@@ -154,19 +154,43 @@ router.get('/slots', requireAuth, async (req, res) => {
     return res.json({ slots: [], travel: null, message: 'Geen beschikbaarheid op deze dag' });
   }
 
+  const timeMin = new Date(date + `T${String(AVAILABILITY.startHour).padStart(2, '0')}:00:00`);
+  const timeMax = new Date(date + `T${String(AVAILABILITY.endHour).padStart(2, '0')}:00:00`);
+
   let travel = null;
+  let destination = null;
+  let origin = HOME_ADDRESS;
+
   if (leadId) {
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });
     if (lead && lead.city) {
-      travel = await getTravelTime(HOME_ADDRESS, lead.city + ', Belgium');
+      destination = lead.city + ', Belgium';
+
+      const dayAppointments = await prisma.appointment.findMany({
+        where: {
+          createdById: req.session.userId,
+          startTime: { gte: timeMin, lt: timeMax }
+        },
+        include: { lead: true },
+        orderBy: { startTime: 'asc' }
+      });
+
+      if (dayAppointments.length > 0) {
+        const lastAppt = dayAppointments[dayAppointments.length - 1];
+        if (lastAppt.lead && lastAppt.lead.city) {
+          origin = lastAppt.lead.city + ', Belgium';
+        }
+      }
+
+      travel = await getTravelTime(origin, destination);
+      if (travel) {
+        travel.origin = origin === HOME_ADDRESS ? 'Thuis' : origin.replace(', Belgium', '');
+        travel.destination = destination.replace(', Belgium', '');
+      }
     }
   }
 
   const travelBuffer = travel ? travel.durationMinutes + AVAILABILITY.bufferMinutes : 0;
-  const totalSlotMinutes = AVAILABILITY.defaultMeetingMinutes + (travelBuffer * 2);
-
-  const timeMin = new Date(date + `T${String(AVAILABILITY.startHour).padStart(2, '0')}:00:00`);
-  const timeMax = new Date(date + `T${String(AVAILABILITY.endHour).padStart(2, '0')}:00:00`);
 
   try {
     const freeBusy = await calendar.freebusy.query({

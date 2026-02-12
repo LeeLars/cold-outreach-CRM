@@ -546,8 +546,8 @@
           travelDiv.style.cssText = 'background:var(--accent-blue-dim);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;';
           travelDiv.innerHTML = `
             <div style="font-weight:600;color:var(--accent-blue);margin-bottom:4px;">Reistijd inbegrepen</div>
-            <div style="color:var(--text-secondary);">${data.travel.durationText} rijden (${data.travel.distanceText}) + 15 min buffer</div>
-            <div style="color:var(--text-muted);margin-top:2px;">Tijdslots houden rekening met heen- en terugreis</div>
+            <div style="color:var(--text-secondary);">${data.travel.origin} -> ${data.travel.destination}: ${data.travel.durationText} (${data.travel.distanceText})</div>
+            <div style="color:var(--text-muted);margin-top:2px;">Slots inclusief heen/terugreis + 15 min buffer</div>
           `;
           slotsDiv.parentNode.insertBefore(travelDiv, slotsDiv);
         }

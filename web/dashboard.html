@@ -74,32 +74,35 @@
     }
 
     function renderKPIs(data) {
+      const c = data.current;
+      const f = data.funnel;
+      const conv = data.conversions;
       const grid = document.getElementById('kpi-grid');
       grid.innerHTML = `
         <div class="kpi-card">
           <div class="kpi-label">Totaal leads</div>
           <div class="kpi-value">${data.totalLeads}</div>
-          <span class="kpi-badge neutral">Alle leads</span>
+          <span class="kpi-badge neutral">${c.NIEUW} nieuw</span>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Verstuurd</div>
-          <div class="kpi-value">${data.verstuurd}</div>
-          <span class="kpi-badge neutral">${data.totalLeads > 0 ? ((data.verstuurd / data.totalLeads) * 100).toFixed(1) : 0}% van totaal</span>
+          <div class="kpi-value">${c.VERSTUURD + c.GEEN_REACTIE}</div>
+          <span class="kpi-badge neutral">${conv.sendRate}% van totaal (${f.verstuurd} door funnel)</span>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Gereageerd</div>
-          <div class="kpi-value">${data.gereageerd}</div>
-          <span class="kpi-badge positive">${data.responseRate}% reactieratio</span>
+          <div class="kpi-value">${c.GEREAGEERD + c.NIET_GEINTERESSEERD}</div>
+          <span class="kpi-badge positive">${conv.responseRate}% reactieratio (${f.gereageerd} door funnel)</span>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Interesse</div>
-          <div class="kpi-value">${data.interesse}</div>
-          <span class="kpi-badge positive">${data.interestRate}% van reacties</span>
+          <div class="kpi-value">${c.AFSPRAAK}</div>
+          <span class="kpi-badge positive">${conv.interestRate}% van reacties (${f.interesse} door funnel)</span>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Klanten</div>
-          <div class="kpi-value">${data.klanten}</div>
-          <span class="kpi-badge positive">${data.conversionRate}% conversie</span>
+          <div class="kpi-value">${c.KLANT}</div>
+          <span class="kpi-badge positive">${conv.closeRate}% close ratio</span>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Totale omzet</div>

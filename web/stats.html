@@ -96,26 +96,29 @@
       try {
         const data = await API.get('/stats/funnel');
 
+        const cur = {};
+        data.funnel.forEach(f => cur[f.status] = f.count);
+
         document.getElementById('funnel-kpis').innerHTML = `
           <div class="kpi-card">
             <div class="kpi-label">Verstuurd ratio</div>
             <div class="kpi-value">${data.conversions.sendRate}%</div>
-            <span class="kpi-badge neutral">${data.counts.totalVerstuurd} van ${data.counts.totalLeads} leads</span>
+            <span class="kpi-badge neutral">${cur.VERSTUURD + cur.GEEN_REACTIE} nu verstuurd / ${data.counts.totalVerstuurd} door funnel</span>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Reactie ratio</div>
             <div class="kpi-value">${data.conversions.responseRate}%</div>
-            <span class="kpi-badge positive">${data.counts.totalGereageerd} van ${data.counts.totalVerstuurd} verstuurd</span>
+            <span class="kpi-badge positive">${cur.GEREAGEERD + cur.NIET_GEINTERESSEERD} nu gereageerd / ${data.counts.totalGereageerd} door funnel</span>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Interesse ratio</div>
             <div class="kpi-value">${data.conversions.interestRate}%</div>
-            <span class="kpi-badge positive">${data.counts.totalInteresse} van ${data.counts.totalGereageerd} reacties</span>
+            <span class="kpi-badge positive">${cur.AFSPRAAK} nu interesse / ${data.counts.totalInteresse} door funnel</span>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Close ratio</div>
             <div class="kpi-value">${data.conversions.closeRate}%</div>
-            <span class="kpi-badge positive">${data.counts.klant} van ${data.counts.totalInteresse} interesse</span>
+            <span class="kpi-badge positive">${cur.KLANT} klanten</span>
           </div>
         `;
 

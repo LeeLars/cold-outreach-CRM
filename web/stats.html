@@ -100,22 +100,22 @@
           <div class="kpi-card">
             <div class="kpi-label">Verstuurd ratio</div>
             <div class="kpi-value">${data.conversions.sendRate}%</div>
-            <span class="kpi-badge neutral">Van totaal leads</span>
+            <span class="kpi-badge neutral">${data.counts.totalVerstuurd} van ${data.counts.totalLeads} leads</span>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Reactie ratio</div>
             <div class="kpi-value">${data.conversions.responseRate}%</div>
-            <span class="kpi-badge positive">Van verstuurd</span>
+            <span class="kpi-badge positive">${data.counts.totalGereageerd} van ${data.counts.totalVerstuurd} verstuurd</span>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Afspraak ratio</div>
-            <div class="kpi-value">${data.conversions.appointmentRate}%</div>
-            <span class="kpi-badge positive">Van reacties</span>
+            <div class="kpi-label">Interesse ratio</div>
+            <div class="kpi-value">${data.conversions.interestRate}%</div>
+            <span class="kpi-badge positive">${data.counts.totalInteresse} van ${data.counts.totalGereageerd} reacties</span>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Close ratio</div>
             <div class="kpi-value">${data.conversions.closeRate}%</div>
-            <span class="kpi-badge positive">Van afspraken</span>
+            <span class="kpi-badge positive">${data.counts.klant} van ${data.counts.totalInteresse} interesse</span>
           </div>
         `;
 
@@ -141,8 +141,8 @@
         const steps = [
           { from: 'Totaal', to: 'Verstuurd', rate: data.conversions.sendRate },
           { from: 'Verstuurd', to: 'Gereageerd', rate: data.conversions.responseRate },
-          { from: 'Gereageerd', to: 'Afspraak', rate: data.conversions.appointmentRate },
-          { from: 'Afspraak', to: 'Klant', rate: data.conversions.closeRate }
+          { from: 'Gereageerd', to: 'Interesse', rate: data.conversions.interestRate },
+          { from: 'Interesse', to: 'Klant', rate: data.conversions.closeRate }
         ];
 
         document.getElementById('conversion-steps').innerHTML = `

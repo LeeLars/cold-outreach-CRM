@@ -87,14 +87,14 @@
           <span class="kpi-badge neutral">${data.totalLeads > 0 ? ((data.verstuurd / data.totalLeads) * 100).toFixed(1) : 0}% van totaal</span>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Reacties</div>
+          <div class="kpi-label">Gereageerd</div>
           <div class="kpi-value">${data.gereageerd}</div>
           <span class="kpi-badge positive">${data.responseRate}% reactieratio</span>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Afspraken</div>
-          <div class="kpi-value">${data.afspraken}</div>
-          <span class="kpi-badge positive">${data.verstuurd > 0 ? ((data.afspraken / data.verstuurd) * 100).toFixed(1) : 0}%</span>
+          <div class="kpi-label">Interesse</div>
+          <div class="kpi-value">${data.interesse}</div>
+          <span class="kpi-badge positive">${data.interestRate}% van reacties</span>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Klanten</div>

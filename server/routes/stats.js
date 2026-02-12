@@ -13,15 +13,17 @@ router.get('/dashboard', async (req, res, next) => {
       totalLeads,
       verstuurd,
       gereageerd,
-      afspraken,
+      interesse,
       klanten,
+      nietGeinteresseerd,
       deals
     ] = await Promise.all([
       prisma.lead.count(),
       prisma.lead.count({ where: { status: { in: ['VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'] } } }),
-      prisma.lead.count({ where: { status: { in: ['GEREAGEERD', 'AFSPRAAK', 'KLANT'] } } }),
+      prisma.lead.count({ where: { status: { in: ['GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'] } } }),
       prisma.lead.count({ where: { status: { in: ['AFSPRAAK', 'KLANT'] } } }),
       prisma.lead.count({ where: { status: 'KLANT' } }),
+      prisma.lead.count({ where: { status: 'NIET_GEINTERESSEERD' } }),
       prisma.deal.aggregate({ _sum: { totalValue: true }, _avg: { totalValue: true, acquisitionCost: true } })
     ]);
 
@@ -33,13 +35,15 @@ router.get('/dashboard', async (req, res, next) => {
       totalLeads,
       verstuurd,
       gereageerd,
-      afspraken,
+      interesse,
       klanten,
+      nietGeinteresseerd,
       totalRevenue,
       avgDealValue,
       avgAcquisitionCost,
       conversionRate: totalLeads > 0 ? ((klanten / totalLeads) * 100).toFixed(1) : 0,
-      responseRate: verstuurd > 0 ? ((gereageerd / verstuurd) * 100).toFixed(1) : 0
+      responseRate: verstuurd > 0 ? ((gereageerd / verstuurd) * 100).toFixed(1) : 0,
+      interestRate: gereageerd > 0 ? ((interesse / gereageerd) * 100).toFixed(1) : 0
     });
   } catch (err) {
     next(err);
@@ -59,18 +63,32 @@ router.get('/funnel', async (req, res, next) => {
     }));
 
     const totalLeads = counts.reduce((a, b) => a + b, 0);
-    const verstuurd = totalLeads - counts[0];
-    const gereageerd = counts[3] + counts[4] + counts[5];
-    const afspraken = counts[4] + counts[5];
-    const klanten = counts[5];
+    const nieuw = counts[0];
+    const verstuurd = counts[1];
+    const geenReactie = counts[2];
+    const geenInteresse = counts[3];
+    const interesse = counts[4];
+    const klant = counts[5];
+    const nietGeinteresseerd = counts[6];
+
+    const totalVerstuurd = verstuurd + geenReactie + geenInteresse + interesse + klant + nietGeinteresseerd;
+    const totalGereageerd = geenInteresse + interesse + klant + nietGeinteresseerd;
+    const totalInteresse = interesse + klant;
 
     res.json({
       funnel,
+      counts: {
+        totalLeads,
+        totalVerstuurd,
+        totalGereageerd,
+        totalInteresse,
+        klant
+      },
       conversions: {
-        sendRate: totalLeads > 0 ? ((verstuurd / totalLeads) * 100).toFixed(1) : 0,
-        responseRate: verstuurd > 0 ? ((gereageerd / verstuurd) * 100).toFixed(1) : 0,
-        appointmentRate: gereageerd > 0 ? ((afspraken / gereageerd) * 100).toFixed(1) : 0,
-        closeRate: afspraken > 0 ? ((klanten / afspraken) * 100).toFixed(1) : 0
+        sendRate: totalLeads > 0 ? ((totalVerstuurd / totalLeads) * 100).toFixed(1) : 0,
+        responseRate: totalVerstuurd > 0 ? ((totalGereageerd / totalVerstuurd) * 100).toFixed(1) : 0,
+        interestRate: totalGereageerd > 0 ? ((totalInteresse / totalGereageerd) * 100).toFixed(1) : 0,
+        closeRate: totalInteresse > 0 ? ((klant / totalInteresse) * 100).toFixed(1) : 0
       }
     });
   } catch (err) {

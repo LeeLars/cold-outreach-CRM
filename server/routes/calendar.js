@@ -16,15 +16,15 @@ const AVAILABILITY = {
 };
 
 function getOAuth2Client() {
-  const redirectUri = process.env.NODE_ENV === 'production'
-    ? 'https://cold-outreach-crm-production.up.railway.app/api/calendar/callback'
-    : process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/calendar/callback';
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'https://cold-outreach-crm-production.up.railway.app/api/calendar/callback';
 
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    redirectUri
-  );
+  if (!clientId || !clientSecret) {
+    throw new Error('Google OAuth credentials niet geconfigureerd. Stel GOOGLE_CLIENT_ID en GOOGLE_CLIENT_SECRET in.');
+  }
+
+  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 }
 
 async function getAuthenticatedClient(userId) {

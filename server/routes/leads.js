@@ -206,6 +206,11 @@ router.post('/import/preview', upload.single('file'), async (req, res, next) => 
   }
 });
 
+const ENRICH_BATCH_SIZE = 25;
+const ENRICH_DELAY_MS = 200;
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 router.post('/enrich', async (req, res, next) => {
   try {
     const { ids } = req.body;
@@ -213,15 +218,20 @@ router.post('/enrich', async (req, res, next) => {
       return res.status(400).json({ error: 'IDs zijn verplicht' });
     }
 
+    const batchIds = ids.slice(0, ENRICH_BATCH_SIZE);
+    const skipped = ids.length - batchIds.length;
+
     const apiKey = process.env.MAPS_KEY;
     if (!apiKey) return res.status(400).json({ error: 'Google Maps API key niet geconfigureerd' });
 
-    const leads = await prisma.lead.findMany({ where: { id: { in: ids } } });
+    const leads = await prisma.lead.findMany({ where: { id: { in: batchIds } } });
     let enriched = 0;
     const results = [];
 
     for (const lead of leads) {
       try {
+        await delay(ENRICH_DELAY_MS);
+
         const query = lead.city ? `${lead.companyName} ${lead.city} Belgium` : `${lead.companyName} Belgium`;
         const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&region=be&language=nl&key=${apiKey}`;
         const searchRes = await fetch(searchUrl);
@@ -240,6 +250,7 @@ router.post('/enrich', async (req, res, next) => {
         }
 
         if (place.place_id) {
+          await delay(ENRICH_DELAY_MS);
           const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website&language=nl&key=${apiKey}`;
           const detailRes = await fetch(detailUrl);
           const detailData = await detailRes.json();
@@ -267,7 +278,11 @@ router.post('/enrich', async (req, res, next) => {
       }
     }
 
-    res.json({ message: `${enriched} van ${leads.length} leads verrijkt`, enriched, total: leads.length, results });
+    const msg = skipped > 0
+      ? `${enriched} van ${leads.length} leads verrijkt (${skipped} overgeslagen, max ${ENRICH_BATCH_SIZE} per keer)`
+      : `${enriched} van ${leads.length} leads verrijkt`;
+
+    res.json({ message: msg, enriched, total: leads.length, skipped, batchSize: ENRICH_BATCH_SIZE, results });
   } catch (err) {
     next(err);
   }

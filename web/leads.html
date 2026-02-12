@@ -346,16 +346,32 @@
       showToast(`${document.querySelectorAll(`.lead-checkbox[data-status="${status}"]:checked`).length} leads geselecteerd`);
     }
 
+    const ENRICH_BATCH = 25;
+
     async function enrichSelected() {
       if (selectedIds.size === 0) return;
       const btn = document.getElementById('enrich-btn');
       btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Verrijken...';
-      lucide.createIcons();
+
+      const allIds = Array.from(selectedIds);
+      const totalBatches = Math.ceil(allIds.length / ENRICH_BATCH);
+      let totalEnriched = 0;
 
       try {
-        const data = await API.post('/leads/enrich', { ids: Array.from(selectedIds) });
-        showToast(data.message);
+        for (let i = 0; i < totalBatches; i++) {
+          const batch = allIds.slice(i * ENRICH_BATCH, (i + 1) * ENRICH_BATCH);
+          btn.innerHTML = `<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Batch ${i + 1}/${totalBatches} (${batch.length})...`;
+          lucide.createIcons();
+
+          const data = await API.post('/leads/enrich', { ids: batch });
+          totalEnriched += data.enriched;
+
+          if (i < totalBatches - 1) {
+            await new Promise(r => setTimeout(r, 1000));
+          }
+        }
+
+        showToast(`${totalEnriched} van ${allIds.length} leads verrijkt`);
         selectedIds.clear();
         updateFloatingBar();
         document.getElementById('select-all').checked = false;
@@ -545,13 +561,20 @@
         resetImport();
         loadLeads();
 
-        if (result.count > 0 && confirm(`${result.count} leads geimporteerd. Wil je ze automatisch verrijken met Google Maps data (adres, telefoon, website)?`)) {
-          showToast('Leads worden verrijkt...', 'info');
+        if (result.count > 0 && confirm(`${result.count} leads geimporteerd. Wil je ze automatisch verrijken met Google Maps data (adres, telefoon, website)?\n\nWordt verwerkt in batches van ${ENRICH_BATCH}.`)) {
           const leadsData = await API.get(`/leads?limit=${result.count}&page=1`);
           const newIds = leadsData.leads.filter(l => l.status === 'NIEUW').slice(0, result.count).map(l => l.id);
           if (newIds.length > 0) {
-            const enrichResult = await API.post('/leads/enrich', { ids: newIds });
-            showToast(enrichResult.message);
+            const totalBatches = Math.ceil(newIds.length / ENRICH_BATCH);
+            let totalEnriched = 0;
+            for (let i = 0; i < totalBatches; i++) {
+              const batch = newIds.slice(i * ENRICH_BATCH, (i + 1) * ENRICH_BATCH);
+              showToast(`Verrijken batch ${i + 1}/${totalBatches} (${batch.length} leads)...`, 'info');
+              const enrichResult = await API.post('/leads/enrich', { ids: batch });
+              totalEnriched += enrichResult.enriched;
+              if (i < totalBatches - 1) await new Promise(r => setTimeout(r, 1000));
+            }
+            showToast(`${totalEnriched} van ${newIds.length} leads verrijkt`);
             loadLeads();
           }
         }

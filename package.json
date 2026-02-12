@@ -1,10 +1,15 @@
 {
-  "name": "cold-outreach-copy",
+  "name": "cold-outreach-crm",
   "version": "1.0.0",
-  "description": "Statische frontend voor cold outreach CRM.",
-  "main": "index.js",
+  "description": "Cold Outreach Management Webapp",
+  "main": "server/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "seed": "node server/prisma/seed.js",
+    "db:migrate": "npx prisma migrate dev --schema=server/prisma/schema.prisma",
+    "db:push": "npx prisma db push --schema=server/prisma/schema.prisma",
+    "db:generate": "npx prisma generate --schema=server/prisma/schema.prisma"
   },
   "repository": {
     "type": "git",
@@ -14,12 +19,17 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/LeeLars/cold-outreach-CRM/issues"
-  },
-  "homepage": "https://github.com/LeeLars/cold-outreach-CRM#readme",
   "dependencies": {
+    "@prisma/client": "^6.4.1",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.6.0",
     "dotenv": "^17.2.4",
-    "pg": "^8.18.0"
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.4.1"
   }
 }

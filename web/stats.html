@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistieken - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content">
+        <div class="tabs">
+          <button class="tab active" data-tab="funnel" onclick="switchTab('funnel')">Funnel analyse</button>
+          <button class="tab" data-tab="revenue" onclick="switchTab('revenue')">Omzet & ROI</button>
+          <button class="tab" data-tab="acquisition" onclick="switchTab('acquisition')">Kost per acquisitie</button>
+        </div>
+
+        <!-- Funnel Tab -->
+        <div id="tab-funnel">
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="funnel-kpis"></div>
+          <div class="card mb-24">
+            <div class="card-header"><span class="card-title">Pipeline per status</span></div>
+            <div class="card-body"><canvas id="funnel-bar-chart" height="300"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Conversieratio per stap</span></div>
+            <div class="card-body" id="conversion-steps"></div>
+          </div>
+        </div>
+
+        <!-- Revenue Tab -->
+        <div id="tab-revenue" class="hidden">
+          <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="revenue-kpis"></div>
+          <div class="grid-2 mb-24">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Omzet per maand</span></div>
+              <div class="card-body"><canvas id="monthly-revenue-chart" height="280"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Omzet per pakket</span></div>
+              <div class="card-body"><canvas id="package-revenue-chart" height="280"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acquisition Tab -->
+        <div id="tab-acquisition" class="hidden">
+          <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);" id="acquisition-kpis"></div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Kost vs. dealwaarde per klant</span></div>
+            <div class="card-body" style="padding:0;">
+              <table class="data-table">
+                <thead><tr><th>Bedrijf</th><th>Acquisitiekost</th><th>Dealwaarde</th><th>ROI</th><th>Datum</th></tr></thead>
+                <tbody id="acquisition-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    let charts = {};
+
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('Statistieken');
+      lucide.createIcons();
+      loadFunnel();
+      loadRevenue();
+      loadAcquisition();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById('tab-funnel').classList.toggle('hidden', tab !== 'funnel');
+      document.getElementById('tab-revenue').classList.toggle('hidden', tab !== 'revenue');
+      document.getElementById('tab-acquisition').classList.toggle('hidden', tab !== 'acquisition');
+    }
+
+    async function loadFunnel() {
+      try {
+        const data = await API.get('/stats/funnel');
+
+        document.getElementById('funnel-kpis').innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">Verstuurd ratio</div>
+            <div class="kpi-value">${data.conversions.sendRate}%</div>
+            <span class="kpi-badge neutral">Van totaal leads</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Reactie ratio</div>
+            <div class="kpi-value">${data.conversions.responseRate}%</div>
+            <span class="kpi-badge positive">Van verstuurd</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Afspraak ratio</div>
+            <div class="kpi-value">${data.conversions.appointmentRate}%</div>
+            <span class="kpi-badge positive">Van reacties</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Close ratio</div>
+            <div class="kpi-value">${data.conversions.closeRate}%</div>
+            <span class="kpi-badge positive">Van afspraken</span>
+          </div>
+        `;
+
+        const ctx = document.getElementById('funnel-bar-chart').getContext('2d');
+        if (charts.funnel) charts.funnel.destroy();
+        const colors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#4ADE80', '#F87171'];
+        charts.funnel = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: data.funnel.map(f => STATUS_LABELS[f.status] || f.status),
+            datasets: [{ data: data.funnel.map(f => f.count), backgroundColor: colors, borderRadius: 6, borderSkipped: false }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#9CA3AF' } },
+              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF' } }
+            }
+          }
+        });
+
+        const steps = [
+          { from: 'Totaal', to: 'Verstuurd', rate: data.conversions.sendRate },
+          { from: 'Verstuurd', to: 'Gereageerd', rate: data.conversions.responseRate },
+          { from: 'Gereageerd', to: 'Afspraak', rate: data.conversions.appointmentRate },
+          { from: 'Afspraak', to: 'Klant', rate: data.conversions.closeRate }
+        ];
+
+        document.getElementById('conversion-steps').innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            ${steps.map(s => `
+              <div style="display:flex;align-items:center;gap:16px;">
+                <span style="width:100px;font-size:13px;color:var(--text-secondary);">${s.from}</span>
+                <div class="progress-bar" style="flex:1;"><div class="progress-bar-fill" style="width:${s.rate}%;"></div></div>
+                <span style="width:60px;font-size:13px;font-weight:600;text-align:right;">${s.rate}%</span>
+                <span style="width:100px;font-size:13px;color:var(--text-secondary);">${s.to}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadRevenue() {
+      try {
+        const data = await API.get('/stats/revenue');
+
+        document.getElementById('revenue-kpis').innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">Totale omzet</div>
+            <div class="kpi-value text-green">${formatCurrency(data.totalRevenue)}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Totale kosten</div>
+            <div class="kpi-value">${formatCurrency(data.totalCost)}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">ROI</div>
+            <div class="kpi-value text-green">${data.roi}%</div>
+          </div>
+        `;
+
+        const ctx1 = document.getElementById('monthly-revenue-chart').getContext('2d');
+        if (charts.monthly) charts.monthly.destroy();
+        charts.monthly = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: data.monthlyRevenue.map(m => m.month),
+            datasets: [{
+              label: 'Omzet',
+              data: data.monthlyRevenue.map(m => m.revenue),
+              backgroundColor: 'rgba(74, 222, 128, 0.3)',
+              borderColor: '#4ADE80',
+              borderWidth: 2,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#9CA3AF' } },
+              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF', callback: v => formatCurrency(v) } }
+            }
+          }
+        });
+
+        const ctx2 = document.getElementById('package-revenue-chart').getContext('2d');
+        if (charts.pkg) charts.pkg.destroy();
+        const pkgColors = ['#4ADE80', '#60A5FA', '#A78BFA', '#FB923C', '#22D3EE'];
+        charts.pkg = new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            labels: data.packageRevenue.map(p => p.name),
+            datasets: [{
+              data: data.packageRevenue.map(p => p.revenue),
+              backgroundColor: pkgColors,
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#9CA3AF', padding: 16, font: { size: 12 } } }
+            }
+          }
+        });
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadAcquisition() {
+      try {
+        const data = await API.get('/stats/acquisition');
+
+        document.getElementById('acquisition-kpis').innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">Gem. acquisitiekost</div>
+            <div class="kpi-value">${formatCurrency(parseFloat(data.avgCost))}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Aantal klanten</div>
+            <div class="kpi-value">${data.perClient.length}</div>
+          </div>
+        `;
+
+        const tbody = document.getElementById('acquisition-body');
+        if (data.perClient.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:40px;">Nog geen klanten</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.perClient.map(c => `
+          <tr>
+            <td style="font-weight:500;">${c.companyName}</td>
+            <td>${formatCurrency(c.acquisitionCost)}</td>
+            <td style="color:var(--accent-green);font-weight:600;">${formatCurrency(c.dealValue)}</td>
+            <td><span class="kpi-badge positive">${c.roi}%</span></td>
+            <td style="color:var(--text-muted);">${formatDate(c.saleDate)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

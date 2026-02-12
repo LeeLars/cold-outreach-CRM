@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content" id="page-content">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <div class="grid-2 mb-24" id="charts-row">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Pipeline Funnel</span></div>
+            <div class="card-body"><canvas id="funnel-chart" height="260"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Omzet over tijd</span></div>
+            <div class="card-body"><canvas id="revenue-chart" height="260"></canvas></div>
+          </div>
+        </div>
+        <div class="grid-2 mb-24">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Recente leads</span></div>
+            <div class="card-body" id="recent-leads"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Financieel overzicht</span></div>
+            <div class="card-body" id="financial-summary"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('Dashboard');
+      lucide.createIcons();
+      loadDashboard();
+    }
+
+    async function loadDashboard() {
+      try {
+        const [dashboard, funnel, revenue, recentLeads] = await Promise.all([
+          API.get('/stats/dashboard'),
+          API.get('/stats/funnel'),
+          API.get('/stats/revenue'),
+          API.get('/stats/recent-leads')
+        ]);
+
+        renderKPIs(dashboard);
+        renderFunnelChart(funnel);
+        renderRevenueChart(revenue);
+        renderRecentLeads(recentLeads);
+        renderFinancialSummary(dashboard, revenue);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderKPIs(data) {
+      const grid = document.getElementById('kpi-grid');
+      grid.innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Totaal leads</div>
+          <div class="kpi-value">${data.totalLeads}</div>
+          <span class="kpi-badge neutral">Alle leads</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Verstuurd</div>
+          <div class="kpi-value">${data.verstuurd}</div>
+          <span class="kpi-badge neutral">${data.totalLeads > 0 ? ((data.verstuurd / data.totalLeads) * 100).toFixed(1) : 0}% van totaal</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Reacties</div>
+          <div class="kpi-value">${data.gereageerd}</div>
+          <span class="kpi-badge positive">${data.responseRate}% reactieratio</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Afspraken</div>
+          <div class="kpi-value">${data.afspraken}</div>
+          <span class="kpi-badge positive">${data.verstuurd > 0 ? ((data.afspraken / data.verstuurd) * 100).toFixed(1) : 0}%</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Klanten</div>
+          <div class="kpi-value">${data.klanten}</div>
+          <span class="kpi-badge positive">${data.conversionRate}% conversie</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Totale omzet</div>
+          <div class="kpi-value">${formatCurrency(data.totalRevenue)}</div>
+          <span class="kpi-badge positive">Omzet</span>
+        </div>
+      `;
+    }
+
+    function renderFunnelChart(data) {
+      const ctx = document.getElementById('funnel-chart').getContext('2d');
+      const labels = data.funnel.map(f => STATUS_LABELS[f.status] || f.status);
+      const values = data.funnel.map(f => f.count);
+      const colors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#4ADE80', '#F87171'];
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderRadius: 6,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#9CA3AF' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: '#9CA3AF', font: { size: 12 } }
+            }
+          }
+        }
+      });
+    }
+
+    function renderRevenueChart(data) {
+      const ctx = document.getElementById('revenue-chart').getContext('2d');
+      const months = data.monthlyRevenue.map(m => m.month);
+      const values = data.monthlyRevenue.map(m => m.revenue);
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Omzet',
+            data: values,
+            borderColor: '#4ADE80',
+            backgroundColor: 'rgba(74, 222, 128, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#4ADE80'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#9CA3AF' }
+            },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: {
+                color: '#9CA3AF',
+                callback: v => formatCurrency(v)
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderRecentLeads(leads) {
+      const container = document.getElementById('recent-leads');
+      if (leads.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-state-title">Geen leads</div><div class="empty-state-text">Importeer leads om te beginnen</div></div>';
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>Bedrijf</th><th>Gemeente</th><th>Status</th><th>Datum</th></tr></thead>
+          <tbody>
+            ${leads.map(l => `
+              <tr>
+                <td>${l.companyName}</td>
+                <td>${l.city || '-'}</td>
+                <td>${statusBadge(l.status)}</td>
+                <td>${formatDate(l.createdAt)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderFinancialSummary(dashboard, revenue) {
+      const container = document.getElementById('financial-summary');
+      container.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="flex justify-between items-center">
+            <span class="text-muted">Totale omzet</span>
+            <span style="font-weight:700;font-size:16px;" class="text-green">${formatCurrency(dashboard.totalRevenue)}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-muted">Gem. dealwaarde</span>
+            <span style="font-weight:600;">${formatCurrency(dashboard.avgDealValue)}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-muted">Gem. acquisitiekost</span>
+            <span style="font-weight:600;">${formatCurrency(dashboard.avgAcquisitionCost)}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-muted">ROI</span>
+            <span style="font-weight:700;font-size:16px;" class="text-green">${revenue.roi}%</span>
+          </div>
+          <hr style="border-color:var(--border-color);">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Omzet per pakket</div>
+          ${revenue.packageRevenue.length > 0 ? revenue.packageRevenue.map(p => `
+            <div class="flex justify-between items-center">
+              <span style="font-size:13px;">${p.name}</span>
+              <span style="font-weight:600;font-size:13px;">${formatCurrency(p.revenue)}</span>
+            </div>
+          `).join('') : '<span class="text-muted" style="font-size:13px;">Nog geen deals</span>'}
+        </div>
+      `;
+    }
+
+    init();
+  </script>
+</body>
+</html>

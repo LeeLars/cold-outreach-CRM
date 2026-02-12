@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gebruikers - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content">
+        <div class="toolbar">
+          <div class="toolbar-left"></div>
+          <div class="toolbar-right">
+            <button class="btn btn-primary" onclick="openUserModal()">
+              <i data-lucide="plus"></i> Gebruiker toevoegen
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Naam</th>
+                  <th>E-mail</th>
+                  <th>Rol</th>
+                  <th>Laatste login</th>
+                  <th>Aangemaakt</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="users-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- User Modal -->
+  <div class="modal-overlay" id="user-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="user-modal-title">Gebruiker toevoegen</span>
+        <button class="modal-close" onclick="closeModal('user-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="user-id">
+        <div class="form-group">
+          <label class="form-label">Naam</label>
+          <input type="text" class="form-input" id="user-name" placeholder="Volledige naam">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" class="form-input" id="user-email" placeholder="naam@bedrijf.nl">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Wachtwoord <span id="password-hint" class="text-muted" style="font-size:10px;text-transform:none;letter-spacing:0;"></span></label>
+          <input type="password" class="form-input" id="user-password" placeholder="Wachtwoord">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol</label>
+          <select class="form-select" id="user-role">
+            <option value="EMPLOYEE">Medewerker</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('user-modal')">Annuleren</button>
+        <button class="btn btn-primary" onclick="saveUser()">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    async function init() {
+      if (!await requireAdminRole()) return;
+      initSidebar();
+      initTopbar('Gebruikers');
+      lucide.createIcons();
+      loadUsers();
+    }
+
+    async function loadUsers() {
+      try {
+        const users = await API.get('/users');
+        const tbody = document.getElementById('users-body');
+
+        tbody.innerHTML = users.map(user => `
+          <tr>
+            <td style="font-weight:500;">${user.name}</td>
+            <td>${user.email}</td>
+            <td>
+              <span style="background:${user.role === 'ADMIN' ? 'var(--accent-green-dim)' : 'var(--accent-blue-dim)'};color:${user.role === 'ADMIN' ? 'var(--accent-green)' : 'var(--accent-blue)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">
+                ${user.role === 'ADMIN' ? 'Admin' : 'Medewerker'}
+              </span>
+            </td>
+            <td style="color:var(--text-muted);">${user.lastLogin ? formatDateTime(user.lastLogin) : 'Nooit'}</td>
+            <td style="color:var(--text-muted);">${formatDate(user.createdAt)}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <button class="btn-icon" onclick="editUser('${user.id}','${user.name}','${user.email}','${user.role}')" title="Bewerken">
+                  <i data-lucide="pencil" style="width:14px;height:14px;"></i>
+                </button>
+                <button class="btn-icon" onclick="deleteUser('${user.id}','${user.name}')" title="Verwijderen" style="color:var(--accent-red);">
+                  <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function openUserModal() {
+      document.getElementById('user-modal-title').textContent = 'Gebruiker toevoegen';
+      document.getElementById('user-id').value = '';
+      document.getElementById('user-name').value = '';
+      document.getElementById('user-email').value = '';
+      document.getElementById('user-password').value = '';
+      document.getElementById('user-password').required = true;
+      document.getElementById('password-hint').textContent = '';
+      document.getElementById('user-role').value = 'EMPLOYEE';
+      openModal('user-modal');
+    }
+
+    function editUser(id, name, email, role) {
+      document.getElementById('user-modal-title').textContent = 'Gebruiker bewerken';
+      document.getElementById('user-id').value = id;
+      document.getElementById('user-name').value = name;
+      document.getElementById('user-email').value = email;
+      document.getElementById('user-password').value = '';
+      document.getElementById('user-password').required = false;
+      document.getElementById('password-hint').textContent = '(laat leeg om niet te wijzigen)';
+      document.getElementById('user-role').value = role;
+      openModal('user-modal');
+    }
+
+    async function saveUser() {
+      const id = document.getElementById('user-id').value;
+      const data = {
+        name: document.getElementById('user-name').value,
+        email: document.getElementById('user-email').value,
+        role: document.getElementById('user-role').value
+      };
+      const password = document.getElementById('user-password').value;
+      if (password) data.password = password;
+
+      if (!data.name || !data.email) return showToast('Vul alle velden in', 'warning');
+      if (!id && !password) return showToast('Wachtwoord is verplicht', 'warning');
+
+      try {
+        if (id) {
+          await API.put(`/users/${id}`, data);
+          showToast('Gebruiker bijgewerkt');
+        } else {
+          await API.post('/users', data);
+          showToast('Gebruiker aangemaakt');
+        }
+        closeModal('user-modal');
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteUser(id, name) {
+      if (!confirm(`Weet je zeker dat je "${name}" wilt verwijderen?`)) return;
+      try {
+        await API.delete(`/users/${id}`);
+        showToast('Gebruiker verwijderd');
+        loadUsers();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

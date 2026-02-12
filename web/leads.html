@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leads - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="topbar-search">
+              <i data-lucide="search"></i>
+              <input type="text" placeholder="Zoek leads..." id="search-input">
+            </div>
+            <select class="form-select" id="status-filter" style="width:180px;">
+              <option value="">Alle statussen</option>
+              <option value="NIEUW">Nieuw</option>
+              <option value="VERSTUURD">Verstuurd</option>
+              <option value="GEEN_REACTIE">Geen reactie</option>
+              <option value="GEREAGEERD">Gereageerd</option>
+              <option value="AFSPRAAK">Afspraak geboekt</option>
+              <option value="KLANT">Klant</option>
+              <option value="NIET_GEINTERESSEERD">Niet geinteresseerd</option>
+            </select>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-secondary" onclick="openModal('import-modal')">
+              <i data-lucide="upload"></i> CSV importeren
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table" id="leads-table">
+              <thead>
+                <tr>
+                  <th class="checkbox-cell"><input type="checkbox" id="select-all"></th>
+                  <th>#</th>
+                  <th>Bedrijfsnaam</th>
+                  <th>Gemeente</th>
+                  <th>Website</th>
+                  <th>Status</th>
+                  <th>Datum</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="leads-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="pagination"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Floating action bar -->
+  <div class="floating-bar" id="floating-bar">
+    <span class="floating-bar-count" id="selected-count">0 leads geselecteerd</span>
+    <select class="form-select" id="bulk-status" style="width:180px;">
+      <option value="">Status wijzigen...</option>
+      <option value="VERSTUURD">Verstuurd</option>
+      <option value="GEEN_REACTIE">Geen reactie</option>
+      <option value="GEREAGEERD">Gereageerd</option>
+      <option value="AFSPRAAK">Afspraak geboekt</option>
+      <option value="KLANT">Klant</option>
+      <option value="NIET_GEINTERESSEERD">Niet geinteresseerd</option>
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="applyBulkStatus()">Toepassen</button>
+    <button class="btn btn-danger btn-sm" id="bulk-delete-btn" onclick="bulkDelete()">Verwijderen</button>
+  </div>
+
+  <!-- CSV Import Modal -->
+  <div class="modal-overlay" id="import-modal">
+    <div class="modal" style="max-width:600px;">
+      <div class="modal-header">
+        <span class="modal-title">CSV importeren</span>
+        <button class="modal-close" onclick="closeModal('import-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="upload-zone" id="upload-zone">
+          <div class="upload-zone-icon"><i data-lucide="file-up" style="width:48px;height:48px;"></i></div>
+          <div class="upload-zone-text">Sleep een CSV-bestand hierheen of <strong>klik om te uploaden</strong></div>
+          <input type="file" id="csv-file" accept=".csv" style="display:none;">
+        </div>
+        <div id="import-preview" class="hidden mt-16"></div>
+        <div class="progress-bar hidden mt-16" id="import-progress"><div class="progress-bar-fill" style="width:0%"></div></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('import-modal')">Annuleren</button>
+        <button class="btn btn-primary hidden" id="confirm-import-btn" onclick="confirmImport()">Importeren</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lead Detail Slide-over -->
+  <div class="slide-over-overlay" id="lead-detail-overlay" onclick="closeSlideOver('lead-detail')"></div>
+  <div class="slide-over" id="lead-detail">
+    <div class="slide-over-header">
+      <span class="card-title" id="lead-detail-title">Lead details</span>
+      <button class="modal-close" onclick="closeSlideOver('lead-detail')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="slide-over-body" id="lead-detail-body"></div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    let currentPage = 1;
+    let selectedIds = new Set();
+    let csvFile = null;
+
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('Leads');
+      lucide.createIcons();
+      setupEventListeners();
+      loadLeads();
+    }
+
+    function setupEventListeners() {
+      document.getElementById('search-input').addEventListener('input', debounce(() => { currentPage = 1; loadLeads(); }, 300));
+      document.getElementById('status-filter').addEventListener('change', () => { currentPage = 1; loadLeads(); });
+      document.getElementById('select-all').addEventListener('change', toggleSelectAll);
+
+      const uploadZone = document.getElementById('upload-zone');
+      const fileInput = document.getElementById('csv-file');
+
+      uploadZone.addEventListener('click', () => fileInput.click());
+      uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+      uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+      uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+      if (!isAdmin()) {
+        document.getElementById('bulk-delete-btn').classList.add('hidden');
+      }
+    }
+
+    async function loadLeads() {
+      const search = document.getElementById('search-input').value;
+      const status = document.getElementById('status-filter').value;
+      const params = new URLSearchParams({ page: currentPage, limit: 50 });
+      if (search) params.set('search', search);
+      if (status) params.set('status', status);
+
+      try {
+        const data = await API.get(`/leads?${params}`);
+        renderLeads(data);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderLeads(data) {
+      const tbody = document.getElementById('leads-body');
+      if (data.leads.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted" style="padding:40px;">Geen leads gevonden</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.leads.map((lead, i) => `
+        <tr>
+          <td class="checkbox-cell"><input type="checkbox" data-id="${lead.id}" class="lead-checkbox" ${selectedIds.has(lead.id) ? 'checked' : ''}></td>
+          <td style="color:var(--text-muted);">${((data.page - 1) * 50) + i + 1}</td>
+          <td><a href="#" onclick="viewLead('${lead.id}');return false;" style="color:var(--text-primary);font-weight:500;">${lead.companyName}</a></td>
+          <td>${lead.city || '-'}</td>
+          <td>${lead.website ? `<a href="${lead.website}" target="_blank" style="color:var(--accent-blue);">${lead.website}</a>` : '-'}</td>
+          <td>${statusBadge(lead.status)}</td>
+          <td style="color:var(--text-muted);">${formatDate(lead.createdAt)}</td>
+          <td>
+            <button class="btn-icon" onclick="viewLead('${lead.id}')" title="Bekijken">
+              <i data-lucide="eye" style="width:16px;height:16px;"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      document.querySelectorAll('.lead-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (cb.checked) selectedIds.add(cb.dataset.id);
+          else selectedIds.delete(cb.dataset.id);
+          updateFloatingBar();
+        });
+      });
+
+      renderPagination(document.getElementById('pagination'), data, (page) => { currentPage = page; loadLeads(); });
+      lucide.createIcons();
+    }
+
+    function toggleSelectAll(e) {
+      const checkboxes = document.querySelectorAll('.lead-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = e.target.checked;
+        if (e.target.checked) selectedIds.add(cb.dataset.id);
+        else selectedIds.delete(cb.dataset.id);
+      });
+      updateFloatingBar();
+    }
+
+    function updateFloatingBar() {
+      const bar = document.getElementById('floating-bar');
+      const count = document.getElementById('selected-count');
+      if (selectedIds.size > 0) {
+        bar.classList.add('active');
+        count.textContent = `${selectedIds.size} leads geselecteerd`;
+      } else {
+        bar.classList.remove('active');
+      }
+    }
+
+    async function applyBulkStatus() {
+      const status = document.getElementById('bulk-status').value;
+      if (!status) return showToast('Selecteer een status', 'warning');
+      if (selectedIds.size === 0) return;
+
+      try {
+        await API.post('/leads/bulk-status', { ids: Array.from(selectedIds), status });
+        showToast(`${selectedIds.size} leads bijgewerkt`);
+        selectedIds.clear();
+        updateFloatingBar();
+        document.getElementById('select-all').checked = false;
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function bulkDelete() {
+      if (!confirm(`Weet je zeker dat je ${selectedIds.size} leads wilt verwijderen?`)) return;
+      try {
+        await API.delete('/leads/bulk', { ids: Array.from(selectedIds) });
+        showToast(`${selectedIds.size} leads verwijderd`);
+        selectedIds.clear();
+        updateFloatingBar();
+        document.getElementById('select-all').checked = false;
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function viewLead(id) {
+      try {
+        const lead = await API.get(`/leads/${id}`);
+        const body = document.getElementById('lead-detail-body');
+        document.getElementById('lead-detail-title').textContent = lead.companyName;
+
+        body.innerHTML = `
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="lead-status" onchange="updateLeadStatus('${lead.id}', this.value)">
+              ${Object.entries(STATUS_LABELS).map(([val, label]) =>
+                `<option value="${val}" ${lead.status === val ? 'selected' : ''}>${label}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bedrijfsnaam</label>
+            <input type="text" class="form-input" id="lead-company" value="${lead.companyName}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gemeente</label>
+            <input type="text" class="form-input" id="lead-city" value="${lead.city || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Website</label>
+            <input type="text" class="form-input" id="lead-website" value="${lead.website || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notities</label>
+            <textarea class="form-input" id="lead-notes" rows="4">${lead.notes || ''}</textarea>
+          </div>
+          <div class="flex justify-between items-center mt-16">
+            <span class="text-muted" style="font-size:12px;">Aangemaakt: ${formatDateTime(lead.createdAt)}</span>
+            <button class="btn btn-primary btn-sm" onclick="saveLead('${lead.id}')">Opslaan</button>
+          </div>
+          ${lead.deal ? `
+            <hr style="border-color:var(--border-color);margin:20px 0;">
+            <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;">Deal informatie</div>
+            <div class="flex justify-between items-center mb-16">
+              <span class="text-muted">Pakket</span>
+              <span style="font-weight:600;">${lead.deal.package.name}</span>
+            </div>
+            <div class="flex justify-between items-center mb-16">
+              <span class="text-muted">Dealwaarde</span>
+              <span style="font-weight:600;" class="text-green">${formatCurrency(lead.deal.totalValue)}</span>
+            </div>
+            <div class="flex justify-between items-center mb-16">
+              <span class="text-muted">Acquisitiekost</span>
+              <span style="font-weight:600;">${formatCurrency(lead.deal.acquisitionCost)}</span>
+            </div>
+          ` : ''}
+        `;
+
+        openSlideOver('lead-detail');
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function updateLeadStatus(id, status) {
+      try {
+        await API.put(`/leads/${id}/status`, { status });
+        showToast('Status bijgewerkt');
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function saveLead(id) {
+      try {
+        await API.put(`/leads/${id}`, {
+          companyName: document.getElementById('lead-company').value,
+          city: document.getElementById('lead-city').value,
+          website: document.getElementById('lead-website').value,
+          notes: document.getElementById('lead-notes').value,
+          status: document.getElementById('lead-status').value
+        });
+        showToast('Lead opgeslagen');
+        closeSlideOver('lead-detail');
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function handleFile(file) {
+      csvFile = file;
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const preview = await API.upload('/leads/import/preview', formData);
+        const previewEl = document.getElementById('import-preview');
+        previewEl.classList.remove('hidden');
+        document.getElementById('confirm-import-btn').classList.remove('hidden');
+
+        previewEl.innerHTML = `
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">${preview.total} leads gevonden</div>
+          <div style="max-height:300px;overflow-y:auto;">
+            <table class="data-table">
+              <thead><tr><th>Bedrijfsnaam</th><th>Gemeente</th><th>Website</th></tr></thead>
+              <tbody>
+                ${preview.records.map(r => `
+                  <tr><td>${r.companyName}</td><td>${r.city || '-'}</td><td>${r.website || '-'}</td></tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          ${preview.total > 20 ? `<div class="text-muted mt-16" style="font-size:12px;">Toont eerste 20 van ${preview.total} records</div>` : ''}
+        `;
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function confirmImport() {
+      if (!csvFile) return;
+      const formData = new FormData();
+      formData.append('file', csvFile);
+
+      const progressBar = document.getElementById('import-progress');
+      progressBar.classList.remove('hidden');
+      progressBar.querySelector('.progress-bar-fill').style.width = '50%';
+
+      try {
+        const result = await API.upload('/leads/import', formData);
+        progressBar.querySelector('.progress-bar-fill').style.width = '100%';
+        showToast(result.message);
+        setTimeout(() => {
+          closeModal('import-modal');
+          resetImport();
+          loadLeads();
+        }, 500);
+      } catch (err) {
+        showToast(err.message, 'error');
+        progressBar.classList.add('hidden');
+      }
+    }
+
+    function resetImport() {
+      csvFile = null;
+      document.getElementById('csv-file').value = '';
+      document.getElementById('import-preview').innerHTML = '';
+      document.getElementById('import-preview').classList.add('hidden');
+      document.getElementById('confirm-import-btn').classList.add('hidden');
+      document.getElementById('import-progress').classList.add('hidden');
+      document.getElementById('import-progress').querySelector('.progress-bar-fill').style.width = '0%';
+    }
+
+    function debounce(fn, ms) {
+      let timer;
+      return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+    }
+
+    init();
+  </script>
+</body>
+</html>

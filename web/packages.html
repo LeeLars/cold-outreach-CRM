@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pakketten - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content">
+        <div class="tabs">
+          <button class="tab active" data-tab="packages" onclick="switchTab('packages')">Website pakketten</button>
+          <button class="tab" data-tab="upsells" onclick="switchTab('upsells')">Upsells</button>
+        </div>
+
+        <div id="tab-packages">
+          <div class="toolbar">
+            <div class="toolbar-left"></div>
+            <div class="toolbar-right" id="add-package-btn-wrap"></div>
+          </div>
+          <div class="grid-3" id="packages-grid"></div>
+        </div>
+
+        <div id="tab-upsells" class="hidden">
+          <div class="toolbar">
+            <div class="toolbar-left"></div>
+            <div class="toolbar-right" id="add-upsell-btn-wrap"></div>
+          </div>
+          <div class="card">
+            <div class="card-body" style="padding:0;">
+              <table class="data-table">
+                <thead><tr><th>Naam</th><th>Prijs</th><th>Type</th><th>Acties</th></tr></thead>
+                <tbody id="upsells-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Package Modal -->
+  <div class="modal-overlay" id="package-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="package-modal-title">Pakket toevoegen</span>
+        <button class="modal-close" onclick="closeModal('package-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="package-id">
+        <div class="form-group">
+          <label class="form-label">Naam</label>
+          <input type="text" class="form-input" id="package-name" placeholder="Pakketnaam">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Eenmalige prijs</label>
+          <input type="number" class="form-input" id="package-price" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Maandelijkse prijs</label>
+          <input type="number" class="form-input" id="package-monthly" placeholder="20.00" step="0.01" min="0" value="20">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('package-modal')">Annuleren</button>
+        <button class="btn btn-primary" onclick="savePackage()">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upsell Modal -->
+  <div class="modal-overlay" id="upsell-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title" id="upsell-modal-title">Upsell toevoegen</span>
+        <button class="modal-close" onclick="closeModal('upsell-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="upsell-id">
+        <div class="form-group">
+          <label class="form-label">Naam</label>
+          <input type="text" class="form-input" id="upsell-name" placeholder="Upsell naam">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prijs</label>
+          <input type="number" class="form-input" id="upsell-price" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="upsell-type">
+            <option value="MONTHLY">Maandelijks</option>
+            <option value="ONE_TIME">Eenmalig</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('upsell-modal')">Annuleren</button>
+        <button class="btn btn-primary" onclick="saveUpsell()">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('Pakketten & Prijzen');
+      lucide.createIcons();
+
+      if (isAdmin()) {
+        document.getElementById('add-package-btn-wrap').innerHTML = '<button class="btn btn-primary" onclick="openPackageModal()"><i data-lucide="plus"></i> Pakket toevoegen</button>';
+        document.getElementById('add-upsell-btn-wrap').innerHTML = '<button class="btn btn-primary" onclick="openUpsellModal()"><i data-lucide="plus"></i> Upsell toevoegen</button>';
+        lucide.createIcons();
+      }
+
+      loadPackages();
+      loadUpsells();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById('tab-packages').classList.toggle('hidden', tab !== 'packages');
+      document.getElementById('tab-upsells').classList.toggle('hidden', tab !== 'upsells');
+    }
+
+    async function loadPackages() {
+      try {
+        const packages = await API.get('/packages');
+        const grid = document.getElementById('packages-grid');
+
+        if (packages.length === 0) {
+          grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-state-title">Geen pakketten</div></div>';
+          return;
+        }
+
+        grid.innerHTML = packages.map(pkg => `
+          <div class="card">
+            <div class="card-body" style="text-align:center;">
+              <div style="font-size:13px;font-weight:600;color:var(--accent-blue);margin-bottom:12px;">${pkg.name}</div>
+              <div style="font-size:32px;font-weight:800;margin-bottom:4px;">${formatCurrency(pkg.oneTimePrice)}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">eenmalig</div>
+              <div style="font-size:14px;color:var(--text-secondary);">+ ${formatCurrency(pkg.monthlyPrice)} / maand</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Hosting + e-mail + back-ups</div>
+              ${isAdmin() ? `
+                <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                  <button class="btn btn-secondary btn-sm" onclick="editPackage('${pkg.id}','${pkg.name}',${pkg.oneTimePrice},${pkg.monthlyPrice})">
+                    <i data-lucide="pencil" style="width:14px;height:14px;"></i> Bewerken
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadUpsells() {
+      try {
+        const upsells = await API.get('/packages/upsells');
+        const tbody = document.getElementById('upsells-body');
+
+        if (upsells.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted" style="padding:40px;">Geen upsells</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = upsells.map(u => `
+          <tr>
+            <td style="font-weight:500;">${u.name}</td>
+            <td>${formatCurrency(u.price)}${u.billingType === 'MONTHLY' ? ' /mnd' : ''}</td>
+            <td><span style="background:${u.billingType === 'MONTHLY' ? 'var(--accent-blue-dim)' : 'var(--accent-purple-dim)'};color:${u.billingType === 'MONTHLY' ? 'var(--accent-blue)' : 'var(--accent-purple)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${u.billingType === 'MONTHLY' ? 'Maandelijks' : 'Eenmalig'}</span></td>
+            <td>${isAdmin() ? `<button class="btn-icon" onclick="editUpsell('${u.id}','${u.name}',${u.price},'${u.billingType}')"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>` : ''}</td>
+          </tr>
+        `).join('');
+
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function openPackageModal() {
+      document.getElementById('package-modal-title').textContent = 'Pakket toevoegen';
+      document.getElementById('package-id').value = '';
+      document.getElementById('package-name').value = '';
+      document.getElementById('package-price').value = '';
+      document.getElementById('package-monthly').value = '20';
+      openModal('package-modal');
+    }
+
+    function editPackage(id, name, price, monthly) {
+      document.getElementById('package-modal-title').textContent = 'Pakket bewerken';
+      document.getElementById('package-id').value = id;
+      document.getElementById('package-name').value = name;
+      document.getElementById('package-price').value = price;
+      document.getElementById('package-monthly').value = monthly;
+      openModal('package-modal');
+    }
+
+    async function savePackage() {
+      const id = document.getElementById('package-id').value;
+      const data = {
+        name: document.getElementById('package-name').value,
+        oneTimePrice: document.getElementById('package-price').value,
+        monthlyPrice: document.getElementById('package-monthly').value
+      };
+
+      if (!data.name || !data.oneTimePrice) return showToast('Vul alle velden in', 'warning');
+
+      try {
+        if (id) {
+          await API.put(`/packages/${id}`, data);
+          showToast('Pakket bijgewerkt');
+        } else {
+          await API.post('/packages', data);
+          showToast('Pakket aangemaakt');
+        }
+        closeModal('package-modal');
+        loadPackages();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function openUpsellModal() {
+      document.getElementById('upsell-modal-title').textContent = 'Upsell toevoegen';
+      document.getElementById('upsell-id').value = '';
+      document.getElementById('upsell-name').value = '';
+      document.getElementById('upsell-price').value = '';
+      document.getElementById('upsell-type').value = 'MONTHLY';
+      openModal('upsell-modal');
+    }
+
+    function editUpsell(id, name, price, type) {
+      document.getElementById('upsell-modal-title').textContent = 'Upsell bewerken';
+      document.getElementById('upsell-id').value = id;
+      document.getElementById('upsell-name').value = name;
+      document.getElementById('upsell-price').value = price;
+      document.getElementById('upsell-type').value = type;
+      openModal('upsell-modal');
+    }
+
+    async function saveUpsell() {
+      const id = document.getElementById('upsell-id').value;
+      const data = {
+        name: document.getElementById('upsell-name').value,
+        price: document.getElementById('upsell-price').value,
+        billingType: document.getElementById('upsell-type').value
+      };
+
+      if (!data.name || !data.price) return showToast('Vul alle velden in', 'warning');
+
+      try {
+        if (id) {
+          await API.put(`/packages/upsells/${id}`, data);
+          showToast('Upsell bijgewerkt');
+        } else {
+          await API.post('/packages/upsells', data);
+          showToast('Upsell aangemaakt');
+        }
+        closeModal('upsell-modal');
+        loadUpsells();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

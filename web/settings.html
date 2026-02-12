@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instellingen - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content">
+        <div class="tabs">
+          <button class="tab active" data-tab="account" onclick="switchTab('account')">Account</button>
+          <button class="tab" data-tab="general" id="general-tab" onclick="switchTab('general')">Algemeen</button>
+        </div>
+
+        <!-- Account Tab -->
+        <div id="tab-account">
+          <div class="card" style="max-width:560px;">
+            <div class="card-header"><span class="card-title">Accountgegevens</span></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Naam</label>
+                <input type="text" class="form-input" id="account-name">
+              </div>
+              <div class="form-group">
+                <label class="form-label">E-mail</label>
+                <input type="email" class="form-input" id="account-email">
+              </div>
+              <div style="margin-top:16px;">
+                <button class="btn btn-primary" onclick="saveAccount()">Opslaan</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mt-16" style="max-width:560px;">
+            <div class="card-header"><span class="card-title">Wachtwoord wijzigen</span></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Huidig wachtwoord</label>
+                <input type="password" class="form-input" id="current-password">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nieuw wachtwoord</label>
+                <input type="password" class="form-input" id="new-password">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bevestig nieuw wachtwoord</label>
+                <input type="password" class="form-input" id="confirm-password">
+              </div>
+              <div style="margin-top:16px;">
+                <button class="btn btn-primary" onclick="changePassword()">Wachtwoord wijzigen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- General Tab (Admin) -->
+        <div id="tab-general" class="hidden">
+          <div class="card" style="max-width:560px;">
+            <div class="card-header"><span class="card-title">Applicatie-informatie</span></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="flex justify-between items-center">
+                  <span class="text-muted">Applicatie</span>
+                  <span style="font-weight:600;">Cold Outreach CRM</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-muted">Versie</span>
+                  <span>1.0.0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-muted">Database</span>
+                  <span style="color:var(--accent-green);">Verbonden (Railway PostgreSQL)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('Instellingen');
+      lucide.createIcons();
+
+      document.getElementById('account-name').value = currentUser.name;
+      document.getElementById('account-email').value = currentUser.email;
+
+      if (!isAdmin()) {
+        document.getElementById('general-tab').classList.add('hidden');
+      }
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById('tab-account').classList.toggle('hidden', tab !== 'account');
+      document.getElementById('tab-general').classList.toggle('hidden', tab !== 'general');
+    }
+
+    async function saveAccount() {
+      const name = document.getElementById('account-name').value;
+      const email = document.getElementById('account-email').value;
+
+      if (!name || !email) return showToast('Vul alle velden in', 'warning');
+
+      try {
+        const updated = await API.put('/users/account/update', { name, email });
+        currentUser.name = updated.name;
+        currentUser.email = updated.email;
+        showToast('Account bijgewerkt');
+        initSidebar();
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById('current-password').value;
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (!currentPassword || !newPassword) return showToast('Vul alle velden in', 'warning');
+      if (newPassword !== confirmPassword) return showToast('Wachtwoorden komen niet overeen', 'error');
+      if (newPassword.length < 6) return showToast('Wachtwoord moet minimaal 6 tekens zijn', 'warning');
+
+      try {
+        await API.put('/users/account/update', { currentPassword, newPassword });
+        showToast('Wachtwoord gewijzigd');
+        document.getElementById('current-password').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

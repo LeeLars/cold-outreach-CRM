@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg-primary);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 40px;
+      box-shadow: var(--shadow);
+    }
+
+    .login-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .login-logo-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--accent-green-dim);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-green);
+    }
+
+    .login-logo-text {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .login-title {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .login-form .form-group {
+      margin-bottom: 20px;
+    }
+
+    .login-error {
+      background: var(--accent-red-dim);
+      color: var(--accent-red);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="assets/images/logo/GrafixStudio_Favicon_Wit.png" alt="Logo" style="width:44px;height:44px;border-radius:8px;">
+      <span class="login-logo-text">Cold Outreach</span>
+    </div>
+    <p class="login-title">Log in om verder te gaan</p>
+
+    <div class="login-error" id="login-error"></div>
+
+    <form class="login-form" id="login-form">
+      <div class="form-group">
+        <label class="form-label" for="email">E-mailadres</label>
+        <input type="email" id="email" class="form-input" placeholder="naam@bedrijf.nl" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Wachtwoord</label>
+        <input type="password" id="password" class="form-input" placeholder="Wachtwoord" required>
+      </div>
+      <button type="submit" class="btn btn-primary login-btn" id="login-btn">Inloggen</button>
+    </form>
+    <div style="margin-top:24px;padding:16px;background:var(--bg-input);border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:8px;">Quick login</div>
+      <div style="font-size:13px;color:var(--text-secondary);"><strong style="color:var(--text-primary);">admin@coldoutreach.nl</strong></div>
+      <div style="font-size:13px;color:var(--text-secondary);">Wachtwoord: <strong style="color:var(--text-primary);">admin123</strong></div>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const errorEl = document.getElementById('login-error');
+      errorEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Bezig...';
+
+      try {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        await API.post('/auth/login', { email, password });
+        window.location.href = basePath('/dashboard.html');
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Inloggen';
+      }
+    });
+  </script>
+</body>
+</html>

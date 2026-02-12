@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deals - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="topbar-search">
+              <i data-lucide="search"></i>
+              <input type="text" placeholder="Zoek deals..." id="search-input">
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-primary" onclick="openNewDealModal()">
+              <i data-lucide="plus"></i> Nieuwe deal
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table" id="deals-table">
+              <thead>
+                <tr>
+                  <th>Bedrijfsnaam</th>
+                  <th>Pakket</th>
+                  <th>Upsells</th>
+                  <th>Eenmalig</th>
+                  <th>Maandelijks</th>
+                  <th>Acquisitiekost</th>
+                  <th>Dealwaarde</th>
+                  <th>Datum</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="deals-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="pagination"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- New/Edit Deal Modal -->
+  <div class="modal-overlay" id="deal-modal">
+    <div class="modal" style="max-width:560px;">
+      <div class="modal-header">
+        <span class="modal-title" id="deal-modal-title">Nieuwe deal</span>
+        <button class="modal-close" onclick="closeModal('deal-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Lead (bedrijf)</label>
+          <select class="form-select" id="deal-lead"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pakket</label>
+          <select class="form-select" id="deal-package"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Upsells</label>
+          <div id="deal-upsells"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Acquisitiekost</label>
+          <input type="number" class="form-input" id="deal-cost" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Datum verkoop</label>
+          <input type="date" class="form-input" id="deal-date">
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-body">
+            <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Berekening</div>
+            <div id="deal-calculation" style="font-size:13px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('deal-modal')">Annuleren</button>
+        <button class="btn btn-primary" id="save-deal-btn" onclick="saveDeal()">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deal Detail Modal -->
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal" style="max-width:560px;">
+      <div class="modal-header">
+        <span class="modal-title" id="detail-modal-title">Deal details</span>
+        <button class="modal-close" onclick="closeModal('detail-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="detail-modal-body"></div>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    let currentPage = 1;
+    let packages = [];
+    let upsells = [];
+    let editingDealId = null;
+
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('Deals');
+      lucide.createIcons();
+      loadDeals();
+    }
+
+    async function loadDeals() {
+      try {
+        const data = await API.get(`/deals?page=${currentPage}&limit=50`);
+        renderDeals(data);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderDeals(data) {
+      const tbody = document.getElementById('deals-body');
+      if (data.deals.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted" style="padding:40px;">Geen deals gevonden</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.deals.map(deal => {
+        const upsellTags = deal.upsells.map(u =>
+          `<span style="background:var(--accent-purple-dim);color:var(--accent-purple);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;margin-right:4px;">${u.upsell.name}</span>`
+        ).join('');
+
+        return `
+          <tr>
+            <td style="font-weight:500;">${deal.lead.companyName}</td>
+            <td><span style="background:var(--accent-blue-dim);color:var(--accent-blue);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${deal.package.name}</span></td>
+            <td>${upsellTags || '-'}</td>
+            <td>${formatCurrency(deal.package.oneTimePrice)}</td>
+            <td>${formatCurrency(deal.package.monthlyPrice)}/mnd</td>
+            <td>${formatCurrency(deal.acquisitionCost)}</td>
+            <td style="font-weight:700;color:var(--accent-green);">${formatCurrency(deal.totalValue)}</td>
+            <td style="color:var(--text-muted);">${formatDate(deal.saleDate)}</td>
+            <td>
+              <button class="btn-icon" onclick="viewDeal('${deal.id}')" title="Bekijken">
+                <i data-lucide="eye" style="width:16px;height:16px;"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      renderPagination(document.getElementById('pagination'), data, (page) => { currentPage = page; loadDeals(); });
+      lucide.createIcons();
+    }
+
+    async function openNewDealModal() {
+      editingDealId = null;
+      document.getElementById('deal-modal-title').textContent = 'Nieuwe deal';
+
+      try {
+        const [pkgs, ups, leadsData] = await Promise.all([
+          API.get('/packages'),
+          API.get('/packages/upsells'),
+          API.get('/leads?limit=1000&status=')
+        ]);
+        packages = pkgs;
+        upsells = ups;
+
+        const leadSelect = document.getElementById('deal-lead');
+        leadSelect.innerHTML = `<option value="">Selecteer een lead...</option>` +
+          leadsData.leads.filter(l => l.status !== 'KLANT').map(l =>
+            `<option value="${l.id}">${l.companyName}${l.city ? ' - ' + l.city : ''}</option>`
+          ).join('');
+
+        const pkgSelect = document.getElementById('deal-package');
+        pkgSelect.innerHTML = packages.map(p =>
+          `<option value="${p.id}">${p.name} - ${formatCurrency(p.oneTimePrice)}</option>`
+        ).join('');
+
+        const upsellsDiv = document.getElementById('deal-upsells');
+        upsellsDiv.innerHTML = upsells.map(u => `
+          <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+            <input type="checkbox" value="${u.id}" class="upsell-checkbox">
+            <span style="font-size:13px;">${u.name} - ${formatCurrency(u.price)}${u.billingType === 'MONTHLY' ? '/mnd' : ''}</span>
+          </label>
+        `).join('');
+
+        document.getElementById('deal-cost').value = '';
+        document.getElementById('deal-date').value = new Date().toISOString().split('T')[0];
+
+        pkgSelect.addEventListener('change', updateCalculation);
+        document.querySelectorAll('.upsell-checkbox').forEach(cb => cb.addEventListener('change', updateCalculation));
+        updateCalculation();
+
+        openModal('deal-modal');
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function updateCalculation() {
+      const pkgId = document.getElementById('deal-package').value;
+      const pkg = packages.find(p => p.id === pkgId);
+      if (!pkg) return;
+
+      const selectedUpsells = Array.from(document.querySelectorAll('.upsell-checkbox:checked')).map(cb => {
+        return upsells.find(u => u.id === cb.value);
+      }).filter(Boolean);
+
+      const upsellOneTime = selectedUpsells.filter(u => u.billingType === 'ONE_TIME').reduce((s, u) => s + u.price, 0);
+      const upsellMonthly = selectedUpsells.filter(u => u.billingType === 'MONTHLY').reduce((s, u) => s + u.price, 0);
+      const totalMonthly = pkg.monthlyPrice + upsellMonthly;
+      const yearlyValue = pkg.oneTimePrice + upsellOneTime + (totalMonthly * 12);
+
+      document.getElementById('deal-calculation').innerHTML = `
+        <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalig pakket</span><span>${formatCurrency(pkg.oneTimePrice)}</span></div>
+        ${upsellOneTime > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalige upsells</span><span>${formatCurrency(upsellOneTime)}</span></div>` : ''}
+        <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Maandelijks (hosting)</span><span>${formatCurrency(pkg.monthlyPrice)}/mnd</span></div>
+        ${upsellMonthly > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Maandelijkse upsells</span><span>${formatCurrency(upsellMonthly)}/mnd</span></div>` : ''}
+        <hr style="border-color:var(--border-color);margin:8px 0;">
+        <div class="flex justify-between"><span style="font-weight:600;">Jaarwaarde (12 mnd)</span><span style="font-weight:700;color:var(--accent-green);">${formatCurrency(yearlyValue)}</span></div>
+      `;
+    }
+
+    async function saveDeal() {
+      const leadId = document.getElementById('deal-lead').value;
+      const packageId = document.getElementById('deal-package').value;
+      const upsellIds = Array.from(document.querySelectorAll('.upsell-checkbox:checked')).map(cb => cb.value);
+      const acquisitionCost = document.getElementById('deal-cost').value || 0;
+      const saleDate = document.getElementById('deal-date').value;
+
+      if (!leadId) return showToast('Selecteer een lead', 'warning');
+      if (!packageId) return showToast('Selecteer een pakket', 'warning');
+
+      try {
+        if (editingDealId) {
+          await API.put(`/deals/${editingDealId}`, { packageId, upsellIds, acquisitionCost, saleDate });
+          showToast('Deal bijgewerkt');
+        } else {
+          await API.post('/deals', { leadId, packageId, upsellIds, acquisitionCost, saleDate });
+          showToast('Deal aangemaakt');
+        }
+        closeModal('deal-modal');
+        loadDeals();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function viewDeal(id) {
+      try {
+        const deal = await API.get(`/deals/${id}`);
+        document.getElementById('detail-modal-title').textContent = deal.lead.companyName;
+
+        const upsellList = deal.upsells.map(u =>
+          `<span style="background:var(--accent-purple-dim);color:var(--accent-purple);padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-right:4px;">${u.upsell.name} - ${formatCurrency(u.upsell.price)}${u.upsell.billingType === 'MONTHLY' ? '/mnd' : ''}</span>`
+        ).join('') || '<span class="text-muted">Geen</span>';
+
+        document.getElementById('detail-modal-body').innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Bedrijf</span>
+              <span style="font-weight:600;">${deal.lead.companyName}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Gemeente</span>
+              <span>${deal.lead.city || '-'}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Pakket</span>
+              <span style="font-weight:600;">${deal.package.name}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Eenmalige prijs</span>
+              <span>${formatCurrency(deal.package.oneTimePrice)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Maandelijks</span>
+              <span>${formatCurrency(deal.package.monthlyPrice)}/mnd</span>
+            </div>
+            <div>
+              <span class="text-muted" style="display:block;margin-bottom:6px;">Upsells</span>
+              <div>${upsellList}</div>
+            </div>
+            <hr style="border-color:var(--border-color);">
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Acquisitiekost</span>
+              <span style="font-weight:600;">${formatCurrency(deal.acquisitionCost)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Totale dealwaarde</span>
+              <span style="font-weight:700;font-size:18px;color:var(--accent-green);">${formatCurrency(deal.totalValue)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">ROI</span>
+              <span style="font-weight:700;color:var(--accent-green);">${deal.acquisitionCost > 0 ? (((deal.totalValue - deal.acquisitionCost) / deal.acquisitionCost) * 100).toFixed(1) : '0'}%</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Datum verkoop</span>
+              <span>${formatDate(deal.saleDate)}</span>
+            </div>
+          </div>
+        `;
+
+        openModal('detail-modal');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

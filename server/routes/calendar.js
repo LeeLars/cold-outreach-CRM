@@ -12,8 +12,36 @@ const AVAILABILITY = {
   days: [1, 2, 3, 4, 5, 6],
   startHour: 9,
   endHour: 17,
-  slotMinutes: 30
+  slotMinutes: 30,
+  defaultMeetingMinutes: 30,
+  bufferMinutes: 15
 };
+
+const HOME_ADDRESS = process.env.HOME_ADDRESS || 'Brugge, Belgium';
+
+async function getTravelTime(origin, destination) {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey || !destination) return null;
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=driving&language=nl&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.routes.length > 0) {
+      const leg = data.routes[0].legs[0];
+      return {
+        durationMinutes: Math.ceil(leg.duration.value / 60),
+        durationText: leg.duration.text,
+        distanceText: leg.distance.text
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('Directions API error:', err);
+    return null;
+  }
+}
 
 function getOAuth2Client() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -110,7 +138,7 @@ router.delete('/disconnect', requireAuth, async (req, res) => {
 });
 
 router.get('/slots', requireAuth, async (req, res) => {
-  const { date } = req.query;
+  const { date, leadId } = req.query;
   if (!date) return res.status(400).json({ error: 'Datum is verplicht' });
 
   const auth = await getAuthenticatedClient(req.session.userId);
@@ -123,8 +151,19 @@ router.get('/slots', requireAuth, async (req, res) => {
   const dayOfWeek = dayStart.getDay();
 
   if (!AVAILABILITY.days.includes(dayOfWeek)) {
-    return res.json({ slots: [], message: 'Geen beschikbaarheid op deze dag' });
+    return res.json({ slots: [], travel: null, message: 'Geen beschikbaarheid op deze dag' });
   }
+
+  let travel = null;
+  if (leadId) {
+    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+    if (lead && lead.city) {
+      travel = await getTravelTime(HOME_ADDRESS, lead.city + ', Belgium');
+    }
+  }
+
+  const travelBuffer = travel ? travel.durationMinutes + AVAILABILITY.bufferMinutes : 0;
+  const totalSlotMinutes = AVAILABILITY.defaultMeetingMinutes + (travelBuffer * 2);
 
   const timeMin = new Date(date + `T${String(AVAILABILITY.startHour).padStart(2, '0')}:00:00`);
   const timeMax = new Date(date + `T${String(AVAILABILITY.endHour).padStart(2, '0')}:00:00`);
@@ -145,26 +184,34 @@ router.get('/slots', requireAuth, async (req, res) => {
     let current = new Date(timeMin);
 
     while (current < timeMax) {
-      const slotEnd = new Date(current.getTime() + AVAILABILITY.slotMinutes * 60000);
+      const meetingStart = new Date(current.getTime() + travelBuffer * 60000);
+      const meetingEnd = new Date(meetingStart.getTime() + AVAILABILITY.defaultMeetingMinutes * 60000);
+      const blockEnd = new Date(meetingEnd.getTime() + travelBuffer * 60000);
+
+      if (blockEnd > timeMax) break;
 
       const isBusy = busySlots.some(busy => {
         const busyStart = new Date(busy.start);
         const busyEnd = new Date(busy.end);
-        return current < busyEnd && slotEnd > busyStart;
+        return current < busyEnd && blockEnd > busyStart;
       });
 
       if (!isBusy) {
+        const fmt = (d) => d.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Brussels' });
         slots.push({
-          start: current.toISOString(),
-          end: slotEnd.toISOString(),
-          label: `${current.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Brussels' })} - ${slotEnd.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Brussels' })}`
+          start: meetingStart.toISOString(),
+          end: meetingEnd.toISOString(),
+          blockStart: current.toISOString(),
+          blockEnd: blockEnd.toISOString(),
+          label: `${fmt(meetingStart)} - ${fmt(meetingEnd)}`,
+          departureTime: travel ? fmt(current) : null
         });
       }
 
-      current = slotEnd;
+      current = new Date(current.getTime() + AVAILABILITY.slotMinutes * 60000);
     }
 
-    res.json({ slots, date });
+    res.json({ slots, date, travel });
   } catch (err) {
     console.error('FreeBusy error:', err);
     res.status(500).json({ error: 'Fout bij ophalen beschikbaarheid' });

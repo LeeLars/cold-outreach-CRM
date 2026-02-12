@@ -75,8 +75,8 @@ const STATUS_LABELS = {
   NIEUW: 'Nieuw',
   VERSTUURD: 'Verstuurd',
   GEEN_REACTIE: 'Geen reactie',
-  GEREAGEERD: 'Gereageerd',
-  AFSPRAAK: 'Afspraak geboekt',
+  GEREAGEERD: 'Geen interesse',
+  AFSPRAAK: 'Interesse',
   KLANT: 'Klant',
   NIET_GEINTERESSEERD: 'Niet geinteresseerd'
 };

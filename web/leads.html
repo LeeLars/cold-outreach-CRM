@@ -31,8 +31,8 @@
               <option value="NIEUW">Nieuw</option>
               <option value="VERSTUURD">Verstuurd</option>
               <option value="GEEN_REACTIE">Geen reactie</option>
-              <option value="GEREAGEERD">Gereageerd</option>
-              <option value="AFSPRAAK">Afspraak geboekt</option>
+              <option value="GEREAGEERD">Geen interesse</option>
+              <option value="AFSPRAAK">Interesse</option>
               <option value="KLANT">Klant</option>
               <option value="NIET_GEINTERESSEERD">Niet geinteresseerd</option>
             </select>
@@ -485,7 +485,11 @@
         await API.put(`/leads/${id}/status`, { status });
         select.className = `status-select ${status}`;
         showToast('Status bijgewerkt');
-        if (status === 'KLANT') {
+        if (status === 'AFSPRAAK') {
+          const row = select.closest('tr');
+          const companyName = row ? row.querySelector('td:nth-child(3) a')?.textContent : '';
+          openBookingModal(id, companyName);
+        } else if (status === 'KLANT') {
           const row = select.closest('tr');
           const companyName = row ? row.querySelector('td:nth-child(3) a')?.textContent : '';
           if (confirm(`${companyName} is nu klant! Wil je direct een deal aanmaken?`)) {
@@ -522,6 +526,7 @@
 
     async function loadSlots() {
       const date = document.getElementById('booking-date').value;
+      const leadId = document.getElementById('booking-lead-id').value;
       if (!date) return;
 
       const slotsDiv = document.getElementById('booking-slots');
@@ -529,8 +534,24 @@
       selectedSlot = null;
       document.getElementById('book-btn').disabled = true;
 
+      const travelInfo = document.getElementById('booking-travel');
+      if (travelInfo) travelInfo.remove();
+
       try {
-        const data = await API.get(`/calendar/slots?date=${date}`);
+        const data = await API.get(`/calendar/slots?date=${date}&leadId=${leadId}`);
+
+        if (data.travel) {
+          const travelDiv = document.createElement('div');
+          travelDiv.id = 'booking-travel';
+          travelDiv.style.cssText = 'background:var(--accent-blue-dim);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;';
+          travelDiv.innerHTML = `
+            <div style="font-weight:600;color:var(--accent-blue);margin-bottom:4px;">Reistijd inbegrepen</div>
+            <div style="color:var(--text-secondary);">${data.travel.durationText} rijden (${data.travel.distanceText}) + 15 min buffer</div>
+            <div style="color:var(--text-muted);margin-top:2px;">Tijdslots houden rekening met heen- en terugreis</div>
+          `;
+          slotsDiv.parentNode.insertBefore(travelDiv, slotsDiv);
+        }
+
         if (data.slots.length === 0) {
           slotsDiv.innerHTML = '<span class="text-muted" style="font-size:13px;">Geen beschikbare tijden op deze dag</span>';
           return;
@@ -538,7 +559,7 @@
 
         slotsDiv.innerHTML = data.slots.map(slot => `
           <button type="button" class="slot-btn" data-start="${slot.start}" data-end="${slot.end}" onclick="selectSlot(this)">
-            ${slot.label}
+            ${slot.label}${slot.departureTime ? `<span style="display:block;font-size:10px;color:var(--text-muted);font-weight:400;">vertrek ${slot.departureTime}</span>` : ''}
           </button>
         `).join('');
       } catch (err) {

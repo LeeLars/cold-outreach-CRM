@@ -81,6 +81,7 @@
       <option value="NIET_GEINTERESSEERD">Niet geinteresseerd</option>
     </select>
     <button class="btn btn-primary btn-sm" onclick="applyBulkStatus()">Toepassen</button>
+    <button class="btn btn-secondary btn-sm" onclick="enrichSelected()" id="enrich-btn"><i data-lucide="sparkles" style="width:14px;height:14px;"></i> Verrijken</button>
     <button class="btn btn-danger btn-sm" id="bulk-delete-btn" onclick="bulkDelete()">Verwijderen</button>
   </div>
 
@@ -329,6 +330,29 @@
       }
     }
 
+    async function enrichSelected() {
+      if (selectedIds.size === 0) return;
+      const btn = document.getElementById('enrich-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Verrijken...';
+      lucide.createIcons();
+
+      try {
+        const data = await API.post('/leads/enrich', { ids: Array.from(selectedIds) });
+        showToast(data.message);
+        selectedIds.clear();
+        updateFloatingBar();
+        document.getElementById('select-all').checked = false;
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="sparkles" style="width:14px;height:14px;"></i> Verrijken';
+        lucide.createIcons();
+      }
+    }
+
     async function viewLead(id) {
       try {
         const lead = await API.get(`/leads/${id}`);
@@ -485,11 +509,21 @@
         const result = await API.upload('/leads/import', formData);
         progressBar.querySelector('.progress-bar-fill').style.width = '100%';
         showToast(result.message);
-        setTimeout(() => {
-          closeModal('import-modal');
-          resetImport();
-          loadLeads();
-        }, 500);
+
+        closeModal('import-modal');
+        resetImport();
+        loadLeads();
+
+        if (result.count > 0 && confirm(`${result.count} leads geimporteerd. Wil je ze automatisch verrijken met Google Maps data (adres, telefoon, website)?`)) {
+          showToast('Leads worden verrijkt...', 'info');
+          const leadsData = await API.get(`/leads?limit=${result.count}&page=1`);
+          const newIds = leadsData.leads.filter(l => l.status === 'NIEUW').slice(0, result.count).map(l => l.id);
+          if (newIds.length > 0) {
+            const enrichResult = await API.post('/leads/enrich', { ids: newIds });
+            showToast(enrichResult.message);
+            loadLeads();
+          }
+        }
       } catch (err) {
         showToast(err.message, 'error');
         progressBar.classList.add('hidden');

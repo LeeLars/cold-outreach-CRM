@@ -206,4 +206,71 @@ router.post('/import/preview', upload.single('file'), async (req, res, next) => 
   }
 });
 
+router.post('/enrich', async (req, res, next) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ error: 'IDs zijn verplicht' });
+    }
+
+    const apiKey = process.env.MAPS_KEY;
+    if (!apiKey) return res.status(400).json({ error: 'Google Maps API key niet geconfigureerd' });
+
+    const leads = await prisma.lead.findMany({ where: { id: { in: ids } } });
+    let enriched = 0;
+    const results = [];
+
+    for (const lead of leads) {
+      try {
+        const query = lead.city ? `${lead.companyName} ${lead.city} Belgium` : `${lead.companyName} Belgium`;
+        const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&region=be&language=nl&key=${apiKey}`;
+        const searchRes = await fetch(searchUrl);
+        const searchData = await searchRes.json();
+
+        if (searchData.status !== 'OK' || searchData.results.length === 0) {
+          results.push({ id: lead.id, name: lead.companyName, status: 'not_found' });
+          continue;
+        }
+
+        const place = searchData.results[0];
+        const updateData = {};
+
+        if (!lead.address && place.formatted_address) {
+          updateData.address = place.formatted_address;
+        }
+
+        if (place.place_id) {
+          const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website&language=nl&key=${apiKey}`;
+          const detailRes = await fetch(detailUrl);
+          const detailData = await detailRes.json();
+
+          if (detailData.status === 'OK' && detailData.result) {
+            if (!lead.phone && detailData.result.formatted_phone_number) {
+              updateData.phone = detailData.result.formatted_phone_number;
+            }
+            if (!lead.website && detailData.result.website) {
+              updateData.website = detailData.result.website;
+            }
+          }
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await prisma.lead.update({ where: { id: lead.id }, data: updateData });
+          enriched++;
+          results.push({ id: lead.id, name: lead.companyName, status: 'enriched', fields: Object.keys(updateData) });
+        } else {
+          results.push({ id: lead.id, name: lead.companyName, status: 'no_new_data' });
+        }
+      } catch (e) {
+        console.error(`Enrich error for ${lead.companyName}:`, e.message);
+        results.push({ id: lead.id, name: lead.companyName, status: 'error' });
+      }
+    }
+
+    res.json({ message: `${enriched} van ${leads.length} leads verrijkt`, enriched, total: leads.length, results });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

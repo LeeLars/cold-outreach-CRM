@@ -60,6 +60,22 @@ app.get('*', (req, res) => {
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const { execSync } = require('child_process');
+
+async function start() {
+  if (process.env.NODE_ENV === 'production') {
+    try {
+      console.log('Syncing database schema...');
+      execSync('npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss', { stdio: 'inherit' });
+      console.log('Database schema synced');
+    } catch (err) {
+      console.error('Schema sync failed:', err.message);
+    }
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+start();

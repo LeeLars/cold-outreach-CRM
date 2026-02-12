@@ -4,7 +4,7 @@
   "description": "Cold Outreach Management Webapp",
   "main": "server/server.js",
   "scripts": {
-    "postinstall": "npx prisma generate --schema=server/prisma/schema.prisma && npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss",
+    "postinstall": "npx prisma generate --schema=server/prisma/schema.prisma",
     "start": "node server/server.js",
     "dev": "node --watch server/server.js",
     "seed": "node server/prisma/seed.js",

@@ -20,8 +20,7 @@ const AVAILABILITY = {
 const HOME_ADDRESS = process.env.HOME_ADDRESS || 'Brugge, Belgium';
 
 async function getTravelTime(origin, destination) {
-  const envKey = ['GOOGLE', 'MAPS', 'API', 'KEY'].join('_');
-  const apiKey = process.env[envKey];
+  const apiKey = process.env.MAPS_KEY;
   if (!apiKey || !destination) return null;
 
   try {

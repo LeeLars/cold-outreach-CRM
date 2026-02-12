@@ -123,6 +123,13 @@
       initTopbar('Deals');
       lucide.createIcons();
       loadDeals();
+
+      const params = new URLSearchParams(window.location.search);
+      const newDealLeadId = params.get('newDeal');
+      if (newDealLeadId) {
+        history.replaceState(null, '', basePath('/deals.html'));
+        setTimeout(() => openNewDealModal(newDealLeadId), 500);
+      }
     }
 
     async function loadDeals() {
@@ -169,7 +176,7 @@
       lucide.createIcons();
     }
 
-    async function openNewDealModal() {
+    async function openNewDealModal(preselectedLeadId) {
       editingDealId = null;
       document.getElementById('deal-modal-title').textContent = 'Nieuwe deal';
 
@@ -184,8 +191,8 @@
 
         const leadSelect = document.getElementById('deal-lead');
         leadSelect.innerHTML = `<option value="">Selecteer een lead...</option>` +
-          leadsData.leads.filter(l => l.status !== 'KLANT').map(l =>
-            `<option value="${l.id}">${l.companyName}${l.city ? ' - ' + l.city : ''}</option>`
+          leadsData.leads.map(l =>
+            `<option value="${l.id}" ${l.id === preselectedLeadId ? 'selected' : ''}>${l.companyName}${l.city ? ' - ' + l.city : ''}</option>`
           ).join('');
 
         const pkgSelect = document.getElementById('deal-package');

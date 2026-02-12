@@ -160,7 +160,24 @@
       }
     }
 
+    function showLoadingSkeleton() {
+      const tbody = document.getElementById('leads-body');
+      tbody.innerHTML = Array(8).fill('').map(() => `
+        <tr>
+          <td class="checkbox-cell"><div class="skeleton-cell sm"></div></td>
+          <td><div class="skeleton-cell sm"></div></td>
+          <td><div class="skeleton-cell lg"></div></td>
+          <td><div class="skeleton-cell md"></div></td>
+          <td><div class="skeleton-cell lg"></div></td>
+          <td><div class="skeleton-cell badge"></div></td>
+          <td><div class="skeleton-cell md"></div></td>
+          <td><div class="skeleton-cell sm"></div></td>
+        </tr>
+      `).join('');
+    }
+
     async function loadLeads() {
+      showLoadingSkeleton();
       const search = document.getElementById('search-input').value;
       const status = document.getElementById('status-filter').value;
       const params = new URLSearchParams({ page: currentPage, limit: currentLimit });
@@ -427,6 +444,13 @@
         await API.put(`/leads/${id}/status`, { status });
         select.className = `status-select ${status}`;
         showToast('Status bijgewerkt');
+        if (status === 'KLANT') {
+          const row = select.closest('tr');
+          const companyName = row ? row.querySelector('td:nth-child(3) a')?.textContent : '';
+          if (confirm(`${companyName} is nu klant! Wil je direct een deal aanmaken?`)) {
+            window.location.href = basePath('/deals.html') + '?newDeal=' + id;
+          }
+        }
       } catch (err) {
         showToast(err.message, 'error');
         loadLeads();

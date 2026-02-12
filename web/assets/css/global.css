@@ -10,16 +10,16 @@
   /* === Deep Navy Theme (Based on #0F3B79) === */
   /* Sidebar color: #0F3B79 (HSL: 215, 78%, 27%) */
   
-  /* Backgrounds - Derived from brand blue hue */
-  --bg-primary: #050B14; /* Very deep navy/black for main background */
-  --bg-secondary: #0F3B79; /* Exact match with sidebar */
-  --bg-card: #0A1E36; /* Rich navy card background */
-  --bg-card-hover: #112946; /* Slightly lighter navy for hover */
-  --bg-input: #071221; /* Dark navy input bg */
+  /* Backgrounds - Lighter, softer Slate Navy tones */
+  --bg-primary: #0F172A; /* Slate 900 - Richer, lighter navy background */
+  --bg-secondary: #0F3B79; /* Keep sidebar brand blue */
+  --bg-card: #1E293B; /* Slate 800 - Lighter card background */
+  --bg-card-hover: #334155; /* Slate 700 - Lighter hover */
+  --bg-input: #0F172A; /* Match primary bg */
   
-  /* Borders - Blue tinted */
-  --border-color: rgba(100, 160, 255, 0.1);
-  --border-color-hover: rgba(100, 160, 255, 0.25);
+  /* Borders - Lighter definition */
+  --border-color: rgba(148, 163, 184, 0.15); /* Slate 400 with opacity */
+  --border-color-hover: rgba(148, 163, 184, 0.3);
   
   /* Text - Cool greys/blues */
   --text-primary: #EEF2F6; /* Cool white */
@@ -102,7 +102,7 @@ input, select, textarea {
 
 input:focus, select:focus, textarea:focus {
   border-color: var(--accent-brand);
-  background: #0D1B2E; /* Slightly lighter navy on focus */
+  background: #1E293B; /* Match card bg on focus */
   box-shadow: 0 0 0 3px var(--accent-brand-dim);
 }
 
@@ -1077,17 +1077,17 @@ textarea.form-input {
 .kpi-grid .kpi-card:nth-child(6) { animation-delay: 300ms; }
 
 /* ===== LOADING SKELETON ===== */
-.skeleton-row {
-  display: flex;
-  gap: 16px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-color);
+.skeleton {
+  background: linear-gradient(90deg, #1E293B 25%, var(--bg-card-hover) 50%, #1E293B 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
 }
 
 .skeleton-cell {
   height: 14px;
   border-radius: 4px;
-  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+  background: linear-gradient(90deg, #1E293B 25%, var(--bg-card-hover) 50%, #1E293B 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-sm);

@@ -124,7 +124,7 @@
 
         const ctx = document.getElementById('funnel-bar-chart').getContext('2d');
         if (charts.funnel) charts.funnel.destroy();
-        const colors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#4ADE80', '#F87171'];
+        const colors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
         charts.funnel = new Chart(ctx, {
           type: 'bar',
           data: {
@@ -193,8 +193,8 @@
             datasets: [{
               label: 'Omzet',
               data: data.monthlyRevenue.map(m => m.revenue),
-              backgroundColor: 'rgba(74, 222, 128, 0.3)',
-              borderColor: '#4ADE80',
+              backgroundColor: 'rgba(59, 130, 246, 0.3)',
+              borderColor: '#3B82F6',
               borderWidth: 2,
               borderRadius: 6
             }]
@@ -211,7 +211,7 @@
 
         const ctx2 = document.getElementById('package-revenue-chart').getContext('2d');
         if (charts.pkg) charts.pkg.destroy();
-        const pkgColors = ['#4ADE80', '#60A5FA', '#A78BFA', '#FB923C', '#22D3EE'];
+        const pkgColors = ['#3B82F6', '#60A5FA', '#A78BFA', '#FB923C', '#22D3EE'];
         charts.pkg = new Chart(ctx2, {
           type: 'doughnut',
           data: {
@@ -259,7 +259,7 @@
           <tr>
             <td style="font-weight:500;">${c.companyName}</td>
             <td>${formatCurrency(c.acquisitionCost)}</td>
-            <td style="color:var(--accent-green);font-weight:600;">${formatCurrency(c.dealValue)}</td>
+            <td style="color:var(--accent-brand);font-weight:600;">${formatCurrency(c.dealValue)}</td>
             <td><span class="kpi-badge positive">${c.roi}%</span></td>
             <td style="color:var(--text-muted);">${formatDate(c.saleDate)}</td>
           </tr>

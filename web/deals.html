@@ -161,7 +161,7 @@
             <td>${formatCurrency(deal.package.oneTimePrice)}</td>
             <td>${formatCurrency(deal.package.monthlyPrice)}/mnd</td>
             <td>${formatCurrency(deal.acquisitionCost)}</td>
-            <td style="font-weight:700;color:var(--accent-green);">${formatCurrency(deal.totalValue)}</td>
+            <td style="font-weight:700;color:var(--accent-brand);">${formatCurrency(deal.totalValue)}</td>
             <td style="color:var(--text-muted);">${formatDate(deal.saleDate)}</td>
             <td>
               <button class="btn-icon" onclick="viewDeal('${deal.id}')" title="Bekijken">
@@ -243,7 +243,7 @@
         <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Maandelijks (hosting)</span><span>${formatCurrency(pkg.monthlyPrice)}/mnd</span></div>
         ${upsellMonthly > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Maandelijkse upsells</span><span>${formatCurrency(upsellMonthly)}/mnd</span></div>` : ''}
         <hr style="border-color:var(--border-color);margin:8px 0;">
-        <div class="flex justify-between"><span style="font-weight:600;">Jaarwaarde (12 mnd)</span><span style="font-weight:700;color:var(--accent-green);">${formatCurrency(yearlyValue)}</span></div>
+        <div class="flex justify-between"><span style="font-weight:600;">Jaarwaarde (12 mnd)</span><span style="font-weight:700;color:var(--accent-brand);">${formatCurrency(yearlyValue)}</span></div>
       `;
     }
 
@@ -314,11 +314,11 @@
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted">Totale dealwaarde</span>
-              <span style="font-weight:700;font-size:18px;color:var(--accent-green);">${formatCurrency(deal.totalValue)}</span>
+              <span style="font-weight:700;font-size:18px;color:var(--accent-brand);">${formatCurrency(deal.totalValue)}</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted">ROI</span>
-              <span style="font-weight:700;color:var(--accent-green);">${deal.acquisitionCost > 0 ? (((deal.totalValue - deal.acquisitionCost) / deal.acquisitionCost) * 100).toFixed(1) : '0'}%</span>
+              <span style="font-weight:700;color:var(--accent-brand);">${deal.acquisitionCost > 0 ? (((deal.totalValue - deal.acquisitionCost) / deal.acquisitionCost) * 100).toFixed(1) : '0'}%</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted">Datum verkoop</span>

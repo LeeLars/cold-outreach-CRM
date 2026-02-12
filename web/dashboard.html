@@ -118,7 +118,7 @@
       const ctx = document.getElementById('funnel-chart').getContext('2d');
       const labels = data.funnel.map(f => STATUS_LABELS[f.status] || f.status);
       const values = data.funnel.map(f => f.count);
-      const colors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#4ADE80', '#F87171'];
+      const colors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
 
       new Chart(ctx, {
         type: 'bar',
@@ -162,12 +162,12 @@
           datasets: [{
             label: 'Omzet',
             data: values,
-            borderColor: '#4ADE80',
-            backgroundColor: 'rgba(74, 222, 128, 0.1)',
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
             fill: true,
             tension: 0.4,
             pointRadius: 4,
-            pointBackgroundColor: '#4ADE80'
+            pointBackgroundColor: '#3B82F6'
           }]
         },
         options: {

@@ -42,6 +42,7 @@
               <button class="btn btn-ghost btn-sm" onclick="selectByStatus('NIEUW')" title="Selecteer alle NIEUW leads op deze pagina" style="font-size:11px;">Sel. Nieuw</button>
               <button class="btn btn-ghost btn-sm" onclick="selectByStatus('VERSTUURD')" title="Selecteer alle VERSTUURD leads op deze pagina" style="font-size:11px;">Sel. Verstuurd</button>
             </div>
+            <button class="btn btn-ghost btn-sm" onclick="checkDuplicates()" title="Zoek duplicaten op basis van bedrijfsnaam" style="font-size:11px;">Duplicaten</button>
             <button class="btn btn-secondary" onclick="openModal('import-modal')">
               <i data-lucide="upload"></i> CSV importeren
             </button>
@@ -155,11 +156,31 @@
     </div>
   </div>
 
+  <!-- Duplicates Modal -->
+  <div class="modal-overlay" id="duplicates-modal">
+    <div class="modal" style="max-width:700px;">
+      <div class="modal-header">
+        <span class="modal-title">Duplicaten gevonden</span>
+        <button class="modal-close" onclick="closeModal('duplicates-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="duplicates-body" style="max-height:60vh;overflow-y:auto;">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('duplicates-modal')">Sluiten</button>
+        <button class="btn btn-danger" id="delete-all-dupes-btn" onclick="deleteAllDuplicates()" style="display:none;">Alle duplicaten verwijderen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Lead Detail Slide-over -->
   <div class="slide-over-overlay" id="lead-detail-overlay" onclick="closeSlideOver('lead-detail')"></div>
   <div class="slide-over" id="lead-detail">
     <div class="slide-over-header">
-      <span class="card-title" id="lead-detail-title">Lead details</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn-icon" id="prev-lead-btn" onclick="navigateLead(-1)" title="Vorige lead" style="width:28px;height:28px;"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>
+        <span class="card-title" id="lead-detail-title">Lead details</span>
+        <button class="btn-icon" id="next-lead-btn" onclick="navigateLead(1)" title="Volgende lead" style="width:28px;height:28px;"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+      </div>
       <button class="modal-close" onclick="closeSlideOver('lead-detail')"><i data-lucide="x"></i></button>
     </div>
     <div class="slide-over-body" id="lead-detail-body"></div>
@@ -334,6 +355,92 @@
       }
     }
 
+    let duplicateData = null;
+
+    async function checkDuplicates() {
+      try {
+        showToast('Duplicaten zoeken...', 'info');
+        const data = await API.get('/leads/duplicates');
+        duplicateData = data;
+
+        if (data.totalGroups === 0) {
+          showToast('Geen duplicaten gevonden');
+          return;
+        }
+
+        const body = document.getElementById('duplicates-body');
+        body.innerHTML = `
+          <div style="margin-bottom:16px;padding:12px;background:var(--accent-red-dim);border-radius:var(--radius-sm);font-size:13px;">
+            <strong>${data.totalDuplicates} duplicaten</strong> gevonden in ${data.totalGroups} groepen
+          </div>
+          ${data.duplicates.map(group => `
+            <div style="margin-bottom:16px;border:1px solid var(--border-color);border-radius:var(--radius-sm);overflow:hidden;">
+              <div style="padding:10px 14px;background:var(--bg-input);font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
+                <span>${group.companyName} (${group.count}x)</span>
+                <button class="btn btn-danger btn-sm" onclick="deleteDuplicatesInGroup('${group.companyName.replace(/'/g, "\\'")}')">Duplicaten verwijderen</button>
+              </div>
+              <table class="data-table" style="font-size:12px;">
+                <thead><tr><th>Gemeente</th><th>Status</th><th>Aangemaakt</th><th>Behouden</th></tr></thead>
+                <tbody>
+                  ${group.leads.map((l, i) => `
+                    <tr${i > 0 ? ' style="opacity:0.6;"' : ''}>
+                      <td>${l.city || '-'}</td>
+                      <td>${STATUS_LABELS[l.status] || l.status}</td>
+                      <td>${formatDate(l.createdAt)}</td>
+                      <td>${i === 0 ? '<span style="color:var(--accent-brand);font-weight:600;">Origineel</span>' : '<span style="color:var(--accent-red);">Duplicaat</span>'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `).join('')}
+        `;
+
+        document.getElementById('delete-all-dupes-btn').style.display = 'inline-flex';
+        openModal('duplicates-modal');
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteDuplicatesInGroup(companyName) {
+      if (!duplicateData) return;
+      const group = duplicateData.duplicates.find(g => g.companyName === companyName);
+      if (!group) return;
+
+      const dupeIds = group.leads.slice(1).map(l => l.id);
+      if (!confirm(`${dupeIds.length} duplicaat(en) van "${companyName}" verwijderen? Het oudste record wordt behouden.`)) return;
+
+      try {
+        await API.delete('/leads/bulk', { ids: dupeIds });
+        showToast(`${dupeIds.length} duplicaat(en) verwijderd`);
+        closeModal('duplicates-modal');
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteAllDuplicates() {
+      if (!duplicateData) return;
+      const allDupeIds = [];
+      for (const group of duplicateData.duplicates) {
+        allDupeIds.push(...group.leads.slice(1).map(l => l.id));
+      }
+
+      if (!confirm(`Weet je zeker dat je alle ${allDupeIds.length} duplicaten wilt verwijderen? Per bedrijf wordt het oudste record behouden.`)) return;
+
+      try {
+        await API.delete('/leads/bulk', { ids: allDupeIds });
+        showToast(`${allDupeIds.length} duplicaten verwijderd`);
+        closeModal('duplicates-modal');
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
     function selectByStatus(status) {
       const checkboxes = document.querySelectorAll('.lead-checkbox');
       checkboxes.forEach(cb => {
@@ -385,13 +492,49 @@
       }
     }
 
+    let currentLeadIds = [];
+    let currentLeadId = null;
+
+    function getLeadIdsFromTable() {
+      return Array.from(document.querySelectorAll('.lead-checkbox')).map(cb => cb.dataset.id);
+    }
+
+    function navigateLead(direction) {
+      if (!currentLeadId || currentLeadIds.length === 0) return;
+      const idx = currentLeadIds.indexOf(currentLeadId);
+      const newIdx = idx + direction;
+      if (newIdx >= 0 && newIdx < currentLeadIds.length) {
+        viewLead(currentLeadIds[newIdx]);
+      }
+    }
+
+    function updateNavButtons() {
+      const idx = currentLeadIds.indexOf(currentLeadId);
+      const prevBtn = document.getElementById('prev-lead-btn');
+      const nextBtn = document.getElementById('next-lead-btn');
+      if (prevBtn) prevBtn.style.opacity = idx <= 0 ? '0.3' : '1';
+      if (prevBtn) prevBtn.style.pointerEvents = idx <= 0 ? 'none' : 'auto';
+      if (nextBtn) nextBtn.style.opacity = idx >= currentLeadIds.length - 1 ? '0.3' : '1';
+      if (nextBtn) nextBtn.style.pointerEvents = idx >= currentLeadIds.length - 1 ? 'none' : 'auto';
+    }
+
+    function isValidUrl(str) {
+      if (!str) return false;
+      return /^(https?:\/\/)?[a-zA-Z0-9][a-zA-Z0-9-]*(\.[a-zA-Z]{2,})+/.test(str.trim());
+    }
+
     async function viewLead(id) {
       try {
+        currentLeadIds = getLeadIdsFromTable();
+        currentLeadId = id;
+
         const lead = await API.get(`/leads/${id}`);
         const body = document.getElementById('lead-detail-body');
         document.getElementById('lead-detail-title').textContent = lead.companyName;
 
-        const websiteUrl = lead.website ? (lead.website.startsWith('http') ? lead.website : 'https://' + lead.website) : null;
+        updateNavButtons();
+
+        const websiteUrl = isValidUrl(lead.website) ? (lead.website.startsWith('http') ? lead.website : 'https://' + lead.website) : null;
 
         body.innerHTML = `
           ${websiteUrl ? `
@@ -466,7 +609,7 @@
             </div>
             <div class="flex justify-between items-center mb-16">
               <span class="text-muted">Dealwaarde</span>
-              <span style="font-weight:600;" class="text-green">${formatCurrency(lead.deal.totalValue)}</span>
+              <span style="font-weight:600;" class="text-brand">${formatCurrency(lead.deal.totalValue)}</span>
             </div>
             <div class="flex justify-between items-center mb-16">
               <span class="text-muted">Acquisitiekost</span>
@@ -481,6 +624,13 @@
         showToast(err.message, 'error');
       }
     }
+
+    document.addEventListener('keydown', (e) => {
+      if (!document.getElementById('lead-detail').classList.contains('active')) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'ArrowLeft') navigateLead(-1);
+      if (e.key === 'ArrowRight') navigateLead(1);
+    });
 
     async function updateLeadStatus(id, status) {
       try {
@@ -657,7 +807,7 @@
       const hint = document.getElementById('booking-address-hint');
       hint.textContent = 'Adres geselecteerd';
       hint.style.display = 'block';
-      hint.style.color = 'var(--accent-green)';
+      hint.style.color = 'var(--accent-brand)';
       loadSlots();
     }
 
@@ -714,7 +864,7 @@
 
           if (result.address) {
             document.getElementById('booking-address').value = result.address;
-            hint.innerHTML = `<span style="color:var(--accent-green);">Gevonden via Google Maps: ${result.name || companyName}</span> <span style="cursor:pointer;text-decoration:underline;" onclick="document.getElementById('booking-address').value='';document.getElementById('booking-address').focus();this.parentNode.style.display='none';">Wijzigen</span>`;
+            hint.innerHTML = `<span style="color:var(--accent-brand);">Gevonden via Google Maps: ${result.name || companyName}</span> <span style="cursor:pointer;text-decoration:underline;" onclick="document.getElementById('booking-address').value='';document.getElementById('booking-address').focus();this.parentNode.style.display='none';">Wijzigen</span>`;
           } else {
             hint.textContent = 'Niet gevonden - vul handmatig in';
             hint.style.color = 'var(--accent-orange)';

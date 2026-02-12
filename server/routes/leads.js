@@ -308,4 +308,31 @@ router.post('/auto-expire', async (req, res, next) => {
   }
 });
 
+router.get('/duplicates', async (req, res, next) => {
+  try {
+    const leads = await prisma.lead.findMany({
+      select: { id: true, companyName: true, city: true, status: true, createdAt: true }
+    });
+
+    const groups = {};
+    for (const lead of leads) {
+      const key = lead.companyName.trim().toLowerCase();
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(lead);
+    }
+
+    const duplicates = Object.entries(groups)
+      .filter(([, items]) => items.length > 1)
+      .map(([name, items]) => ({
+        companyName: items[0].companyName,
+        count: items.length,
+        leads: items.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      }));
+
+    res.json({ duplicates, totalGroups: duplicates.length, totalDuplicates: duplicates.reduce((s, d) => s + d.count - 1, 0) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

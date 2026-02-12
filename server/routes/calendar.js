@@ -138,7 +138,7 @@ router.delete('/disconnect', requireAuth, async (req, res) => {
 });
 
 router.get('/slots', requireAuth, async (req, res) => {
-  const { date, leadId } = req.query;
+  const { date, leadId, address } = req.query;
   if (!date) return res.status(400).json({ error: 'Datum is verplicht' });
 
   const auth = await getAuthenticatedClient(req.session.userId);
@@ -161,32 +161,35 @@ router.get('/slots', requireAuth, async (req, res) => {
   let destination = null;
   let origin = HOME_ADDRESS;
 
-  if (leadId) {
+  if (address) {
+    destination = address.includes('Belgium') ? address : address + ', Belgium';
+  } else if (leadId) {
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });
     if (lead && (lead.address || lead.city)) {
       destination = lead.address ? lead.address + ', Belgium' : lead.city + ', Belgium';
+    }
+  }
 
-      const dayAppointments = await prisma.appointment.findMany({
-        where: {
-          createdById: req.session.userId,
-          startTime: { gte: timeMin, lt: timeMax }
-        },
-        include: { lead: true },
-        orderBy: { startTime: 'asc' }
-      });
+  if (destination) {
+    const dayAppointments = await prisma.appointment.findMany({
+      where: {
+        createdById: req.session.userId,
+        startTime: { gte: timeMin, lt: timeMax }
+      },
+      orderBy: { startTime: 'asc' }
+    });
 
-      if (dayAppointments.length > 0) {
-        const lastAppt = dayAppointments[dayAppointments.length - 1];
-        if (lastAppt.lead && lastAppt.lead.city) {
-          origin = lastAppt.lead.city + ', Belgium';
-        }
+    if (dayAppointments.length > 0) {
+      const lastAppt = dayAppointments[dayAppointments.length - 1];
+      if (lastAppt.location) {
+        origin = lastAppt.location.includes('Belgium') ? lastAppt.location : lastAppt.location + ', Belgium';
       }
+    }
 
-      travel = await getTravelTime(origin, destination);
-      if (travel) {
-        travel.origin = origin === HOME_ADDRESS ? 'Thuis' : origin.replace(', Belgium', '');
-        travel.destination = destination.replace(', Belgium', '');
-      }
+    travel = await getTravelTime(origin, destination);
+    if (travel) {
+      travel.origin = origin === HOME_ADDRESS ? 'Thuis' : origin.replace(', Belgium', '');
+      travel.destination = destination.replace(', Belgium', '');
     }
   }
 
@@ -251,7 +254,7 @@ router.get('/slots', requireAuth, async (req, res) => {
 });
 
 router.post('/book', requireAuth, async (req, res) => {
-  const { leadId, startTime, endTime, title, description } = req.body;
+  const { leadId, startTime, endTime, title, description, location } = req.body;
 
   if (!leadId || !startTime || !endTime) {
     return res.status(400).json({ error: 'Lead, starttijd en eindtijd zijn verplicht' });
@@ -273,6 +276,7 @@ router.post('/book', requireAuth, async (req, res) => {
         requestBody: {
           summary: title || `Afspraak - ${lead.companyName}`,
           description: description || `Cold outreach afspraak met ${lead.companyName}`,
+          location: location || undefined,
           start: { dateTime: startTime, timeZone: 'Europe/Brussels' },
           end: { dateTime: endTime, timeZone: 'Europe/Brussels' },
           reminders: {
@@ -295,6 +299,7 @@ router.post('/book', requireAuth, async (req, res) => {
       leadId,
       title: title || `Afspraak - ${lead.companyName}`,
       description,
+      location: location || null,
       startTime: new Date(startTime),
       endTime: new Date(endTime),
       googleEventId,

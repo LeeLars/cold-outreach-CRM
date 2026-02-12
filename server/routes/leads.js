@@ -23,7 +23,11 @@ router.get('/', async (req, res, next) => {
       where.OR = [
         { companyName: { contains: search, mode: 'insensitive' } },
         { city: { contains: search, mode: 'insensitive' } },
-        { website: { contains: search, mode: 'insensitive' } }
+        { website: { contains: search, mode: 'insensitive' } },
+        { contactPerson: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { address: { contains: search, mode: 'insensitive' } }
       ];
     }
 
@@ -74,10 +78,10 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const { companyName, city, website, status, notes } = req.body;
+    const { companyName, city, address, website, phone, email, contactPerson, status, notes } = req.body;
     const lead = await prisma.lead.update({
       where: { id: req.params.id },
-      data: { companyName, city, website, status, notes }
+      data: { companyName, city, address, website, phone, email, contactPerson, status, notes }
     });
     res.json(lead);
   } catch (err) {

@@ -163,8 +163,8 @@ router.get('/slots', requireAuth, async (req, res) => {
 
   if (leadId) {
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-    if (lead && lead.city) {
-      destination = lead.city + ', Belgium';
+    if (lead && (lead.address || lead.city)) {
+      destination = lead.address ? lead.address + ', Belgium' : lead.city + ', Belgium';
 
       const dayAppointments = await prisma.appointment.findMany({
         where: {
@@ -193,16 +193,24 @@ router.get('/slots', requireAuth, async (req, res) => {
   const travelBuffer = travel ? travel.durationMinutes + AVAILABILITY.bufferMinutes : 0;
 
   try {
+    const calendarList = await calendar.calendarList.list();
+    const allCalendars = calendarList.data.items || [];
+    const calendarItems = allCalendars.map(c => ({ id: c.id }));
+
     const freeBusy = await calendar.freebusy.query({
       requestBody: {
         timeMin: timeMin.toISOString(),
         timeMax: timeMax.toISOString(),
         timeZone: 'Europe/Brussels',
-        items: [{ id: calendarId }]
+        items: calendarItems.length > 0 ? calendarItems : [{ id: calendarId }]
       }
     });
 
-    const busySlots = freeBusy.data.calendars[calendarId]?.busy || [];
+    let busySlots = [];
+    const calendars = freeBusy.data.calendars || {};
+    for (const cal of Object.values(calendars)) {
+      if (cal.busy) busySlots.push(...cal.busy);
+    }
 
     const slots = [];
     let current = new Date(timeMin);

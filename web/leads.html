@@ -341,6 +341,22 @@
             <input type="text" class="form-input" id="lead-company" value="${lead.companyName}">
           </div>
           <div class="form-group">
+            <label class="form-label">Contactpersoon</label>
+            <input type="text" class="form-input" id="lead-contact" value="${lead.contactPerson || ''}" placeholder="Naam contactpersoon">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefoon</label>
+            <input type="tel" class="form-input" id="lead-phone" value="${lead.phone || ''}" placeholder="+32 ...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-input" id="lead-email" value="${lead.email || ''}" placeholder="info@bedrijf.be">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Adres</label>
+            <input type="text" class="form-input" id="lead-address" value="${lead.address || ''}" placeholder="Straat + nr, postcode gemeente">
+          </div>
+          <div class="form-group">
             <label class="form-label">Gemeente</label>
             <input type="text" class="form-input" id="lead-city" value="${lead.city || ''}">
           </div>
@@ -401,6 +417,10 @@
       try {
         await API.put(`/leads/${id}`, {
           companyName: document.getElementById('lead-company').value,
+          contactPerson: document.getElementById('lead-contact').value,
+          phone: document.getElementById('lead-phone').value,
+          email: document.getElementById('lead-email').value,
+          address: document.getElementById('lead-address').value,
           city: document.getElementById('lead-city').value,
           website: document.getElementById('lead-website').value,
           notes: document.getElementById('lead-notes').value,

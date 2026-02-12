@@ -37,7 +37,11 @@
               <option value="NIET_GEINTERESSEERD">Niet geinteresseerd</option>
             </select>
           </div>
-          <div class="toolbar-right">
+          <div class="toolbar-right" style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:4px;">
+              <button class="btn btn-ghost btn-sm" onclick="selectByStatus('NIEUW')" title="Selecteer alle NIEUW leads op deze pagina" style="font-size:11px;">Sel. Nieuw</button>
+              <button class="btn btn-ghost btn-sm" onclick="selectByStatus('VERSTUURD')" title="Selecteer alle VERSTUURD leads op deze pagina" style="font-size:11px;">Sel. Verstuurd</button>
+            </div>
             <button class="btn btn-secondary" onclick="openModal('import-modal')">
               <i data-lucide="upload"></i> CSV importeren
             </button>
@@ -245,7 +249,7 @@
 
       tbody.innerHTML = data.leads.map((lead, i) => `
         <tr>
-          <td class="checkbox-cell"><input type="checkbox" data-id="${lead.id}" class="lead-checkbox" ${selectedIds.has(lead.id) ? 'checked' : ''}></td>
+          <td class="checkbox-cell"><input type="checkbox" data-id="${lead.id}" data-status="${lead.status}" class="lead-checkbox" ${selectedIds.has(lead.id) ? 'checked' : ''}></td>
           <td style="color:var(--text-muted);">${((data.page - 1) * currentLimit) + i + 1}</td>
           <td><a href="#" onclick="viewLead('${lead.id}');return false;" style="color:var(--text-primary);font-weight:500;">${lead.companyName}</a></td>
           <td>${lead.city || '-'}</td>
@@ -328,6 +332,18 @@
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    function selectByStatus(status) {
+      const checkboxes = document.querySelectorAll('.lead-checkbox');
+      checkboxes.forEach(cb => {
+        if (cb.dataset.status === status) {
+          cb.checked = true;
+          selectedIds.add(cb.dataset.id);
+        }
+      });
+      updateFloatingBar();
+      showToast(`${document.querySelectorAll(`.lead-checkbox[data-status="${status}"]:checked`).length} leads geselecteerd`);
     }
 
     async function enrichSelected() {

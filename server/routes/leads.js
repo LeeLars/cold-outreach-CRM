@@ -273,4 +273,24 @@ router.post('/enrich', async (req, res, next) => {
   }
 });
 
+router.post('/auto-expire', async (req, res, next) => {
+  try {
+    const { days = 7 } = req.body;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    const result = await prisma.lead.updateMany({
+      where: {
+        status: 'VERSTUURD',
+        updatedAt: { lt: cutoff }
+      },
+      data: { status: 'GEEN_REACTIE' }
+    });
+
+    res.json({ message: `${result.count} leads naar 'Geen reactie' gezet`, count: result.count });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

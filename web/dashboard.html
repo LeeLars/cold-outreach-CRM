@@ -56,6 +56,8 @@
 
     async function loadDashboard() {
       try {
+        try { await API.post('/leads/auto-expire', { days: 7 }); } catch(e) {}
+
         const [dashboard, funnel, revenue, recentLeads] = await Promise.all([
           API.get('/stats/dashboard'),
           API.get('/stats/funnel'),

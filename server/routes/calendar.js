@@ -137,6 +137,33 @@ router.delete('/disconnect', requireAuth, async (req, res) => {
   res.json({ message: 'Google Calendar ontkoppeld' });
 });
 
+router.get('/autocomplete-address', requireAuth, async (req, res) => {
+  const { input } = req.query;
+  if (!input || input.length < 3) return res.json({ predictions: [] });
+
+  const apiKey = process.env.MAPS_KEY;
+  if (!apiKey) return res.json({ predictions: [] });
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&components=country:be&language=nl&types=address|establishment&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK') {
+      return res.json({
+        predictions: data.predictions.slice(0, 5).map(p => ({
+          description: p.description,
+          placeId: p.place_id
+        }))
+      });
+    }
+    res.json({ predictions: [] });
+  } catch (err) {
+    console.error('Autocomplete error:', err);
+    res.json({ predictions: [] });
+  }
+});
+
 router.get('/lookup-address', requireAuth, async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ error: 'Zoekterm is verplicht' });

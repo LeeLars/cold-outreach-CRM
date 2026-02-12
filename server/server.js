@@ -10,6 +10,7 @@ const dealsRoutes = require('./routes/deals');
 const packagesRoutes = require('./routes/packages');
 const statsRoutes = require('./routes/stats');
 const usersRoutes = require('./routes/users');
+const calendarRoutes = require('./routes/calendar');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/deals', dealsRoutes);
 app.use('/api/packages', packagesRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {

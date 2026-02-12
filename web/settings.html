@@ -16,6 +16,7 @@
       <main class="page-content">
         <div class="tabs">
           <button class="tab active" data-tab="account" onclick="switchTab('account')">Account</button>
+          <button class="tab" data-tab="calendar" onclick="switchTab('calendar')">Google Calendar</button>
           <button class="tab" data-tab="general" id="general-tab" onclick="switchTab('general')">Algemeen</button>
         </div>
 
@@ -55,6 +56,18 @@
               </div>
               <div style="margin-top:16px;">
                 <button class="btn btn-primary" onclick="changePassword()">Wachtwoord wijzigen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Tab -->
+        <div id="tab-calendar" class="hidden">
+          <div class="card" style="max-width:560px;">
+            <div class="card-header"><span class="card-title">Google Calendar</span></div>
+            <div class="card-body" id="calendar-status">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="skeleton-cell xl" style="height:20px;"></div>
               </div>
             </div>
           </div>
@@ -104,13 +117,82 @@
       if (!isAdmin()) {
         document.getElementById('general-tab').classList.add('hidden');
       }
+
+      loadCalendarStatus();
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('calendar') === 'connected') {
+        history.replaceState(null, '', basePath('/settings.html'));
+        showToast('Google Calendar gekoppeld');
+        switchTab('calendar');
+      }
     }
 
     function switchTab(tab) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
       document.getElementById('tab-account').classList.toggle('hidden', tab !== 'account');
+      document.getElementById('tab-calendar').classList.toggle('hidden', tab !== 'calendar');
       document.getElementById('tab-general').classList.toggle('hidden', tab !== 'general');
+    }
+
+    async function loadCalendarStatus() {
+      try {
+        const data = await API.get('/calendar/status');
+        const container = document.getElementById('calendar-status');
+
+        if (data.connected) {
+          container.innerHTML = `
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:var(--accent-green);"></div>
+              <span style="font-weight:600;color:var(--accent-green);">Gekoppeld</span>
+            </div>
+            <div class="flex justify-between items-center" style="margin-bottom:12px;">
+              <span class="text-muted">Calendar ID</span>
+              <span style="font-size:13px;">${data.calendarId}</span>
+            </div>
+            <div class="flex justify-between items-center" style="margin-bottom:12px;">
+              <span class="text-muted">Beschikbaarheid</span>
+              <span style="font-size:13px;">Ma-Za 09:00-17:00 (30 min slots)</span>
+            </div>
+            <div style="margin-top:16px;">
+              <button class="btn btn-danger btn-sm" onclick="disconnectCalendar()">Ontkoppelen</button>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div style="text-align:center;padding:20px 0;">
+              <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">Koppel je Google Calendar om automatisch beschikbare tijdslots te tonen bij het inplannen van afspraken.</div>
+              <button class="btn btn-primary" onclick="connectCalendar()">
+                <i data-lucide="calendar" style="width:16px;height:16px;"></i> Google Calendar koppelen
+              </button>
+            </div>
+          `;
+          lucide.createIcons();
+        }
+      } catch (err) {
+        document.getElementById('calendar-status').innerHTML = '<span class="text-muted">Fout bij laden status</span>';
+      }
+    }
+
+    async function connectCalendar() {
+      try {
+        const data = await API.get('/calendar/connect');
+        window.location.href = data.url;
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function disconnectCalendar() {
+      if (!confirm('Weet je zeker dat je Google Calendar wilt ontkoppelen?')) return;
+      try {
+        await API.delete('/calendar/disconnect');
+        showToast('Google Calendar ontkoppeld');
+        loadCalendarStatus();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
     }
 
     async function saveAccount() {

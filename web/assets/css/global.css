@@ -505,6 +505,31 @@ table {
 .status-select.NIET_GEINTERESSEERD { background-color: var(--accent-red-dim); color: var(--accent-red); }
 .status-select option { background: var(--bg-card); color: var(--text-primary); }
 
+/* ===== TIME SLOT BUTTONS ===== */
+.slot-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.slot-btn:hover {
+  border-color: var(--accent-green);
+  color: var(--text-primary);
+}
+
+.slot-btn.selected {
+  background: var(--accent-green-dim);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
 /* ===== BUTTONS ===== */
 .btn {
   display: inline-flex;

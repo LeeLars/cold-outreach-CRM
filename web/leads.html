@@ -107,6 +107,41 @@
     </div>
   </div>
 
+  <!-- Appointment Booking Modal -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <span class="modal-title" id="booking-modal-title">Afspraak inplannen</span>
+        <button class="modal-close" onclick="closeModal('booking-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="booking-lead-id">
+        <div class="form-group">
+          <label class="form-label">Datum</label>
+          <input type="date" class="form-input" id="booking-date" onchange="loadSlots()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Beschikbare tijden</label>
+          <div id="booking-slots" style="display:flex;flex-wrap:wrap;gap:8px;">
+            <span class="text-muted" style="font-size:13px;">Kies eerst een datum</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Titel (optioneel)</label>
+          <input type="text" class="form-input" id="booking-title" placeholder="Afspraak - Bedrijfsnaam">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notitie (optioneel)</label>
+          <textarea class="form-input" id="booking-description" rows="2" placeholder="Extra info..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('booking-modal')">Annuleren</button>
+        <button class="btn btn-primary" id="book-btn" onclick="bookAppointment()" disabled>Inplannen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Lead Detail Slide-over -->
   <div class="slide-over-overlay" id="lead-detail-overlay" onclick="closeSlideOver('lead-detail')"></div>
   <div class="slide-over" id="lead-detail">
@@ -319,8 +354,14 @@
           </div>
           <div class="flex justify-between items-center mt-16">
             <span class="text-muted" style="font-size:12px;">Aangemaakt: ${formatDateTime(lead.createdAt)}</span>
-            <button class="btn btn-primary btn-sm" onclick="saveLead('${lead.id}')">Opslaan</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary btn-sm" onclick="openBookingModal('${lead.id}','${lead.companyName}')">
+                <i data-lucide="calendar-plus" style="width:14px;height:14px;"></i> Afspraak
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="saveLead('${lead.id}')">Opslaan</button>
+            </div>
           </div>
+          <div id="lead-appointments-${lead.id}" class="mt-16"></div>
           ${lead.deal ? `
             <hr style="border-color:var(--border-color);margin:20px 0;">
             <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;">Deal informatie</div>
@@ -454,6 +495,120 @@
       } catch (err) {
         showToast(err.message, 'error');
         loadLeads();
+      }
+    }
+
+    let selectedSlot = null;
+
+    function openBookingModal(leadId, companyName) {
+      selectedSlot = null;
+      document.getElementById('booking-lead-id').value = leadId;
+      document.getElementById('booking-modal-title').textContent = `Afspraak - ${companyName}`;
+      document.getElementById('booking-title').value = `Afspraak - ${companyName}`;
+      document.getElementById('booking-description').value = '';
+      document.getElementById('booking-date').value = '';
+      document.getElementById('booking-slots').innerHTML = '<span class="text-muted" style="font-size:13px;">Kies eerst een datum</span>';
+      document.getElementById('book-btn').disabled = true;
+
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      document.getElementById('booking-date').min = tomorrow.toISOString().split('T')[0];
+
+      closeSlideOver('lead-detail');
+      openModal('booking-modal');
+      lucide.createIcons();
+      loadLeadAppointments(leadId);
+    }
+
+    async function loadSlots() {
+      const date = document.getElementById('booking-date').value;
+      if (!date) return;
+
+      const slotsDiv = document.getElementById('booking-slots');
+      slotsDiv.innerHTML = '<div class="skeleton-cell xl" style="height:32px;"></div>';
+      selectedSlot = null;
+      document.getElementById('book-btn').disabled = true;
+
+      try {
+        const data = await API.get(`/calendar/slots?date=${date}`);
+        if (data.slots.length === 0) {
+          slotsDiv.innerHTML = '<span class="text-muted" style="font-size:13px;">Geen beschikbare tijden op deze dag</span>';
+          return;
+        }
+
+        slotsDiv.innerHTML = data.slots.map(slot => `
+          <button type="button" class="slot-btn" data-start="${slot.start}" data-end="${slot.end}" onclick="selectSlot(this)">
+            ${slot.label}
+          </button>
+        `).join('');
+      } catch (err) {
+        slotsDiv.innerHTML = `<span class="text-muted" style="font-size:13px;">${err.message}</span>`;
+      }
+    }
+
+    function selectSlot(btn) {
+      document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedSlot = { start: btn.dataset.start, end: btn.dataset.end };
+      document.getElementById('book-btn').disabled = false;
+    }
+
+    async function bookAppointment() {
+      if (!selectedSlot) return showToast('Selecteer een tijdslot', 'warning');
+
+      const leadId = document.getElementById('booking-lead-id').value;
+      const title = document.getElementById('booking-title').value;
+      const description = document.getElementById('booking-description').value;
+
+      try {
+        await API.post('/calendar/book', {
+          leadId,
+          startTime: selectedSlot.start,
+          endTime: selectedSlot.end,
+          title,
+          description
+        });
+        showToast('Afspraak ingepland');
+        closeModal('booking-modal');
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadLeadAppointments(leadId) {
+      try {
+        const appointments = await API.get(`/calendar/appointments?leadId=${leadId}`);
+        const container = document.getElementById(`lead-appointments-${leadId}`);
+        if (!container || appointments.length === 0) return;
+
+        container.innerHTML = `
+          <hr style="border-color:var(--border-color);margin:20px 0;">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;">Afspraken</div>
+          ${appointments.map(a => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-color);">
+              <div>
+                <div style="font-size:13px;font-weight:500;">${formatDateTime(a.startTime)}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${a.title}</div>
+              </div>
+              <button class="btn-icon" onclick="deleteAppointment('${a.id}')" title="Verwijderen" style="color:var(--accent-red);">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+              </button>
+            </div>
+          `).join('')}
+        `;
+        lucide.createIcons();
+      } catch (err) {}
+    }
+
+    async function deleteAppointment(id) {
+      if (!confirm('Afspraak verwijderen?')) return;
+      try {
+        await API.delete(`/calendar/appointments/${id}`);
+        showToast('Afspraak verwijderd');
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
       }
     }
 

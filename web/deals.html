@@ -179,6 +179,7 @@
     async function openNewDealModal(preselectedLeadId) {
       editingDealId = null;
       document.getElementById('deal-modal-title').textContent = 'Nieuwe deal';
+      document.getElementById('deal-lead').disabled = false;
 
       try {
         const [pkgs, ups, leadsData] = await Promise.all([
@@ -323,10 +324,77 @@
               <span class="text-muted">Datum verkoop</span>
               <span>${formatDate(deal.saleDate)}</span>
             </div>
+            <hr style="border-color:var(--border-color);">
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <button class="btn btn-secondary btn-sm" onclick="closeModal('detail-modal');editDeal('${deal.id}')">
+                <i data-lucide="pencil" style="width:14px;height:14px;"></i> Bewerken
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="deleteDeal('${deal.id}')">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Verwijderen
+              </button>
+            </div>
           </div>
         `;
 
         openModal('detail-modal');
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function editDeal(id) {
+      try {
+        const deal = await API.get(`/deals/${id}`);
+        editingDealId = id;
+        document.getElementById('deal-modal-title').textContent = 'Deal bewerken';
+
+        const [pkgs, ups] = await Promise.all([
+          API.get('/packages'),
+          API.get('/packages/upsells')
+        ]);
+        packages = pkgs;
+        upsells = ups;
+
+        const leadSelect = document.getElementById('deal-lead');
+        leadSelect.innerHTML = `<option value="${deal.leadId}" selected>${deal.lead.companyName}${deal.lead.city ? ' - ' + deal.lead.city : ''}</option>`;
+        leadSelect.disabled = true;
+
+        const pkgSelect = document.getElementById('deal-package');
+        pkgSelect.innerHTML = packages.map(p =>
+          `<option value="${p.id}" ${p.id === deal.packageId ? 'selected' : ''}>${p.name} - ${formatCurrency(p.oneTimePrice)}</option>`
+        ).join('');
+
+        const dealUpsellIds = deal.upsells.map(u => u.upsellId);
+        const upsellsDiv = document.getElementById('deal-upsells');
+        upsellsDiv.innerHTML = upsells.map(u => `
+          <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+            <input type="checkbox" value="${u.id}" class="upsell-checkbox" ${dealUpsellIds.includes(u.id) ? 'checked' : ''}>
+            <span style="font-size:13px;">${u.name} - ${formatCurrency(u.price)}${u.billingType === 'MONTHLY' ? '/mnd' : ''}</span>
+          </label>
+        `).join('');
+
+        document.getElementById('deal-cost').value = deal.acquisitionCost || '';
+        document.getElementById('deal-date').value = deal.saleDate ? deal.saleDate.split('T')[0] : '';
+
+        pkgSelect.addEventListener('change', updateCalculation);
+        document.querySelectorAll('.upsell-checkbox').forEach(cb => cb.addEventListener('change', updateCalculation));
+        updateCalculation();
+
+        openModal('deal-modal');
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteDeal(id) {
+      if (!confirm('Weet je zeker dat je deze deal wilt verwijderen?')) return;
+      try {
+        await API.delete(`/deals/${id}`);
+        showToast('Deal verwijderd');
+        closeModal('detail-modal');
+        loadDeals();
       } catch (err) {
         showToast(err.message, 'error');
       }

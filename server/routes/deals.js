@@ -160,4 +160,20 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const deal = await prisma.deal.findUnique({ where: { id: req.params.id } });
+    if (!deal) {
+      return res.status(404).json({ error: 'Deal niet gevonden' });
+    }
+
+    await prisma.dealUpsell.deleteMany({ where: { dealId: req.params.id } });
+    await prisma.deal.delete({ where: { id: req.params.id } });
+
+    res.json({ message: 'Deal verwijderd' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

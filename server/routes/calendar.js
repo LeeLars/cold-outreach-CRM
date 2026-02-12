@@ -137,6 +137,35 @@ router.delete('/disconnect', requireAuth, async (req, res) => {
   res.json({ message: 'Google Calendar ontkoppeld' });
 });
 
+router.get('/lookup-address', requireAuth, async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ error: 'Zoekterm is verplicht' });
+
+  const apiKey = process.env.MAPS_KEY;
+  if (!apiKey) return res.json({ address: null });
+
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&region=be&language=nl&key=${apiKey}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.results.length > 0) {
+      const place = data.results[0];
+      return res.json({
+        address: place.formatted_address,
+        name: place.name,
+        lat: place.geometry?.location?.lat,
+        lng: place.geometry?.location?.lng
+      });
+    }
+
+    res.json({ address: null });
+  } catch (err) {
+    console.error('Places lookup error:', err);
+    res.json({ address: null });
+  }
+});
+
 router.get('/slots', requireAuth, async (req, res) => {
   const { date, leadId, address } = req.query;
   if (!date) return res.status(400).json({ error: 'Datum is verplicht' });

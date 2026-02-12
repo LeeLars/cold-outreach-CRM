@@ -20,6 +20,12 @@
               <i data-lucide="search"></i>
               <input type="text" placeholder="Zoek leads..." id="search-input">
             </div>
+            <select class="form-select" id="page-size" style="width:120px;" onchange="currentLimit=parseInt(this.value);currentPage=1;loadLeads();">
+              <option value="50">50 per pagina</option>
+              <option value="100" selected>100 per pagina</option>
+              <option value="200">200 per pagina</option>
+              <option value="500">500 per pagina</option>
+            </select>
             <select class="form-select" id="status-filter" style="width:180px;">
               <option value="">Alle statussen</option>
               <option value="NIEUW">Nieuw</option>
@@ -118,6 +124,7 @@
   <script src="assets/js/sidebar.js"></script>
   <script>
     let currentPage = 1;
+    let currentLimit = 100;
     let selectedIds = new Set();
     let csvFile = null;
 
@@ -156,7 +163,7 @@
     async function loadLeads() {
       const search = document.getElementById('search-input').value;
       const status = document.getElementById('status-filter').value;
-      const params = new URLSearchParams({ page: currentPage, limit: 50 });
+      const params = new URLSearchParams({ page: currentPage, limit: currentLimit });
       if (search) params.set('search', search);
       if (status) params.set('status', status);
 
@@ -178,11 +185,17 @@
       tbody.innerHTML = data.leads.map((lead, i) => `
         <tr>
           <td class="checkbox-cell"><input type="checkbox" data-id="${lead.id}" class="lead-checkbox" ${selectedIds.has(lead.id) ? 'checked' : ''}></td>
-          <td style="color:var(--text-muted);">${((data.page - 1) * 50) + i + 1}</td>
+          <td style="color:var(--text-muted);">${((data.page - 1) * currentLimit) + i + 1}</td>
           <td><a href="#" onclick="viewLead('${lead.id}');return false;" style="color:var(--text-primary);font-weight:500;">${lead.companyName}</a></td>
           <td>${lead.city || '-'}</td>
           <td>${lead.website ? `<a href="${lead.website}" target="_blank" style="color:var(--accent-blue);">${lead.website}</a>` : '-'}</td>
-          <td>${statusBadge(lead.status)}</td>
+          <td>
+            <select class="status-select ${lead.status}" data-id="${lead.id}" onchange="quickStatusChange(this)">
+              ${Object.entries(STATUS_LABELS).map(([val, label]) =>
+                `<option value="${val}" ${lead.status === val ? 'selected' : ''}>${label}</option>`
+              ).join('')}
+            </select>
+          </td>
           <td style="color:var(--text-muted);">${formatDate(lead.createdAt)}</td>
           <td>
             <button class="btn-icon" onclick="viewLead('${lead.id}')" title="Bekijken">
@@ -405,6 +418,19 @@
       document.getElementById('confirm-import-btn').classList.add('hidden');
       document.getElementById('import-progress').classList.add('hidden');
       document.getElementById('import-progress').querySelector('.progress-bar-fill').style.width = '0%';
+    }
+
+    async function quickStatusChange(select) {
+      const id = select.dataset.id;
+      const status = select.value;
+      try {
+        await API.put(`/leads/${id}/status`, { status });
+        select.className = `status-select ${status}`;
+        showToast('Status bijgewerkt');
+      } catch (err) {
+        showToast(err.message, 'error');
+        loadLeads();
+      }
     }
 
     function debounce(fn, ms) {

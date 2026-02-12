@@ -85,9 +85,10 @@ function statusBadge(status) {
   return `<span class="status-badge ${status}">${STATUS_LABELS[status] || status}</span>`;
 }
 
-function renderPagination(container, { page, totalPages, total }, onPageChange) {
-  const start = ((page - 1) * 50) + 1;
-  const end = Math.min(page * 50, total);
+function renderPagination(container, { page, totalPages, total, limit }, onPageChange) {
+  const perPage = limit || (typeof currentLimit !== 'undefined' ? currentLimit : 50);
+  const start = ((page - 1) * perPage) + 1;
+  const end = Math.min(page * perPage, total);
 
   container.innerHTML = `
     <div class="pagination">

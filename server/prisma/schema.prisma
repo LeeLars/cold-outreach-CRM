@@ -116,6 +116,7 @@ model Appointment {
   startTime     DateTime
   endTime       DateTime
   googleEventId String?
+  reminderSent  Boolean  @default(false)
   createdBy     User     @relation(fields: [createdById], references: [id])
   createdById   String
   createdAt     DateTime @default(now())

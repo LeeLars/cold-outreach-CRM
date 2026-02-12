@@ -10,6 +10,7 @@ function initSidebar() {
     ]},
     { section: 'Beheer', items: [
       { id: 'leads', label: 'Leads', icon: 'users', href: basePath('/leads.html') },
+      { id: 'agenda', label: 'Agenda', icon: 'calendar', href: basePath('/agenda.html') },
       { id: 'deals', label: 'Deals', icon: 'handshake', href: basePath('/deals.html') },
       { id: 'packages', label: 'Pakketten', icon: 'package', href: basePath('/packages.html') }
     ]},

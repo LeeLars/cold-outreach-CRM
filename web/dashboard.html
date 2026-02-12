@@ -15,6 +15,7 @@
     <div class="main-content">
       <header class="topbar" id="topbar"></header>
       <main class="page-content" id="page-content">
+        <div id="dashboard-reminders"></div>
         <div class="kpi-grid" id="kpi-grid"></div>
         <div class="grid-2 mb-24" id="charts-row">
           <div class="card">
@@ -51,7 +52,54 @@
       initSidebar();
       initTopbar('Dashboard');
       lucide.createIcons();
+      loadDashboardReminders();
       loadDashboard();
+    }
+
+    async function loadDashboardReminders() {
+      try {
+        const reminders = await API.get('/calendar/reminders');
+        const container = document.getElementById('dashboard-reminders');
+        if (!reminders || reminders.length === 0) { container.innerHTML = ''; return; }
+
+        container.innerHTML = `
+          <div style="background:var(--bg-card);border:1px solid var(--accent-orange-dim);border-left:4px solid var(--accent-orange);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;">
+            <div style="font-size:14px;font-weight:700;color:var(--accent-orange);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+              <i data-lucide="bell-ring" style="width:18px;height:18px;"></i>
+              ${reminders.length} afspraak${reminders.length > 1 ? 'en' : ''} binnenkort - stuur een herinnering!
+            </div>
+            ${reminders.map(r => {
+              const time = new Date(r.startTime).toLocaleString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+              const phone = r.lead?.phone || '';
+              const company = r.lead?.companyName || r.title;
+              return `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-input);border-radius:var(--radius-sm);margin-bottom:8px;gap:12px;">
+                  <div style="flex:1;">
+                    <div style="font-weight:600;font-size:13px;">${company}</div>
+                    <div style="font-size:12px;color:var(--text-muted);">${time}</div>
+                    ${phone ? `<div style="font-size:12px;color:var(--accent-brand);font-weight:600;">${phone}</div>` : '<div style="font-size:12px;color:var(--accent-red);">Geen telefoonnummer</div>'}
+                  </div>
+                  <div style="display:flex;gap:6px;flex-shrink:0;">
+                    ${phone ? `<a href="tel:${phone}" class="btn btn-primary btn-sm"><i data-lucide="phone" style="width:12px;height:12px;"></i> Bellen</a>` : ''}
+                    <button class="btn btn-ghost btn-sm" onclick="markDashboardReminder('${r.id}')">Gedaan</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+        lucide.createIcons();
+      } catch (err) {
+        console.error('Reminders error:', err);
+      }
+    }
+
+    async function markDashboardReminder(id) {
+      try {
+        await API.post(`/calendar/reminders/${id}/sent`);
+        showToast('Herinnering gemarkeerd als verstuurd');
+        loadDashboardReminders();
+      } catch (err) { showToast(err.message, 'error'); }
     }
 
     async function loadDashboard() {

@@ -408,4 +408,110 @@ router.delete('/appointments/:id', requireAuth, async (req, res) => {
   res.json({ message: 'Afspraak verwijderd' });
 });
 
+// Get calendar events for a date range (combines Google Calendar + local DB)
+router.get('/events', requireAuth, async (req, res) => {
+  const { start, end } = req.query;
+  if (!start || !end) return res.status(400).json({ error: 'start en end zijn verplicht' });
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  // Local appointments from DB
+  const dbAppointments = await prisma.appointment.findMany({
+    where: {
+      startTime: { gte: startDate, lte: endDate }
+    },
+    include: { lead: { select: { id: true, companyName: true, phone: true, city: true } }, createdBy: { select: { name: true } } },
+    orderBy: { startTime: 'asc' }
+  });
+
+  const events = dbAppointments.map(a => ({
+    id: a.id,
+    title: a.title,
+    start: a.startTime,
+    end: a.endTime,
+    location: a.location,
+    description: a.description,
+    googleEventId: a.googleEventId,
+    reminderSent: a.reminderSent,
+    source: 'crm',
+    lead: a.lead,
+    createdBy: a.createdBy?.name
+  }));
+
+  // Also fetch Google Calendar events that are NOT in our DB (external events)
+  const auth = await getAuthenticatedClient(req.session.userId);
+  if (auth) {
+    const { oauth2Client, calendarId } = auth;
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    try {
+      const gcalEvents = await calendar.events.list({
+        calendarId,
+        timeMin: startDate.toISOString(),
+        timeMax: endDate.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime',
+        maxResults: 100
+      });
+
+      const knownGoogleIds = new Set(dbAppointments.filter(a => a.googleEventId).map(a => a.googleEventId));
+
+      for (const ev of (gcalEvents.data.items || [])) {
+        if (knownGoogleIds.has(ev.id)) continue; // skip already in DB
+        if (!ev.start?.dateTime) continue; // skip all-day events
+
+        events.push({
+          id: 'gcal_' + ev.id,
+          title: ev.summary || '(Geen titel)',
+          start: ev.start.dateTime,
+          end: ev.end?.dateTime || ev.start.dateTime,
+          location: ev.location || null,
+          description: ev.description || null,
+          googleEventId: ev.id,
+          reminderSent: null,
+          source: 'google',
+          lead: null,
+          createdBy: null
+        });
+      }
+    } catch (err) {
+      console.error('Google Calendar events fetch error:', err.message);
+    }
+  }
+
+  events.sort((a, b) => new Date(a.start) - new Date(b.start));
+  res.json(events);
+});
+
+// Get upcoming appointments that need a reminder (next 24h, reminderSent = false)
+router.get('/reminders', requireAuth, async (req, res) => {
+  const now = new Date();
+  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  const upcoming = await prisma.appointment.findMany({
+    where: {
+      reminderSent: false,
+      startTime: { gte: now, lte: in24h }
+    },
+    include: { lead: { select: { id: true, companyName: true, phone: true, city: true, contactPerson: true } } },
+    orderBy: { startTime: 'asc' }
+  });
+
+  res.json(upcoming);
+});
+
+// Mark a reminder as sent
+router.post('/reminders/:id/sent', requireAuth, async (req, res) => {
+  try {
+    await prisma.appointment.update({
+      where: { id: req.params.id },
+      data: { reminderSent: true }
+    });
+    res.json({ message: 'Herinnering gemarkeerd als verstuurd' });
+  } catch (err) {
+    res.status(404).json({ error: 'Afspraak niet gevonden' });
+  }
+});
+
 module.exports = router;

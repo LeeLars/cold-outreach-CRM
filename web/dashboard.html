@@ -54,7 +54,6 @@
       lucide.createIcons();
       loadDashboardReminders();
       loadDashboard();
-      loadQrStats();
     }
 
     async function loadDashboardReminders() {
@@ -115,6 +114,7 @@
         ]);
 
         renderKPIs(dashboard);
+        loadQrStats();
         renderFunnelChart(funnel);
         renderRevenueChart(revenue);
         renderRecentLeads(recentLeads);
@@ -313,6 +313,10 @@
         }
       } catch (err) {
         console.error('QR stats error:', err);
+        const totalEl = document.getElementById('qr-total');
+        const badgeEl = document.getElementById('qr-badge');
+        if (totalEl) totalEl.textContent = '0';
+        if (badgeEl) { badgeEl.className = 'kpi-badge neutral'; badgeEl.textContent = 'Nog geen data'; }
       }
     }
 

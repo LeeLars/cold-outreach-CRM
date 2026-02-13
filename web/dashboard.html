@@ -114,7 +114,6 @@
         ]);
 
         renderKPIs(dashboard);
-        loadQrStats();
         renderFunnelChart(funnel);
         renderRevenueChart(revenue);
         renderRecentLeads(recentLeads);
@@ -159,11 +158,6 @@
           <div class="kpi-label">Totale omzet</div>
           <div class="kpi-value">${formatCurrency(data.totalRevenue)}</div>
           <span class="kpi-badge positive">Omzet</span>
-        </div>
-        <div class="kpi-card" id="qr-kpi-card">
-          <div class="kpi-label">Flyer QR Scans</div>
-          <div class="kpi-value" id="qr-total">-</div>
-          <span class="kpi-badge neutral" id="qr-badge">laden...</span>
         </div>
       `;
     }
@@ -299,25 +293,6 @@
           `).join('') : '<span class="text-muted" style="font-size:13px;">Nog geen deals</span>'}
         </div>
       `;
-    }
-
-    async function loadQrStats() {
-      try {
-        const qr = await API.get('/qr/stats');
-        const totalEl = document.getElementById('qr-total');
-        const badgeEl = document.getElementById('qr-badge');
-        if (totalEl) totalEl.textContent = qr.total;
-        if (badgeEl) {
-          badgeEl.className = 'kpi-badge ' + (qr.today > 0 ? 'positive' : 'neutral');
-          badgeEl.textContent = `${qr.today} vandaag, ${qr.thisWeek} deze week`;
-        }
-      } catch (err) {
-        console.error('QR stats error:', err);
-        const totalEl = document.getElementById('qr-total');
-        const badgeEl = document.getElementById('qr-badge');
-        if (totalEl) totalEl.textContent = '0';
-        if (badgeEl) { badgeEl.className = 'kpi-badge neutral'; badgeEl.textContent = 'Nog geen data'; }
-      }
     }
 
     init();

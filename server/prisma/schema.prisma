@@ -61,14 +61,6 @@ model Lead {
   appointments   Appointment[]
 }
 
-model QrScan {
-  id        String   @id @default(cuid())
-  campaign  String   @default("flyer")
-  ip        String?
-  userAgent String?
-  scannedAt DateTime @default(now())
-}
-
 model Deal {
   id              String       @id @default(cuid())
   lead            Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)

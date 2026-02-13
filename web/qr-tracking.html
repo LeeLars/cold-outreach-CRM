@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <title>QR Tracking - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    .qr-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .qr-stat {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+    }
+    .qr-stat-value { font-size: 28px; font-weight: 800; color: var(--text-primary); }
+    .qr-stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+    .campaign-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: all var(--transition);
+    }
+    .campaign-card:hover { border-color: var(--border-color-hover); }
+    .campaign-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .campaign-name { font-size: 16px; font-weight: 700; }
+    .campaign-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+    .campaign-meta { display: flex; gap: 20px; flex-wrap: wrap; }
+    .campaign-meta-item { font-size: 12px; color: var(--text-secondary); }
+    .campaign-meta-item strong { color: var(--text-primary); font-weight: 700; }
+    .campaign-url {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-input);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      margin-top: 12px;
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--accent-brand);
+      word-break: break-all;
+    }
+    .campaign-url button { flex-shrink: 0; }
+    .campaign-badge {
+      display: inline-flex;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .campaign-badge.active { background: var(--accent-green-dim); color: var(--accent-green); }
+    .campaign-badge.inactive { background: var(--accent-red-dim); color: var(--accent-red); }
+
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; }
+    .tab-bar .btn.active { background: var(--accent-brand-dim); color: var(--accent-brand); border-color: rgba(59,130,246,0.3); }
+
+    .wa-message {
+      display: flex;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      transition: all var(--transition);
+    }
+    .wa-message:hover { border-color: var(--border-color-hover); }
+    .wa-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-green-dim);
+      color: var(--accent-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .wa-content { flex: 1; }
+    .wa-from { font-size: 13px; font-weight: 600; }
+    .wa-body { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .wa-time { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    .chart-container { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+    .chart-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content" id="page-content">
+
+        <!-- Stats -->
+        <div class="qr-stats" id="qr-stats"></div>
+
+        <!-- Tabs -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div class="tab-bar">
+            <button class="btn btn-ghost btn-sm active" id="tab-campaigns" onclick="switchTab('campaigns')">Campagnes</button>
+            <button class="btn btn-ghost btn-sm" id="tab-messages" onclick="switchTab('messages')">WhatsApp Berichten</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('create-campaign-modal')">
+            <i data-lucide="plus" style="width:14px;height:14px;"></i> Nieuwe campagne
+          </button>
+        </div>
+
+        <!-- Campaigns tab -->
+        <div id="campaigns-tab">
+          <div class="chart-container">
+            <div class="chart-title">Scans per dag (afgelopen 30 dagen)</div>
+            <canvas id="scans-chart" height="200"></canvas>
+          </div>
+          <div id="campaigns-list"></div>
+        </div>
+
+        <!-- Messages tab -->
+        <div id="messages-tab" style="display:none;">
+          <div id="messages-list"></div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Create Campaign Modal -->
+  <div class="modal-overlay" id="create-campaign-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Nieuwe QR Campagne</span>
+        <button class="modal-close" onclick="closeModal('create-campaign-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Campagne naam</label>
+          <input type="text" class="form-input" id="camp-name" placeholder="bijv. Flyer Brugge Centrum">
+        </div>
+        <div class="form-group">
+          <label class="form-label">WhatsApp URL</label>
+          <input type="text" class="form-input" id="camp-url" value="https://wa.me/32470089888?text=Dag%20Lars%2C%20ik%20wil%20graag%20wat%20meer%20info%20over%20een%20nieuwe%20website.%20Wanneer%20kunnen%20we%20eens%20samen%20zitten%3F">
+          <div class="field-hint" style="font-size:11px;color:var(--text-muted);margin-top:4px;">De WhatsApp link waar de QR code naartoe leidt</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Beschrijving (optioneel)</label>
+          <textarea class="form-input" id="camp-desc" rows="2" placeholder="Waar wordt deze flyer verspreid?"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('create-campaign-modal')">Annuleren</button>
+        <button class="btn btn-primary btn-sm" onclick="createCampaign()">Aanmaken</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? `${window.location.origin}`
+      : 'https://cold-outreach-crm-production.up.railway.app';
+
+    let scansChart = null;
+
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('QR Tracking');
+      lucide.createIcons();
+      await Promise.all([loadStats(), loadCampaigns(), loadMessages()]);
+    }
+
+    // ===== STATS =====
+    async function loadStats() {
+      try {
+        const stats = await API.get('/qr/stats');
+        document.getElementById('qr-stats').innerHTML = `
+          <div class="qr-stat">
+            <div class="qr-stat-value">${stats.totalScans}</div>
+            <div class="qr-stat-label">Totaal scans</div>
+          </div>
+          <div class="qr-stat">
+            <div class="qr-stat-value">${stats.scansToday}</div>
+            <div class="qr-stat-label">Vandaag</div>
+          </div>
+          <div class="qr-stat">
+            <div class="qr-stat-value">${stats.scansWeek}</div>
+            <div class="qr-stat-label">Deze week</div>
+          </div>
+          <div class="qr-stat">
+            <div class="qr-stat-value">${stats.totalCampaigns}</div>
+            <div class="qr-stat-label">Actieve campagnes</div>
+          </div>
+          <div class="qr-stat">
+            <div class="qr-stat-value" style="color:var(--accent-green);">${stats.totalMessages}</div>
+            <div class="qr-stat-label">WhatsApp berichten</div>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Stats error:', err);
+      }
+    }
+
+    // ===== CAMPAIGNS =====
+    async function loadCampaigns() {
+      try {
+        const campaigns = await API.get('/qr/campaigns');
+        const list = document.getElementById('campaigns-list');
+
+        if (!campaigns.length) {
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon"><i data-lucide="qr-code" style="width:48px;height:48px;"></i></div>
+              <div class="empty-state-title">Geen campagnes</div>
+              <div class="empty-state-text">Maak je eerste QR campagne aan om scans te tracken.</div>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        list.innerHTML = campaigns.map(c => {
+          const scanUrl = `${BACKEND_URL}/qr/scan/${c.slug}`;
+          return `
+            <div class="campaign-card">
+              <div class="campaign-header">
+                <div>
+                  <span class="campaign-name">${c.name}</span>
+                  <span class="campaign-badge ${c.isActive ? 'active' : 'inactive'}" style="margin-left:8px;">${c.isActive ? 'Actief' : 'Inactief'}</span>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn btn-ghost btn-sm" onclick="toggleCampaign('${c.id}', ${!c.isActive})" title="${c.isActive ? 'Deactiveren' : 'Activeren'}">
+                    <i data-lucide="${c.isActive ? 'pause' : 'play'}" style="width:14px;height:14px;"></i>
+                  </button>
+                  <button class="btn btn-ghost btn-sm" onclick="deleteCampaign('${c.id}')" title="Verwijderen" style="color:var(--accent-red);">
+                    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                  </button>
+                </div>
+              </div>
+              ${c.description ? `<div class="campaign-desc">${c.description}</div>` : ''}
+              <div class="campaign-meta">
+                <div class="campaign-meta-item"><strong>${c.totalScans}</strong> totaal scans</div>
+                <div class="campaign-meta-item"><strong>${c.scansToday}</strong> vandaag</div>
+                <div class="campaign-meta-item"><strong>${c.scansWeek}</strong> deze week</div>
+                <div class="campaign-meta-item" style="color:var(--text-muted);">Aangemaakt: ${new Date(c.createdAt).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+              </div>
+              <div class="campaign-url">
+                <span style="flex:1;">${scanUrl}</span>
+                <button class="btn btn-ghost btn-sm" onclick="copyUrl('${scanUrl}')" title="Kopieer URL">
+                  <i data-lucide="copy" style="width:12px;height:12px;"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        lucide.createIcons();
+
+        // Load chart for first campaign (or all)
+        loadScansChart(campaigns);
+      } catch (err) {
+        console.error('Campaigns error:', err);
+      }
+    }
+
+    async function loadScansChart(campaigns) {
+      // Aggregate scans from all campaigns
+      const allByDay = {};
+      for (const c of campaigns) {
+        try {
+          const data = await API.get(`/qr/campaigns/${c.id}/scans?days=30`);
+          for (const [day, count] of Object.entries(data.byDay)) {
+            allByDay[day] = (allByDay[day] || 0) + count;
+          }
+        } catch (err) {}
+      }
+
+      // Fill in missing days
+      const labels = [];
+      const values = [];
+      const today = new Date();
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        labels.push(d.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' }));
+        values.push(allByDay[key] || 0);
+      }
+
+      const ctx = document.getElementById('scans-chart').getContext('2d');
+      if (scansChart) scansChart.destroy();
+
+      scansChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Scans',
+            data: values,
+            backgroundColor: 'rgba(59, 130, 246, 0.3)',
+            borderColor: 'rgba(59, 130, 246, 0.8)',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1, color: '#64748B' }, grid: { color: 'rgba(99,152,235,0.06)' } },
+            x: { ticks: { color: '#64748B', maxRotation: 45 }, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    async function createCampaign() {
+      const name = document.getElementById('camp-name').value.trim();
+      const whatsappUrl = document.getElementById('camp-url').value.trim();
+      const description = document.getElementById('camp-desc').value.trim();
+
+      if (!name) return showToast('Vul een naam in', 'error');
+      if (!whatsappUrl) return showToast('Vul een WhatsApp URL in', 'error');
+
+      try {
+        await API.post('/qr/campaigns', { name, whatsappUrl, description: description || null });
+        showToast('Campagne aangemaakt');
+        closeModal('create-campaign-modal');
+        document.getElementById('camp-name').value = '';
+        document.getElementById('camp-desc').value = '';
+        await Promise.all([loadStats(), loadCampaigns()]);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function toggleCampaign(id, isActive) {
+      try {
+        await API.put(`/qr/campaigns/${id}`, { isActive });
+        showToast(isActive ? 'Campagne geactiveerd' : 'Campagne gedeactiveerd');
+        await loadCampaigns();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteCampaign(id) {
+      if (!confirm('Weet je zeker dat je deze campagne wilt verwijderen? Alle scan data gaat verloren.')) return;
+      try {
+        await API.delete(`/qr/campaigns/${id}`);
+        showToast('Campagne verwijderd');
+        await Promise.all([loadStats(), loadCampaigns()]);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function copyUrl(url) {
+      navigator.clipboard.writeText(url).then(() => showToast('URL gekopieerd'));
+    }
+
+    // ===== WHATSAPP MESSAGES =====
+    async function loadMessages() {
+      try {
+        const data = await API.get('/qr/whatsapp/messages?limit=100');
+        const list = document.getElementById('messages-list');
+
+        if (!data.messages.length) {
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon"><i data-lucide="message-circle" style="width:48px;height:48px;"></i></div>
+              <div class="empty-state-title">Geen berichten</div>
+              <div class="empty-state-text">Wanneer iemand via WhatsApp een bericht stuurt, verschijnt het hier.<br>
+              <span style="font-size:11px;color:var(--text-muted);margin-top:8px;display:block;">Vereist WhatsApp Business API configuratie. Stel WHATSAPP_VERIFY_TOKEN in als environment variable.</span></div>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        list.innerHTML = data.messages.map(m => {
+          const initial = (m.name || m.from || '?').charAt(0).toUpperCase();
+          const time = new Date(m.timestamp).toLocaleString('nl-BE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+          return `
+            <div class="wa-message">
+              <div class="wa-avatar">${initial}</div>
+              <div class="wa-content">
+                <div class="wa-from">${m.name || m.from}</div>
+                <div class="wa-body">${m.body}</div>
+                <div class="wa-time">${time} | ${m.from}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Messages error:', err);
+      }
+    }
+
+    // ===== TABS =====
+    function switchTab(tab) {
+      document.getElementById('tab-campaigns').classList.toggle('active', tab === 'campaigns');
+      document.getElementById('tab-messages').classList.toggle('active', tab === 'messages');
+      document.getElementById('campaigns-tab').style.display = tab === 'campaigns' ? 'block' : 'none';
+      document.getElementById('messages-tab').style.display = tab === 'messages' ? 'block' : 'none';
+    }
+
+    init();
+  </script>
+</body>
+</html>

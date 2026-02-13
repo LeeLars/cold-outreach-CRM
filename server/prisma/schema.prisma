@@ -123,6 +123,38 @@ model Appointment {
   updatedAt     DateTime @updatedAt
 }
 
+model QrCampaign {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  whatsappUrl String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  scans       QrScan[]
+}
+
+model QrScan {
+  id         String     @id @default(cuid())
+  campaign   QrCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+  ip         String?
+  userAgent  String?
+  referer    String?
+  scannedAt  DateTime   @default(now())
+}
+
+model WhatsAppMessage {
+  id        String   @id @default(cuid())
+  from      String
+  name      String?
+  body      String
+  timestamp DateTime
+  waId      String?
+  createdAt DateTime @default(now())
+}
+
 model GoogleToken {
   id           String   @id @default(cuid())
   user         User     @relation(fields: [userId], references: [id])

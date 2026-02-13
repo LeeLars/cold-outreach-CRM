@@ -15,7 +15,8 @@ function initSidebar() {
       { id: 'packages', label: 'Pakketten', icon: 'package', href: basePath('/packages.html') }
     ]},
     { section: 'Analyse', items: [
-      { id: 'stats', label: 'Statistieken', icon: 'bar-chart-3', href: basePath('/stats.html') }
+      { id: 'stats', label: 'Statistieken', icon: 'bar-chart-3', href: basePath('/stats.html') },
+      { id: 'qr-tracking', label: 'QR Tracking', icon: 'qr-code', href: basePath('/qr-tracking.html') }
     ]},
     { section: 'Systeem', items: [
       { id: 'users', label: 'Gebruikers', icon: 'shield-check', href: basePath('/users.html'), adminOnly: true },

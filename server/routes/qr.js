@@ -2,243 +2,75 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { requireAuth } = require('../middleware/auth');
 
-const router = express.Router();
 const prisma = new PrismaClient();
 
-// PUBLIC: QR scan redirect (no auth needed)
-router.get('/scan/:slug', async (req, res) => {
+const WHATSAPP_URL = 'https://wa.me/32470089888?text=Dag%20Lars%2C%20ik%20wil%20graag%20wat%20meer%20info%20over%20een%20nieuwe%20website.%20Wanneer%20kunnen%20we%20eens%20samen%20zitten%3F';
+
+// Public router: /qr/:campaign - no auth
+const publicRouter = express.Router();
+
+publicRouter.get('/:campaign', async (req, res) => {
   try {
-    const campaign = await prisma.qrCampaign.findUnique({
-      where: { slug: req.params.slug }
-    });
+    const campaign = req.params.campaign;
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
 
-    if (!campaign || !campaign.isActive) {
-      return res.status(404).send('Campagne niet gevonden');
-    }
-
-    // Log the scan
     await prisma.qrScan.create({
-      data: {
-        campaignId: campaign.id,
-        ip: req.headers['x-forwarded-for'] || req.ip,
-        userAgent: req.headers['user-agent'] || null,
-        referer: req.headers['referer'] || null
-      }
+      data: { campaign, ip, userAgent }
     });
-
-    // Redirect to WhatsApp
-    res.redirect(302, campaign.whatsappUrl);
   } catch (err) {
-    console.error('QR scan error:', err);
-    res.status(500).send('Er ging iets mis');
+    console.error('QR scan log error:', err.message);
   }
+
+  res.redirect(WHATSAPP_URL);
 });
 
-// ===== PROTECTED ENDPOINTS (require auth) =====
+// API router: /api/qr/* - requires auth
+const apiRouter = express.Router();
+apiRouter.use(requireAuth);
 
-// Get all campaigns with scan counts
-router.get('/campaigns', requireAuth, async (req, res, next) => {
+apiRouter.get('/stats', async (req, res) => {
   try {
-    const campaigns = await prisma.qrCampaign.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: { select: { scans: true } }
-      }
-    });
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + (weekStart.getDay() === 0 ? -6 : 1));
 
-    // Add scan stats per campaign
-    const result = await Promise.all(campaigns.map(async (c) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-
-      const [scansToday, scansWeek] = await Promise.all([
-        prisma.qrScan.count({ where: { campaignId: c.id, scannedAt: { gte: today } } }),
-        prisma.qrScan.count({ where: { campaignId: c.id, scannedAt: { gte: weekAgo } } })
-      ]);
-
-      return {
-        ...c,
-        totalScans: c._count.scans,
-        scansToday,
-        scansWeek
-      };
-    }));
-
-    res.json(result);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Create campaign
-router.post('/campaigns', requireAuth, async (req, res, next) => {
-  try {
-    const { name, whatsappUrl, description } = req.body;
-    if (!name || !whatsappUrl) {
-      return res.status(400).json({ error: 'Naam en WhatsApp URL zijn verplicht' });
-    }
-
-    // Generate slug from name
-    const slug = name.toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      + '-' + Date.now().toString(36);
-
-    const campaign = await prisma.qrCampaign.create({
-      data: { name, slug, whatsappUrl, description }
-    });
-
-    res.json(campaign);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Update campaign
-router.put('/campaigns/:id', requireAuth, async (req, res, next) => {
-  try {
-    const { name, whatsappUrl, description, isActive } = req.body;
-    const campaign = await prisma.qrCampaign.update({
-      where: { id: req.params.id },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(whatsappUrl !== undefined && { whatsappUrl }),
-        ...(description !== undefined && { description }),
-        ...(isActive !== undefined && { isActive })
-      }
-    });
-    res.json(campaign);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Delete campaign
-router.delete('/campaigns/:id', requireAuth, async (req, res, next) => {
-  try {
-    await prisma.qrCampaign.delete({ where: { id: req.params.id } });
-    res.json({ message: 'Campagne verwijderd' });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Get scan history for a campaign
-router.get('/campaigns/:id/scans', requireAuth, async (req, res, next) => {
-  try {
-    const { days = 30 } = req.query;
-    const since = new Date();
-    since.setDate(since.getDate() - parseInt(days));
-
-    const scans = await prisma.qrScan.findMany({
-      where: { campaignId: req.params.id, scannedAt: { gte: since } },
-      orderBy: { scannedAt: 'desc' },
-      take: 500
-    });
-
-    // Group by day for chart
-    const byDay = {};
-    scans.forEach(s => {
-      const day = s.scannedAt.toISOString().split('T')[0];
-      byDay[day] = (byDay[day] || 0) + 1;
-    });
-
-    res.json({ scans, byDay });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Get QR stats overview (for dashboard)
-router.get('/stats', requireAuth, async (req, res, next) => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const weekAgo = new Date(today);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
-    const [totalScans, scansToday, scansWeek, totalCampaigns, totalMessages] = await Promise.all([
+    const [total, today, thisWeek] = await Promise.all([
       prisma.qrScan.count(),
-      prisma.qrScan.count({ where: { scannedAt: { gte: today } } }),
-      prisma.qrScan.count({ where: { scannedAt: { gte: weekAgo } } }),
-      prisma.qrCampaign.count({ where: { isActive: true } }),
-      prisma.whatsAppMessage.count()
+      prisma.qrScan.count({ where: { scannedAt: { gte: todayStart } } }),
+      prisma.qrScan.count({ where: { scannedAt: { gte: weekStart } } })
     ]);
 
-    res.json({ totalScans, scansToday, scansWeek, totalCampaigns, totalMessages });
-  } catch (err) {
-    next(err);
-  }
-});
+    const fourteenDaysAgo = new Date(todayStart);
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
 
-// ===== WHATSAPP WEBHOOK =====
+    const recentScans = await prisma.qrScan.findMany({
+      where: { scannedAt: { gte: fourteenDaysAgo } },
+      select: { scannedAt: true },
+      orderBy: { scannedAt: 'asc' }
+    });
 
-// Verification endpoint (Meta sends GET to verify)
-router.get('/whatsapp/webhook', (req, res) => {
-  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'cold-outreach-whatsapp-verify';
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-    console.log('WhatsApp webhook verified');
-    return res.status(200).send(challenge);
-  }
-  res.sendStatus(403);
-});
-
-// Incoming messages webhook (Meta sends POST)
-router.post('/whatsapp/webhook', async (req, res) => {
-  try {
-    const body = req.body;
-
-    if (body.object === 'whatsapp_business_account') {
-      for (const entry of (body.entry || [])) {
-        for (const change of (entry.changes || [])) {
-          if (change.field === 'messages') {
-            const messages = change.value?.messages || [];
-            for (const msg of messages) {
-              await prisma.whatsAppMessage.create({
-                data: {
-                  from: msg.from,
-                  name: change.value?.contacts?.[0]?.profile?.name || null,
-                  body: msg.text?.body || msg.type || '',
-                  timestamp: new Date(parseInt(msg.timestamp) * 1000),
-                  waId: msg.id
-                }
-              });
-              console.log(`WhatsApp message from ${msg.from}: ${msg.text?.body || msg.type}`);
-            }
-          }
-        }
-      }
+    const perDay = {};
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(fourteenDaysAgo);
+      d.setDate(d.getDate() + i);
+      perDay[d.toISOString().slice(0, 10)] = 0;
     }
+    recentScans.forEach(s => {
+      const key = s.scannedAt.toISOString().slice(0, 10);
+      if (perDay[key] !== undefined) perDay[key]++;
+    });
 
-    res.sendStatus(200);
+    res.json({
+      total,
+      today,
+      thisWeek,
+      perDay: Object.entries(perDay).map(([date, count]) => ({ date, count }))
+    });
   } catch (err) {
-    console.error('WhatsApp webhook error:', err);
-    res.sendStatus(200); // Always 200 to avoid Meta retries
+    res.status(500).json({ error: 'Fout bij ophalen statistieken' });
   }
 });
 
-// Get WhatsApp messages (for CRM view)
-router.get('/whatsapp/messages', requireAuth, async (req, res, next) => {
-  try {
-    const { limit = 50, offset = 0 } = req.query;
-    const [messages, total] = await Promise.all([
-      prisma.whatsAppMessage.findMany({
-        orderBy: { timestamp: 'desc' },
-        take: parseInt(limit),
-        skip: parseInt(offset)
-      }),
-      prisma.whatsAppMessage.count()
-    ]);
-    res.json({ messages, total });
-  } catch (err) {
-    next(err);
-  }
-});
-
-module.exports = router;
+module.exports = { publicRouter, apiRouter };

@@ -11,7 +11,7 @@ const packagesRoutes = require('./routes/packages');
 const statsRoutes = require('./routes/stats');
 const usersRoutes = require('./routes/users');
 const calendarRoutes = require('./routes/calendar');
-const qrRoutes = require('./routes/qr');
+const { publicRouter: qrPublicRoutes, apiRouter: qrApiRoutes } = require('./routes/qr');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -52,14 +52,10 @@ app.use('/api/packages', packagesRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/calendar', calendarRoutes);
-app.use('/api/qr', qrRoutes);
-// Public QR scan redirect (short URL)
-app.use('/qr', (req, res, next) => {
-  if (req.path.startsWith('/scan/')) {
-    return qrRoutes(req, res, next);
-  }
-  next();
-});
+app.use('/api/qr', qrApiRoutes);
+
+// Public QR redirect (no auth needed)
+app.use('/qr', qrPublicRoutes);
 
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {

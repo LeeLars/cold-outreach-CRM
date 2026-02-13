@@ -587,6 +587,18 @@
             <input type="text" class="form-input" id="lead-website" value="${lead.website || ''}">
           </div>
           <div class="form-group">
+            <label class="form-label">Bron</label>
+            <select class="form-select" id="lead-source">
+              <option value="" ${!lead.source ? 'selected' : ''}>Onbekend</option>
+              <option value="flyer" ${lead.source === 'flyer' ? 'selected' : ''}>Flyer / QR</option>
+              <option value="website" ${lead.source === 'website' ? 'selected' : ''}>Website</option>
+              <option value="referral" ${lead.source === 'referral' ? 'selected' : ''}>Doorverwijzing</option>
+              <option value="cold-outreach" ${lead.source === 'cold-outreach' ? 'selected' : ''}>Cold outreach</option>
+              <option value="social" ${lead.source === 'social' ? 'selected' : ''}>Social media</option>
+              <option value="other" ${lead.source === 'other' ? 'selected' : ''}>Anders</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label class="form-label">Notities</label>
             <textarea class="form-input" id="lead-notes" rows="4">${lead.notes || ''}</textarea>
           </div>
@@ -652,6 +664,7 @@
           address: document.getElementById('lead-address').value,
           city: document.getElementById('lead-city').value,
           website: document.getElementById('lead-website').value,
+          source: document.getElementById('lead-source').value,
           notes: document.getElementById('lead-notes').value,
           status: document.getElementById('lead-status').value
         });

@@ -51,6 +51,7 @@ model Lead {
   email          String?
   contactPerson  String?
   status         LeadStatus @default(NIEUW)
+  source         String?
   notes          String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
@@ -58,6 +59,14 @@ model Lead {
   createdById    String
   deal           Deal?
   appointments   Appointment[]
+}
+
+model QrScan {
+  id        String   @id @default(cuid())
+  campaign  String   @default("flyer")
+  ip        String?
+  userAgent String?
+  scannedAt DateTime @default(now())
 }
 
 model Deal {
@@ -121,38 +130,6 @@ model Appointment {
   createdById   String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-}
-
-model QrCampaign {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  whatsappUrl String
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  scans       QrScan[]
-}
-
-model QrScan {
-  id         String     @id @default(cuid())
-  campaign   QrCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  campaignId String
-  ip         String?
-  userAgent  String?
-  referer    String?
-  scannedAt  DateTime   @default(now())
-}
-
-model WhatsAppMessage {
-  id        String   @id @default(cuid())
-  from      String
-  name      String?
-  body      String
-  timestamp DateTime
-  waId      String?
-  createdAt DateTime @default(now())
 }
 
 model GoogleToken {

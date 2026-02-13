@@ -37,13 +37,6 @@
             <div class="card-body" id="financial-summary"></div>
           </div>
         </div>
-        <div class="card mb-24">
-          <div class="card-header">
-            <span class="card-title">QR Tracking</span>
-            <a href="qr-tracking.html" class="btn btn-ghost btn-sm" style="font-size:11px;">Bekijk alles</a>
-          </div>
-          <div class="card-body" id="qr-dashboard"></div>
-        </div>
       </main>
     </div>
   </div>
@@ -61,7 +54,7 @@
       lucide.createIcons();
       loadDashboardReminders();
       loadDashboard();
-      loadQrDashboard();
+      loadQrStats();
     }
 
     async function loadDashboardReminders() {
@@ -108,35 +101,6 @@
         showToast('Herinnering gemarkeerd als verstuurd');
         loadDashboardReminders();
       } catch (err) { showToast(err.message, 'error'); }
-    }
-
-    async function loadQrDashboard() {
-      try {
-        const stats = await API.get('/qr/stats');
-        const container = document.getElementById('qr-dashboard');
-        container.innerHTML = `
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px;">
-            <div style="text-align:center;">
-              <div style="font-size:24px;font-weight:800;">${stats.totalScans}</div>
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Totaal scans</div>
-            </div>
-            <div style="text-align:center;">
-              <div style="font-size:24px;font-weight:800;">${stats.scansToday}</div>
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Vandaag</div>
-            </div>
-            <div style="text-align:center;">
-              <div style="font-size:24px;font-weight:800;">${stats.scansWeek}</div>
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Deze week</div>
-            </div>
-            <div style="text-align:center;">
-              <div style="font-size:24px;font-weight:800;color:var(--accent-green);">${stats.totalMessages}</div>
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">WA berichten</div>
-            </div>
-          </div>
-        `;
-      } catch (err) {
-        document.getElementById('qr-dashboard').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">QR tracking data niet beschikbaar</div>';
-      }
     }
 
     async function loadDashboard() {
@@ -195,6 +159,11 @@
           <div class="kpi-label">Totale omzet</div>
           <div class="kpi-value">${formatCurrency(data.totalRevenue)}</div>
           <span class="kpi-badge positive">Omzet</span>
+        </div>
+        <div class="kpi-card" id="qr-kpi-card">
+          <div class="kpi-label">Flyer QR Scans</div>
+          <div class="kpi-value" id="qr-total">-</div>
+          <span class="kpi-badge neutral" id="qr-badge">laden...</span>
         </div>
       `;
     }
@@ -330,6 +299,21 @@
           `).join('') : '<span class="text-muted" style="font-size:13px;">Nog geen deals</span>'}
         </div>
       `;
+    }
+
+    async function loadQrStats() {
+      try {
+        const qr = await API.get('/qr/stats');
+        const totalEl = document.getElementById('qr-total');
+        const badgeEl = document.getElementById('qr-badge');
+        if (totalEl) totalEl.textContent = qr.total;
+        if (badgeEl) {
+          badgeEl.className = 'kpi-badge ' + (qr.today > 0 ? 'positive' : 'neutral');
+          badgeEl.textContent = `${qr.today} vandaag, ${qr.thisWeek} deze week`;
+        }
+      } catch (err) {
+        console.error('QR stats error:', err);
+      }
     }
 
     init();

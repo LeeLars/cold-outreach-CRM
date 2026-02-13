@@ -78,10 +78,10 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const { companyName, city, address, website, phone, email, contactPerson, status, notes } = req.body;
+    const { companyName, city, address, website, phone, email, contactPerson, status, source, notes } = req.body;
     const lead = await prisma.lead.update({
       where: { id: req.params.id },
-      data: { companyName, city, address, website, phone, email, contactPerson, status, notes }
+      data: { companyName, city, address, website, phone, email, contactPerson, status, source, notes }
     });
     res.json(lead);
   } catch (err) {

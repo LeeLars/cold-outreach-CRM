@@ -269,12 +269,12 @@
       }
 
       tbody.innerHTML = data.leads.map((lead, i) => `
-        <tr>
+        <tr style="cursor:pointer;" onclick="if(!event.target.closest('input,select,a,button')){viewLead('${lead.id}')}">
           <td class="checkbox-cell"><input type="checkbox" data-id="${lead.id}" data-status="${lead.status}" class="lead-checkbox" ${selectedIds.has(lead.id) ? 'checked' : ''}></td>
           <td style="color:var(--text-muted);">${((data.page - 1) * currentLimit) + i + 1}</td>
-          <td><a href="#" onclick="viewLead('${lead.id}');return false;" style="color:var(--text-primary);font-weight:500;">${lead.companyName}</a></td>
+          <td style="color:var(--text-primary);font-weight:500;">${lead.companyName}</td>
           <td>${lead.city || '-'}</td>
-          <td>${lead.website ? `<a href="${lead.website}" target="_blank" style="color:var(--accent-blue);">${lead.website}</a>` : '-'}</td>
+          <td>${lead.website ? `<a href="${lead.website}" target="_blank" style="color:var(--accent-blue);" onclick="event.stopPropagation()">${lead.website}</a>` : '-'}</td>
           <td class="status-cell ${lead.status}">
             <select class="status-select ${lead.status}" data-id="${lead.id}" onchange="quickStatusChange(this)">
               ${Object.entries(STATUS_LABELS).map(([val, label]) =>

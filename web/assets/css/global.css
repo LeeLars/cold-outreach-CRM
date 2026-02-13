@@ -13,22 +13,22 @@
      ============================================ */
 
   /* Layer 0: Page background */
-  --bg-primary: #0E1A2E;
+  --bg-primary: #1B2B4B;
   /* Layer 1: Topbar / secondary surfaces */
-  --bg-secondary: #132240;
+  --bg-secondary: #213458;
   /* Layer 2: Cards */
-  --bg-card: #182B4A;
+  --bg-card: #273E66;
   /* Layer 3: Card hover / elevated elements */
-  --bg-card-hover: #1E3558;
+  --bg-card-hover: #2F4A75;
   /* Inputs */
-  --bg-input: #132240;
+  --bg-input: #213458;
 
   /* Sidebar: brand blue */
   --sidebar-bg: #0F3B79;
 
   /* Borders */
-  --border-color: rgba(99, 152, 235, 0.12);
-  --border-color-hover: rgba(99, 152, 235, 0.25);
+  --border-color: rgba(120, 170, 245, 0.15);
+  --border-color-hover: rgba(120, 170, 245, 0.30);
 
   /* Text hierarchy */
   --text-primary: #F1F5F9;
@@ -1004,8 +1004,8 @@ textarea.form-input {
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(99, 152, 235, 0.15); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(99, 152, 235, 0.25); }
+::-webkit-scrollbar-thumb { background: rgba(120, 170, 245, 0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(120, 170, 245, 0.35); }
 
 /* ===== ANIMATIONS ===== */
 .fade-in {

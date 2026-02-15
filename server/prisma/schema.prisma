@@ -73,6 +73,26 @@ model Deal {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   upsells         DealUpsell[]
+  
+  // Website requirements
+  websiteGoal     String?
+  targetAudience  String?
+  hasExistingWebsite Boolean   @default(false)
+  existingWebsiteUrl String?
+  
+  // Design & visual identity
+  mood            String?
+  heroType        String?
+  toneOfVoice     String?
+  usps            String?
+  primaryCta      String?
+  
+  // Strategy & content
+  features        String?
+  languages       String?
+  contentStatus   String?
+  urgency         String?
+  specialRequests String?
 }
 
 model DealUpsell {

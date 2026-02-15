@@ -58,7 +58,12 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const { leadId, packageId, upsellIds = [], acquisitionCost = 0, saleDate } = req.body;
+    const { 
+      leadId, packageId, upsellIds = [], acquisitionCost = 0, saleDate,
+      websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
+      mood, heroType, toneOfVoice, usps, primaryCta,
+      features, languages, contentStatus, urgency, specialRequests
+    } = req.body;
 
     if (!leadId || !packageId) {
       return res.status(400).json({ error: 'Lead en pakket zijn verplicht' });
@@ -88,6 +93,20 @@ router.post('/', async (req, res, next) => {
         acquisitionCost: parseFloat(acquisitionCost),
         saleDate: saleDate ? new Date(saleDate) : new Date(),
         totalValue,
+        websiteGoal: websiteGoal || null,
+        targetAudience: targetAudience || null,
+        hasExistingWebsite: hasExistingWebsite || false,
+        existingWebsiteUrl: existingWebsiteUrl || null,
+        mood: mood || null,
+        heroType: heroType || null,
+        toneOfVoice: toneOfVoice || null,
+        usps: usps || null,
+        primaryCta: primaryCta || null,
+        features: features || null,
+        languages: languages || null,
+        contentStatus: contentStatus || null,
+        urgency: urgency || null,
+        specialRequests: specialRequests || null,
         upsells: {
           create: upsellIds.map(upsellId => ({ upsellId }))
         }
@@ -112,7 +131,12 @@ router.post('/', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const { packageId, upsellIds = [], acquisitionCost, saleDate } = req.body;
+    const { 
+      packageId, upsellIds = [], acquisitionCost, saleDate,
+      websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
+      mood, heroType, toneOfVoice, usps, primaryCta,
+      features, languages, contentStatus, urgency, specialRequests
+    } = req.body;
 
     const existing = await prisma.deal.findUnique({ where: { id: req.params.id } });
     if (!existing) {
@@ -143,6 +167,20 @@ router.put('/:id', async (req, res, next) => {
         acquisitionCost: acquisitionCost !== undefined ? parseFloat(acquisitionCost) : existing.acquisitionCost,
         saleDate: saleDate ? new Date(saleDate) : existing.saleDate,
         totalValue,
+        websiteGoal: websiteGoal !== undefined ? websiteGoal : existing.websiteGoal,
+        targetAudience: targetAudience !== undefined ? targetAudience : existing.targetAudience,
+        hasExistingWebsite: hasExistingWebsite !== undefined ? hasExistingWebsite : existing.hasExistingWebsite,
+        existingWebsiteUrl: existingWebsiteUrl !== undefined ? existingWebsiteUrl : existing.existingWebsiteUrl,
+        mood: mood !== undefined ? mood : existing.mood,
+        heroType: heroType !== undefined ? heroType : existing.heroType,
+        toneOfVoice: toneOfVoice !== undefined ? toneOfVoice : existing.toneOfVoice,
+        usps: usps !== undefined ? usps : existing.usps,
+        primaryCta: primaryCta !== undefined ? primaryCta : existing.primaryCta,
+        features: features !== undefined ? features : existing.features,
+        languages: languages !== undefined ? languages : existing.languages,
+        contentStatus: contentStatus !== undefined ? contentStatus : existing.contentStatus,
+        urgency: urgency !== undefined ? urgency : existing.urgency,
+        specialRequests: specialRequests !== undefined ? specialRequests : existing.specialRequests,
         upsells: {
           create: upsellIds.map(upsellId => ({ upsellId }))
         }

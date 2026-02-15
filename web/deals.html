@@ -53,44 +53,214 @@
     </div>
   </div>
 
-  <!-- New/Edit Deal Modal -->
+  <!-- New/Edit Deal Modal - Wizard -->
   <div class="modal-overlay" id="deal-modal">
-    <div class="modal" style="max-width:560px;">
+    <div class="modal" style="max-width:700px;">
       <div class="modal-header">
         <span class="modal-title" id="deal-modal-title">Nieuwe deal</span>
         <button class="modal-close" onclick="closeModal('deal-modal')"><i data-lucide="x"></i></button>
       </div>
+      
+      <!-- Progress Bar -->
+      <div class="wizard-progress">
+        <div class="wizard-progress-bar" id="wizard-progress-bar"></div>
+      </div>
+      
       <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Lead (bedrijf)</label>
-          <select class="form-select" id="deal-lead"></select>
+        <!-- Step 1: Basis deal info -->
+        <div class="wizard-step" id="wizard-step-1">
+          <h3 class="wizard-step-title">Basis deal informatie</h3>
+          <div class="form-group">
+            <label class="form-label">Lead (bedrijf)</label>
+            <select class="form-select" id="deal-lead"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pakket</label>
+            <select class="form-select" id="deal-package"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Upsells</label>
+            <div id="deal-upsells"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Acquisitiekost</label>
+            <input type="number" class="form-input" id="deal-cost" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Datum verkoop</label>
+            <input type="date" class="form-input" id="deal-date">
+          </div>
+          <div class="card" style="margin-top:16px;">
+            <div class="card-body">
+              <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Berekening</div>
+              <div id="deal-calculation" style="font-size:13px;"></div>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Pakket</label>
-          <select class="form-select" id="deal-package"></select>
+
+        <!-- Step 2: Website doelen en context -->
+        <div class="wizard-step" id="wizard-step-2" style="display:none;">
+          <h3 class="wizard-step-title">Website doelen & context</h3>
+          <div class="form-group">
+            <label class="form-label">Wat is het hoofddoel van de website?</label>
+            <select class="form-select" id="deal-website-goal">
+              <option value="">Selecteer doel...</option>
+              <option value="leads">Leads genereren</option>
+              <option value="sales">Online verkopen</option>
+              <option value="branding">Merkbekendheid</option>
+              <option value="info">Informatievoorziening</option>
+              <option value="portfolio">Portfolio tonen</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Wie is de doelgroep?</label>
+            <input type="text" class="form-input" id="deal-target-audience" placeholder="B2B, particulieren, jongeren, etc.">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Heeft de klant al een website?</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="has-existing" value="false" checked>
+                <span>Nee, volledig nieuw</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="has-existing" value="true">
+                <span>Ja, bestaande website</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group" id="existing-url-group" style="display:none;">
+            <label class="form-label">URL bestaande website</label>
+            <input type="url" class="form-input" id="deal-existing-url" placeholder="https://...">
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Upsells</label>
-          <div id="deal-upsells"></div>
+
+        <!-- Step 3: Design & visuele identiteit -->
+        <div class="wizard-step" id="wizard-step-3" style="display:none;">
+          <h3 class="wizard-step-title">Design & visuele identiteit</h3>
+          <div class="form-group">
+            <label class="form-label">Welke sfeer/mood past bij het merk?</label>
+            <select class="form-select" id="deal-mood">
+              <option value="">Selecteer sfeer...</option>
+              <option value="modern-minimalistisch">Modern & minimalistisch</option>
+              <option value="professioneel-zakelijk">Professioneel & zakelijk</option>
+              <option value="creatief-speels">Creatief & speels</option>
+              <option value="luxe-premium">Luxe & premium</option>
+              <option value="warm-toegankelijk">Warm & toegankelijk</option>
+              <option value="stoer-industrieel">Stoer & industrieel</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Wat voor hero sectie heeft voorkeur?</label>
+            <select class="form-select" id="deal-hero-type">
+              <option value="">Selecteer hero type...</option>
+              <option value="foto-groot">Grote foto/visual</option>
+              <option value="video-achtergrond">Video achtergrond</option>
+              <option value="illustratie">Illustratie/grafisch</option>
+              <option value="minimaal-tekst">Minimaal met focus op tekst</option>
+              <option value="product-showcase">Product showcase</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tone of voice</label>
+            <select class="form-select" id="deal-tone">
+              <option value="">Selecteer tone...</option>
+              <option value="formeel">Formeel & professioneel</option>
+              <option value="vriendelijk">Vriendelijk & persoonlijk</option>
+              <option value="direct">Direct & to-the-point</option>
+              <option value="inspirerend">Inspirerend & motiverend</option>
+              <option value="humoristisch">Humoristisch & luchtig</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Acquisitiekost</label>
-          <input type="number" class="form-input" id="deal-cost" placeholder="0.00" step="0.01" min="0">
+
+        <!-- Step 4: Strategie & content -->
+        <div class="wizard-step" id="wizard-step-4" style="display:none;">
+          <h3 class="wizard-step-title">Strategie & content</h3>
+          <div class="form-group">
+            <label class="form-label">Belangrijkste USP's (unieke verkooppunten)</label>
+            <textarea class="form-input" id="deal-usps" rows="3" placeholder="Bijv: 24/7 service, 20 jaar ervaring, gratis verzending..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Primaire call-to-action</label>
+            <input type="text" class="form-input" id="deal-cta" placeholder="Bijv: Vraag offerte aan, Bestel nu, Plan gesprek...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gewenste functionaliteiten</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" value="contactform">
+                <span>Contactformulier</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="blog">
+                <span>Blog/nieuws</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="webshop">
+                <span>Webshop</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="booking">
+                <span>Boekingssysteem</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="portfolio">
+                <span>Portfolio/projecten</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="login">
+                <span>Inlogomgeving</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Talen</label>
+            <select class="form-select" id="deal-languages">
+              <option value="nl">Nederlands</option>
+              <option value="nl-en">Nederlands + Engels</option>
+              <option value="nl-en-de">Nederlands + Engels + Duits</option>
+              <option value="custom">Anders (specificeren in opmerkingen)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Content status</label>
+            <select class="form-select" id="deal-content-status">
+              <option value="">Selecteer status...</option>
+              <option value="ready">Content is klaar</option>
+              <option value="partial">Deels beschikbaar</option>
+              <option value="needs-help">Hulp nodig bij teksten</option>
+              <option value="none">Nog geen content</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Urgentie</label>
+            <select class="form-select" id="deal-urgency">
+              <option value="">Selecteer urgentie...</option>
+              <option value="asap">Zo snel mogelijk</option>
+              <option value="1-month">Binnen 1 maand</option>
+              <option value="2-3-months">2-3 maanden</option>
+              <option value="flexible">Flexibel</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Datum verkoop</label>
-          <input type="date" class="form-input" id="deal-date">
-        </div>
-        <div class="card" style="margin-top:16px;">
-          <div class="card-body">
-            <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Berekening</div>
-            <div id="deal-calculation" style="font-size:13px;"></div>
+
+        <!-- Step 5: Overzicht & bevestiging -->
+        <div class="wizard-step" id="wizard-step-5" style="display:none;">
+          <h3 class="wizard-step-title">Overzicht & bevestiging</h3>
+          <div id="deal-summary" class="deal-summary"></div>
+          <div class="form-group">
+            <label class="form-label">Speciale wensen of opmerkingen</label>
+            <textarea class="form-input" id="deal-special-requests" rows="4" placeholder="Eventuele aanvullende informatie..."></textarea>
           </div>
         </div>
       </div>
+      
       <div class="modal-footer">
+        <button class="btn btn-secondary" id="wizard-prev-btn" onclick="prevStep()" style="display:none;">Vorige</button>
         <button class="btn btn-secondary" onclick="closeModal('deal-modal')">Annuleren</button>
-        <button class="btn btn-primary" id="save-deal-btn" onclick="saveDeal()">Opslaan</button>
+        <button class="btn btn-primary" id="wizard-next-btn" onclick="nextStep()">Volgende</button>
+        <button class="btn btn-primary" id="save-deal-btn" onclick="saveDeal()" style="display:none;">Opslaan</button>
       </div>
     </div>
   </div>
@@ -116,6 +286,8 @@
     let packages = [];
     let upsells = [];
     let editingDealId = null;
+    let currentWizardStep = 1;
+    const totalWizardSteps = 5;
 
     async function init() {
       if (!await requireLogin()) return;
@@ -216,11 +388,143 @@
         document.querySelectorAll('.upsell-checkbox').forEach(cb => cb.addEventListener('change', updateCalculation));
         updateCalculation();
 
+        currentWizardStep = 1;
+        updateWizardUI();
+        
+        document.querySelectorAll('input[name="has-existing"]').forEach(radio => {
+          radio.addEventListener('change', (e) => {
+            document.getElementById('existing-url-group').style.display = e.target.value === 'true' ? 'block' : 'none';
+          });
+        });
+
         openModal('deal-modal');
         lucide.createIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    function updateWizardUI() {
+      for (let i = 1; i <= totalWizardSteps; i++) {
+        const step = document.getElementById(`wizard-step-${i}`);
+        if (step) step.style.display = i === currentWizardStep ? 'block' : 'none';
+      }
+      
+      const progressBar = document.getElementById('wizard-progress-bar');
+      progressBar.style.width = `${(currentWizardStep / totalWizardSteps) * 100}%`;
+      
+      document.getElementById('wizard-prev-btn').style.display = currentWizardStep > 1 ? 'inline-block' : 'none';
+      document.getElementById('wizard-next-btn').style.display = currentWizardStep < totalWizardSteps ? 'inline-block' : 'none';
+      document.getElementById('save-deal-btn').style.display = currentWizardStep === totalWizardSteps ? 'inline-block' : 'none';
+      
+      if (currentWizardStep === totalWizardSteps) {
+        updateSummary();
+      }
+    }
+
+    function nextStep() {
+      if (!validateStep(currentWizardStep)) return;
+      if (currentWizardStep < totalWizardSteps) {
+        currentWizardStep++;
+        updateWizardUI();
+      }
+    }
+
+    function prevStep() {
+      if (currentWizardStep > 1) {
+        currentWizardStep--;
+        updateWizardUI();
+      }
+    }
+
+    function validateStep(step) {
+      if (step === 1) {
+        const leadId = document.getElementById('deal-lead').value;
+        const packageId = document.getElementById('deal-package').value;
+        if (!leadId) {
+          showToast('Selecteer een lead', 'warning');
+          return false;
+        }
+        if (!packageId) {
+          showToast('Selecteer een pakket', 'warning');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function updateSummary() {
+      const leadSelect = document.getElementById('deal-lead');
+      const pkgSelect = document.getElementById('deal-package');
+      const leadName = leadSelect.options[leadSelect.selectedIndex]?.text || '-';
+      const pkgName = pkgSelect.options[pkgSelect.selectedIndex]?.text || '-';
+      
+      const selectedUpsells = Array.from(document.querySelectorAll('.upsell-checkbox:checked')).map(cb => {
+        const upsell = upsells.find(u => u.id === cb.value);
+        return upsell ? upsell.name : '';
+      }).filter(Boolean);
+      
+      const websiteGoal = document.getElementById('deal-website-goal').value;
+      const targetAudience = document.getElementById('deal-target-audience').value;
+      const hasExisting = document.querySelector('input[name="has-existing"]:checked').value === 'true';
+      const existingUrl = document.getElementById('deal-existing-url').value;
+      const mood = document.getElementById('deal-mood').value;
+      const heroType = document.getElementById('deal-hero-type').value;
+      const tone = document.getElementById('deal-tone').value;
+      const usps = document.getElementById('deal-usps').value;
+      const cta = document.getElementById('deal-cta').value;
+      const selectedFeatures = Array.from(document.querySelectorAll('.checkbox-group input:checked')).map(cb => cb.nextElementSibling.textContent);
+      const languages = document.getElementById('deal-languages').value;
+      const contentStatus = document.getElementById('deal-content-status').value;
+      const urgency = document.getElementById('deal-urgency').value;
+      
+      document.getElementById('deal-summary').innerHTML = `
+        <div style="display:grid;gap:16px;">
+          <div>
+            <h4 style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-primary);">Deal informatie</h4>
+            <div style="display:grid;gap:6px;font-size:13px;">
+              <div class="flex justify-between"><span class="text-muted">Lead:</span><span>${leadName}</span></div>
+              <div class="flex justify-between"><span class="text-muted">Pakket:</span><span>${pkgName}</span></div>
+              ${selectedUpsells.length > 0 ? `<div class="flex justify-between"><span class="text-muted">Upsells:</span><span>${selectedUpsells.join(', ')}</span></div>` : ''}
+            </div>
+          </div>
+          
+          ${websiteGoal || targetAudience ? `
+          <div>
+            <h4 style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-primary);">Website context</h4>
+            <div style="display:grid;gap:6px;font-size:13px;">
+              ${websiteGoal ? `<div class="flex justify-between"><span class="text-muted">Doel:</span><span>${document.querySelector(`#deal-website-goal option[value="${websiteGoal}"]`)?.text || websiteGoal}</span></div>` : ''}
+              ${targetAudience ? `<div class="flex justify-between"><span class="text-muted">Doelgroep:</span><span>${targetAudience}</span></div>` : ''}
+              ${hasExisting ? `<div class="flex justify-between"><span class="text-muted">Bestaande site:</span><span>${existingUrl || 'Ja'}</span></div>` : ''}
+            </div>
+          </div>
+          ` : ''}
+          
+          ${mood || heroType || tone ? `
+          <div>
+            <h4 style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-primary);">Design & identiteit</h4>
+            <div style="display:grid;gap:6px;font-size:13px;">
+              ${mood ? `<div class="flex justify-between"><span class="text-muted">Sfeer:</span><span>${document.querySelector(`#deal-mood option[value="${mood}"]`)?.text || mood}</span></div>` : ''}
+              ${heroType ? `<div class="flex justify-between"><span class="text-muted">Hero:</span><span>${document.querySelector(`#deal-hero-type option[value="${heroType}"]`)?.text || heroType}</span></div>` : ''}
+              ${tone ? `<div class="flex justify-between"><span class="text-muted">Tone:</span><span>${document.querySelector(`#deal-tone option[value="${tone}"]`)?.text || tone}</span></div>` : ''}
+            </div>
+          </div>
+          ` : ''}
+          
+          ${usps || cta || selectedFeatures.length > 0 ? `
+          <div>
+            <h4 style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-primary);">Strategie & content</h4>
+            <div style="display:grid;gap:6px;font-size:13px;">
+              ${usps ? `<div><span class="text-muted">USP's:</span><div style="margin-top:4px;">${usps}</div></div>` : ''}
+              ${cta ? `<div class="flex justify-between"><span class="text-muted">CTA:</span><span>${cta}</span></div>` : ''}
+              ${selectedFeatures.length > 0 ? `<div><span class="text-muted">Features:</span><div style="margin-top:4px;">${selectedFeatures.join(', ')}</div></div>` : ''}
+              ${contentStatus ? `<div class="flex justify-between"><span class="text-muted">Content:</span><span>${document.querySelector(`#deal-content-status option[value="${contentStatus}"]`)?.text || contentStatus}</span></div>` : ''}
+              ${urgency ? `<div class="flex justify-between"><span class="text-muted">Urgentie:</span><span>${document.querySelector(`#deal-urgency option[value="${urgency}"]`)?.text || urgency}</span></div>` : ''}
+            </div>
+          </div>
+          ` : ''}
+        </div>
+      `;
     }
 
     function updateCalculation() {
@@ -257,12 +561,39 @@
       if (!leadId) return showToast('Selecteer een lead', 'warning');
       if (!packageId) return showToast('Selecteer een pakket', 'warning');
 
+      const websiteGoal = document.getElementById('deal-website-goal').value || null;
+      const targetAudience = document.getElementById('deal-target-audience').value || null;
+      const hasExistingWebsite = document.querySelector('input[name="has-existing"]:checked').value === 'true';
+      const existingWebsiteUrl = document.getElementById('deal-existing-url').value || null;
+      const mood = document.getElementById('deal-mood').value || null;
+      const heroType = document.getElementById('deal-hero-type').value || null;
+      const toneOfVoice = document.getElementById('deal-tone').value || null;
+      const usps = document.getElementById('deal-usps').value || null;
+      const primaryCta = document.getElementById('deal-cta').value || null;
+      const selectedFeatures = Array.from(document.querySelectorAll('.checkbox-group input:checked')).map(cb => cb.value);
+      const features = selectedFeatures.length > 0 ? selectedFeatures.join(',') : null;
+      const languages = document.getElementById('deal-languages').value || null;
+      const contentStatus = document.getElementById('deal-content-status').value || null;
+      const urgency = document.getElementById('deal-urgency').value || null;
+      const specialRequests = document.getElementById('deal-special-requests').value || null;
+
+      const dealData = {
+        packageId, upsellIds, acquisitionCost, saleDate,
+        websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
+        mood, heroType, toneOfVoice, usps, primaryCta,
+        features, languages, contentStatus, urgency, specialRequests
+      };
+
+      if (!editingDealId) {
+        dealData.leadId = leadId;
+      }
+
       try {
         if (editingDealId) {
-          await API.put(`/deals/${editingDealId}`, { packageId, upsellIds, acquisitionCost, saleDate });
+          await API.put(`/deals/${editingDealId}`, dealData);
           showToast('Deal bijgewerkt');
         } else {
-          await API.post('/deals', { leadId, packageId, upsellIds, acquisitionCost, saleDate });
+          await API.post('/deals', dealData);
           showToast('Deal aangemaakt');
         }
         closeModal('deal-modal');

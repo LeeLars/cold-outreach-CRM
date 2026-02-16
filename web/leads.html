@@ -167,7 +167,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('duplicates-modal')">Sluiten</button>
-        <button class="btn btn-danger" id="delete-all-dupes-btn" onclick="deleteAllDuplicates()" style="display:none;">Alle duplicaten verwijderen</button>
+        <button class="btn btn-danger" id="delete-all-dupes-btn" onclick="deleteAllDuplicates()" style="display:none;">Verwijder alle geselecteerde</button>
       </div>
     </div>
   </div>
@@ -359,35 +359,54 @@
 
     async function checkDuplicates() {
       try {
-        showToast('Duplicaten zoeken...', 'info');
+        showToast('Alle leads doorzoeken op duplicaten...', 'info');
         const data = await API.get('/leads/duplicates');
         duplicateData = data;
 
         if (data.totalGroups === 0) {
-          showToast('Geen duplicaten gevonden');
+          showToast('Geen duplicaten gevonden in de volledige database');
           return;
         }
 
         const body = document.getElementById('duplicates-body');
         body.innerHTML = `
-          <div style="margin-bottom:16px;padding:12px;background:var(--accent-red-dim);border-radius:var(--radius-sm);font-size:13px;">
-            <strong>${data.totalDuplicates} duplicaten</strong> gevonden in ${data.totalGroups} groepen
+          <div style="margin-bottom:16px;padding:12px;background:var(--accent-orange-dim);border-radius:var(--radius-sm);font-size:13px;">
+            <strong>${data.totalDuplicates} duplicaten</strong> gevonden in ${data.totalGroups} groepen (alle leads doorzocht)
           </div>
-          ${data.duplicates.map(group => `
+          ${data.duplicates.map((group, groupIndex) => `
             <div style="margin-bottom:16px;border:1px solid var(--border-color);border-radius:var(--radius-sm);overflow:hidden;">
               <div style="padding:10px 14px;background:var(--bg-input);font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
                 <span>${group.companyName} (${group.count}x)</span>
-                <button class="btn btn-danger btn-sm" onclick="deleteDuplicatesInGroup('${group.companyName.replace(/'/g, "\\'")}')">Duplicaten verwijderen</button>
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-ghost btn-sm" onclick="selectAllInGroup(${groupIndex}, false)">Deselecteer alles</button>
+                  <button class="btn btn-ghost btn-sm" onclick="selectAllInGroup(${groupIndex}, true)">Selecteer duplicaten</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteSelectedInGroup(${groupIndex})">Verwijder geselecteerde</button>
+                </div>
               </div>
               <table class="data-table" style="font-size:12px;">
-                <thead><tr><th>Gemeente</th><th>Status</th><th>Aangemaakt</th><th>Behouden</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th style="width:40px;">
+                      <input type="checkbox" onchange="toggleGroupSelection(${groupIndex}, this.checked)">
+                    </th>
+                    <th>Bedrijf</th>
+                    <th>Gemeente</th>
+                    <th>Status</th>
+                    <th>Aangemaakt</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
                 <tbody>
                   ${group.leads.map((l, i) => `
-                    <tr${i > 0 ? ' style="opacity:0.6;"' : ''}>
+                    <tr${i > 0 ? ' style="background:var(--accent-red-dim);"' : ''}>
+                      <td>
+                        <input type="checkbox" class="duplicate-checkbox" data-group="${groupIndex}" data-lead-id="${l.id}" ${i > 0 ? 'checked' : ''}>
+                      </td>
+                      <td style="font-weight:${i === 0 ? '600' : '400'};">${group.companyName}</td>
                       <td>${l.city || '-'}</td>
                       <td>${STATUS_LABELS[l.status] || l.status}</td>
                       <td>${formatDate(l.createdAt)}</td>
-                      <td>${i === 0 ? '<span style="color:var(--accent-brand);font-weight:600;">Origineel</span>' : '<span style="color:var(--accent-red);">Duplicaat</span>'}</td>
+                      <td>${i === 0 ? '<span style="color:var(--accent-brand);font-weight:600;">Origineel (oudste)</span>' : '<span style="color:var(--accent-red);">Duplicaat</span>'}</td>
                     </tr>
                   `).join('')}
                 </tbody>
@@ -399,6 +418,44 @@
         document.getElementById('delete-all-dupes-btn').style.display = 'inline-flex';
         openModal('duplicates-modal');
         lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function toggleGroupSelection(groupIndex, checked) {
+      const checkboxes = document.querySelectorAll(`.duplicate-checkbox[data-group="${groupIndex}"]`);
+      checkboxes.forEach(cb => cb.checked = checked);
+    }
+
+    function selectAllInGroup(groupIndex, selectDuplicatesOnly) {
+      const group = duplicateData.duplicates[groupIndex];
+      const checkboxes = document.querySelectorAll(`.duplicate-checkbox[data-group="${groupIndex}"]`);
+      checkboxes.forEach((cb, index) => {
+        if (selectDuplicatesOnly) {
+          cb.checked = index > 0;
+        } else {
+          cb.checked = false;
+        }
+      });
+    }
+
+    async function deleteSelectedInGroup(groupIndex) {
+      const selectedIds = Array.from(document.querySelectorAll(`.duplicate-checkbox[data-group="${groupIndex}"]:checked`))
+        .map(cb => cb.dataset.leadId);
+      
+      if (selectedIds.length === 0) {
+        showToast('Geen leads geselecteerd', 'error');
+        return;
+      }
+
+      const group = duplicateData.duplicates[groupIndex];
+      if (!confirm(`${selectedIds.length} geselecteerde lead(s) van "${group.companyName}" verwijderen?`)) return;
+
+      try {
+        await API.delete('/leads/bulk', { ids: selectedIds });
+        showToast(`${selectedIds.length} lead(s) verwijderd`);
+        checkDuplicates();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -423,19 +480,20 @@
     }
 
     async function deleteAllDuplicates() {
-      if (!duplicateData) return;
-      const allDupeIds = [];
-      for (const group of duplicateData.duplicates) {
-        allDupeIds.push(...group.leads.slice(1).map(l => l.id));
+      const selectedIds = Array.from(document.querySelectorAll('.duplicate-checkbox:checked'))
+        .map(cb => cb.dataset.leadId);
+      
+      if (selectedIds.length === 0) {
+        showToast('Geen leads geselecteerd om te verwijderen', 'error');
+        return;
       }
 
-      if (!confirm(`Weet je zeker dat je alle ${allDupeIds.length} duplicaten wilt verwijderen? Per bedrijf wordt het oudste record behouden.`)) return;
+      if (!confirm(`Weet je zeker dat je ${selectedIds.length} geselecteerde lead(s) wilt verwijderen?`)) return;
 
       try {
-        await API.delete('/leads/bulk', { ids: allDupeIds });
-        showToast(`${allDupeIds.length} duplicaten verwijderd`);
-        closeModal('duplicates-modal');
-        loadLeads();
+        await API.delete('/leads/bulk', { ids: selectedIds });
+        showToast(`${selectedIds.length} lead(s) verwijderd`);
+        checkDuplicates();
       } catch (err) {
         showToast(err.message, 'error');
       }

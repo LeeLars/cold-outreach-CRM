@@ -72,7 +72,15 @@
           <h3 class="wizard-step-title">Basis deal informatie</h3>
           <div class="form-group">
             <label class="form-label">Lead (bedrijf)</label>
-            <select class="form-select" id="deal-lead"></select>
+            <div style="position:relative;">
+              <input type="text" class="form-input" id="deal-lead-search" placeholder="Zoek bedrijf..." autocomplete="off">
+              <input type="hidden" id="deal-lead" value="">
+              <div id="lead-suggestions" class="suggestions-dropdown" style="display:none;"></div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="openNewLeadModal()" style="margin-top:8px;width:100%;">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i>
+              <span>Nieuwe lead toevoegen</span>
+            </button>
           </div>
           <div class="form-group">
             <label class="form-label">Pakket</label>
@@ -348,10 +356,11 @@
       lucide.createIcons();
     }
 
+    let allLeads = [];
+
     async function openNewDealModal(preselectedLeadId) {
       editingDealId = null;
       document.getElementById('deal-modal-title').textContent = 'Nieuwe deal';
-      document.getElementById('deal-lead').disabled = false;
 
       try {
         const [pkgs, ups, leadsData] = await Promise.all([
@@ -361,12 +370,23 @@
         ]);
         packages = pkgs;
         upsells = ups;
+        allLeads = leadsData.leads;
 
-        const leadSelect = document.getElementById('deal-lead');
-        leadSelect.innerHTML = `<option value="">Selecteer een lead...</option>` +
-          leadsData.leads.map(l =>
-            `<option value="${l.id}" ${l.id === preselectedLeadId ? 'selected' : ''}>${l.companyName}${l.city ? ' - ' + l.city : ''}</option>`
-          ).join('');
+        const leadSearchInput = document.getElementById('deal-lead-search');
+        const leadHiddenInput = document.getElementById('deal-lead');
+        
+        if (preselectedLeadId) {
+          const preselectedLead = allLeads.find(l => l.id === preselectedLeadId);
+          if (preselectedLead) {
+            leadSearchInput.value = `${preselectedLead.companyName}${preselectedLead.city ? ' - ' + preselectedLead.city : ''}`;
+            leadHiddenInput.value = preselectedLead.id;
+          }
+        } else {
+          leadSearchInput.value = '';
+          leadHiddenInput.value = '';
+        }
+        
+        initLeadSearch();
 
         const pkgSelect = document.getElementById('deal-package');
         pkgSelect.innerHTML = packages.map(p =>
@@ -402,6 +422,68 @@
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    function initLeadSearch() {
+      const searchInput = document.getElementById('deal-lead-search');
+      const hiddenInput = document.getElementById('deal-lead');
+      const suggestionsDiv = document.getElementById('lead-suggestions');
+      
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        
+        if (query.length < 2) {
+          suggestionsDiv.style.display = 'none';
+          hiddenInput.value = '';
+          return;
+        }
+        
+        const filtered = allLeads.filter(lead => {
+          const companyName = lead.companyName.toLowerCase();
+          const city = (lead.city || '').toLowerCase();
+          return companyName.includes(query) || city.includes(query);
+        }).slice(0, 10);
+        
+        if (filtered.length === 0) {
+          suggestionsDiv.innerHTML = '<div class="suggestion-item" style="color:var(--text-muted);cursor:default;">Geen resultaten</div>';
+          suggestionsDiv.style.display = 'block';
+          hiddenInput.value = '';
+          return;
+        }
+        
+        suggestionsDiv.innerHTML = filtered.map(lead => `
+          <div class="suggestion-item" data-id="${lead.id}" data-name="${lead.companyName}${lead.city ? ' - ' + lead.city : ''}">
+            <div style="font-weight:500;">${lead.companyName}</div>
+            ${lead.city ? `<div style="font-size:12px;color:var(--text-muted);">${lead.city}</div>` : ''}
+          </div>
+        `).join('');
+        
+        suggestionsDiv.style.display = 'block';
+        
+        suggestionsDiv.querySelectorAll('.suggestion-item[data-id]').forEach(item => {
+          item.addEventListener('click', () => {
+            searchInput.value = item.dataset.name;
+            hiddenInput.value = item.dataset.id;
+            suggestionsDiv.style.display = 'none';
+          });
+        });
+      });
+      
+      searchInput.addEventListener('blur', () => {
+        setTimeout(() => {
+          suggestionsDiv.style.display = 'none';
+        }, 200);
+      });
+      
+      searchInput.addEventListener('focus', () => {
+        if (searchInput.value.length >= 2) {
+          searchInput.dispatchEvent(new Event('input'));
+        }
+      });
+    }
+
+    function openNewLeadModal() {
+      window.location.href = basePath('/leads.html?new=true');
     }
 
     function updateWizardUI() {

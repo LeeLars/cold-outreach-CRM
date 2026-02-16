@@ -3,6 +3,7 @@ const multer = require('multer');
 const { parse } = require('csv-parse');
 const { PrismaClient } = require('@prisma/client');
 const { requireAuth } = require('../middleware/auth');
+const { normalizeCity } = require('../utils/normalize');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -81,7 +82,18 @@ router.put('/:id', async (req, res, next) => {
     const { companyName, city, address, website, phone, email, contactPerson, status, source, notes } = req.body;
     const lead = await prisma.lead.update({
       where: { id: req.params.id },
-      data: { companyName, city, address, website, phone, email, contactPerson, status, source, notes }
+      data: { 
+        companyName, 
+        city: normalizeCity(city), 
+        address, 
+        website, 
+        phone, 
+        email, 
+        contactPerson, 
+        status, 
+        source, 
+        notes 
+      }
     });
     res.json(lead);
   } catch (err) {
@@ -150,9 +162,10 @@ router.post('/import', upload.single('file'), async (req, res, next) => {
     });
 
     for await (const record of parser) {
+      const cityValue = record.gemeente || record.city || record.Gemeente || record.stad || '';
       records.push({
         companyName: record.bedrijfsnaam || record.companyName || record.Bedrijfsnaam || '',
-        city: record.gemeente || record.city || record.Gemeente || record.stad || '',
+        city: normalizeCity(cityValue),
         website: record.website || record.Website || '',
         status: 'NIEUW',
         createdById: req.session.userId
@@ -190,9 +203,10 @@ router.post('/import/preview', upload.single('file'), async (req, res, next) => 
     });
 
     for await (const record of parser) {
+      const cityValue = record.gemeente || record.city || record.Gemeente || record.stad || '';
       records.push({
         companyName: record.bedrijfsnaam || record.companyName || record.Bedrijfsnaam || '',
-        city: record.gemeente || record.city || record.Gemeente || record.stad || '',
+        city: normalizeCity(cityValue),
         website: record.website || record.Website || ''
       });
     }

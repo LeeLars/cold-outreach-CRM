@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { requireAuth } = require('../middleware/auth');
+const { normalizeCity } = require('../utils/normalize');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -234,9 +235,7 @@ router.get('/locations', async (req, res, next) => {
       const normalizedKey = lead.city.toLowerCase().trim();
       
       if (!cityNameMap[normalizedKey]) {
-        cityNameMap[normalizedKey] = lead.city.split('-').map(part => 
-          part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
-        ).join('-');
+        cityNameMap[normalizedKey] = normalizeCity(lead.city);
       }
       
       const city = cityNameMap[normalizedKey];

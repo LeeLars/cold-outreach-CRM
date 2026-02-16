@@ -19,6 +19,7 @@
           <button class="tab active" data-tab="funnel" onclick="switchTab('funnel')">Funnel analyse</button>
           <button class="tab" data-tab="revenue" onclick="switchTab('revenue')">Omzet & ROI</button>
           <button class="tab" data-tab="acquisition" onclick="switchTab('acquisition')">Kost per acquisitie</button>
+          <button class="tab" data-tab="locations" onclick="switchTab('locations')">Locaties</button>
         </div>
 
         <!-- Funnel Tab -->
@@ -62,6 +63,98 @@
             </div>
           </div>
         </div>
+
+        <!-- Locations Tab -->
+        <div id="tab-locations" class="hidden">
+          <div class="card mb-24" style="background:var(--accent-blue-dim);border:1px solid var(--accent-blue);">
+            <div class="card-body">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <i data-lucide="map-pin" style="width:24px;height:24px;color:var(--accent-blue);"></i>
+                <div>
+                  <div style="font-weight:600;font-size:14px;color:var(--accent-blue);">Locatie-gebaseerde statistieken</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Alle data gebaseerd op gemeente veld uit leads lijst</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);" id="location-kpis"></div>
+
+          <div class="card mb-24">
+            <div class="card-header">
+              <span class="card-title">Top 15 gemeentes - Leads & Performance</span>
+              <div style="display:flex;gap:8px;">
+                <select id="location-metric-filter" class="form-select" style="width:200px;" onchange="updateLocationChart()">
+                  <option value="total">Totaal leads</option>
+                  <option value="verstuurd">Verstuurd</option>
+                  <option value="gereageerd">Gereageerd</option>
+                  <option value="klanten">Klanten</option>
+                  <option value="revenue">Omzet</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="location-bar-chart" height="350"></canvas>
+            </div>
+          </div>
+
+          <div class="grid-2 mb-24">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Response rate per gemeente</span></div>
+              <div class="card-body">
+                <canvas id="location-response-chart" height="300"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Conversion rate per gemeente</span></div>
+              <div class="card-body">
+                <canvas id="location-conversion-chart" height="300"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Gedetailleerd overzicht per gemeente</span>
+              <input type="text" id="location-search" class="form-input" placeholder="Zoek gemeente..." style="width:250px;" oninput="filterLocationTable()">
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="max-height:600px;overflow-y:auto;">
+                <table class="data-table" style="font-size:13px;">
+                  <thead style="position:sticky;top:0;background:var(--bg-card);z-index:10;">
+                    <tr>
+                      <th style="cursor:pointer;" onclick="sortLocationTable('city')">
+                        Gemeente <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      </th>
+                      <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('total')">
+                        Totaal <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      </th>
+                      <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('verstuurd')">
+                        Verstuurd <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      </th>
+                      <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('gereageerd')">
+                        Gereageerd <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      </th>
+                      <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('responseRate')">
+                        Response % <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      </th>
+                      <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('klanten')">
+                        Klanten <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      </th>
+                      <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('conversionRate')">
+                        Conversion % <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      </th>
+                      <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('revenue')">
+                        Omzet <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody id="location-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   </div>
@@ -74,6 +167,10 @@
   <script>
     let charts = {};
 
+    let locationData = [];
+    let locationSortColumn = 'total';
+    let locationSortDirection = 'desc';
+
     async function init() {
       if (!await requireLogin()) return;
       initSidebar();
@@ -82,6 +179,7 @@
       loadFunnel();
       loadRevenue();
       loadAcquisition();
+      loadLocations();
     }
 
     function switchTab(tab) {
@@ -90,6 +188,7 @@
       document.getElementById('tab-funnel').classList.toggle('hidden', tab !== 'funnel');
       document.getElementById('tab-revenue').classList.toggle('hidden', tab !== 'revenue');
       document.getElementById('tab-acquisition').classList.toggle('hidden', tab !== 'acquisition');
+      document.getElementById('tab-locations').classList.toggle('hidden', tab !== 'locations');
     }
 
     async function loadFunnel() {
@@ -267,6 +366,260 @@
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    async function loadLocations() {
+      try {
+        const data = await API.get('/stats/locations');
+        locationData = data;
+
+        const totalLocations = data.length;
+        const totalLeads = data.reduce((sum, loc) => sum + loc.total, 0);
+        const totalVerstuurd = data.reduce((sum, loc) => sum + loc.verstuurd, 0);
+        const totalGereageerd = data.reduce((sum, loc) => sum + loc.gereageerd, 0);
+        const totalKlanten = data.reduce((sum, loc) => sum + loc.klanten, 0);
+        const totalRevenue = data.reduce((sum, loc) => sum + loc.revenue, 0);
+
+        document.getElementById('location-kpis').innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">Gemeentes</div>
+            <div class="kpi-value">${totalLocations}</div>
+            <span class="kpi-badge neutral">Unieke locaties</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Totaal leads</div>
+            <div class="kpi-value">${totalLeads}</div>
+            <span class="kpi-badge neutral">Over alle locaties</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Gem. response rate</div>
+            <div class="kpi-value">${totalVerstuurd > 0 ? ((totalGereageerd / totalVerstuurd) * 100).toFixed(1) : 0}%</div>
+            <span class="kpi-badge positive">Alle locaties</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Totaal klanten</div>
+            <div class="kpi-value">${totalKlanten}</div>
+            <span class="kpi-badge positive">Over alle locaties</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Totale omzet</div>
+            <div class="kpi-value text-green">${formatCurrency(totalRevenue)}</div>
+            <span class="kpi-badge positive">Alle locaties</span>
+          </div>
+        `;
+
+        updateLocationChart();
+        renderLocationResponseChart(data);
+        renderLocationConversionChart(data);
+        renderLocationTable(data);
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function updateLocationChart() {
+      const metric = document.getElementById('location-metric-filter').value;
+      const top15 = [...locationData].sort((a, b) => b[metric] - a[metric]).slice(0, 15);
+
+      const ctx = document.getElementById('location-bar-chart').getContext('2d');
+      if (charts.locationBar) charts.locationBar.destroy();
+
+      const labels = top15.map(l => l.city);
+      const values = top15.map(l => metric === 'revenue' ? l[metric] : l[metric]);
+      
+      const metricLabels = {
+        total: 'Totaal leads',
+        verstuurd: 'Verstuurd',
+        gereageerd: 'Gereageerd',
+        klanten: 'Klanten',
+        revenue: 'Omzet'
+      };
+
+      const colors = {
+        total: '#6B7280',
+        verstuurd: '#60A5FA',
+        gereageerd: '#FB923C',
+        klanten: '#22C55E',
+        revenue: '#3B82F6'
+      };
+
+      charts.locationBar = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: metricLabels[metric],
+            data: values,
+            backgroundColor: colors[metric],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#9CA3AF', font: { size: 11 } }
+            },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: {
+                color: '#9CA3AF',
+                callback: v => metric === 'revenue' ? formatCurrency(v) : v
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderLocationResponseChart(data) {
+      const top10 = [...data]
+        .filter(l => l.verstuurd > 0)
+        .sort((a, b) => parseFloat(b.responseRate) - parseFloat(a.responseRate))
+        .slice(0, 10);
+
+      const ctx = document.getElementById('location-response-chart').getContext('2d');
+      if (charts.locationResponse) charts.locationResponse.destroy();
+
+      charts.locationResponse = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: top10.map(l => l.city),
+          datasets: [{
+            label: 'Response rate %',
+            data: top10.map(l => parseFloat(l.responseRate)),
+            backgroundColor: '#FB923C',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#9CA3AF', callback: v => v + '%' },
+              max: 100
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: '#9CA3AF', font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    function renderLocationConversionChart(data) {
+      const top10 = [...data]
+        .filter(l => l.gereageerd > 0)
+        .sort((a, b) => parseFloat(b.conversionRate) - parseFloat(a.conversionRate))
+        .slice(0, 10);
+
+      const ctx = document.getElementById('location-conversion-chart').getContext('2d');
+      if (charts.locationConversion) charts.locationConversion.destroy();
+
+      charts.locationConversion = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: top10.map(l => l.city),
+          datasets: [{
+            label: 'Conversion rate %',
+            data: top10.map(l => parseFloat(l.conversionRate)),
+            backgroundColor: '#22C55E',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#9CA3AF', callback: v => v + '%' },
+              max: 100
+            },
+            y: {
+              grid: { display: false },
+              ticks: { color: '#9CA3AF', font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    function renderLocationTable(data) {
+      const tbody = document.getElementById('location-table-body');
+      const sorted = sortLocationData(data);
+
+      tbody.innerHTML = sorted.map(loc => `
+        <tr>
+          <td style="font-weight:600;">${loc.city}</td>
+          <td style="text-align:right;">${loc.total}</td>
+          <td style="text-align:right;">${loc.verstuurd}</td>
+          <td style="text-align:right;">${loc.gereageerd}</td>
+          <td style="text-align:right;">
+            <span style="color:${parseFloat(loc.responseRate) > 50 ? 'var(--accent-green)' : parseFloat(loc.responseRate) > 25 ? 'var(--accent-orange)' : 'var(--text-muted)'};">
+              ${loc.responseRate}%
+            </span>
+          </td>
+          <td style="text-align:right;">${loc.klanten}</td>
+          <td style="text-align:right;">
+            <span style="color:${parseFloat(loc.conversionRate) > 50 ? 'var(--accent-green)' : parseFloat(loc.conversionRate) > 25 ? 'var(--accent-orange)' : 'var(--text-muted)'};">
+              ${loc.conversionRate}%
+            </span>
+          </td>
+          <td style="text-align:right;font-weight:600;color:var(--accent-green);">
+            ${loc.revenue > 0 ? formatCurrency(loc.revenue) : '-'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function sortLocationData(data) {
+      return [...data].sort((a, b) => {
+        let aVal = a[locationSortColumn];
+        let bVal = b[locationSortColumn];
+
+        if (locationSortColumn === 'responseRate' || locationSortColumn === 'conversionRate') {
+          aVal = parseFloat(aVal);
+          bVal = parseFloat(bVal);
+        }
+
+        if (locationSortDirection === 'asc') {
+          return aVal > bVal ? 1 : -1;
+        } else {
+          return aVal < bVal ? 1 : -1;
+        }
+      });
+    }
+
+    function sortLocationTable(column) {
+      if (locationSortColumn === column) {
+        locationSortDirection = locationSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        locationSortColumn = column;
+        locationSortDirection = 'desc';
+      }
+      renderLocationTable(locationData);
+    }
+
+    function filterLocationTable() {
+      const search = document.getElementById('location-search').value.toLowerCase();
+      const filtered = locationData.filter(loc => 
+        loc.city.toLowerCase().includes(search)
+      );
+      renderLocationTable(filtered);
     }
 
     init();

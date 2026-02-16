@@ -186,4 +186,64 @@ router.get('/recent-leads', async (req, res, next) => {
   }
 });
 
+router.get('/locations', async (req, res, next) => {
+  try {
+    const leads = await prisma.lead.findMany({
+      select: {
+        city: true,
+        status: true,
+        deal: {
+          select: {
+            totalValue: true
+          }
+        }
+      }
+    });
+
+    const locationStats = {};
+
+    leads.forEach(lead => {
+      const city = lead.city || 'Onbekend';
+      
+      if (!locationStats[city]) {
+        locationStats[city] = {
+          total: 0,
+          verstuurd: 0,
+          gereageerd: 0,
+          klanten: 0,
+          revenue: 0
+        };
+      }
+
+      locationStats[city].total++;
+
+      if (['VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
+        locationStats[city].verstuurd++;
+      }
+
+      if (['GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
+        locationStats[city].gereageerd++;
+      }
+
+      if (lead.status === 'KLANT') {
+        locationStats[city].klanten++;
+        if (lead.deal) {
+          locationStats[city].revenue += lead.deal.totalValue;
+        }
+      }
+    });
+
+    const locationArray = Object.entries(locationStats).map(([city, stats]) => ({
+      city,
+      ...stats,
+      responseRate: stats.verstuurd > 0 ? ((stats.gereageerd / stats.verstuurd) * 100).toFixed(1) : 0,
+      conversionRate: stats.gereageerd > 0 ? ((stats.klanten / stats.gereageerd) * 100).toFixed(1) : 0
+    })).sort((a, b) => b.total - a.total);
+
+    res.json(locationArray);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -27,6 +27,19 @@
             <div class="card-body"><canvas id="revenue-chart" height="260"></canvas></div>
           </div>
         </div>
+        <div class="card mb-24">
+          <div class="card-header">
+            <span class="card-title">Statistieken per locatie</span>
+          </div>
+          <div class="card-body">
+            <div class="grid-2" style="gap:24px;">
+              <div>
+                <canvas id="location-chart" height="300"></canvas>
+              </div>
+              <div id="location-table-container" style="max-height:400px;overflow-y:auto;"></div>
+            </div>
+          </div>
+        </div>
         <div class="grid-2 mb-24">
           <div class="card">
             <div class="card-header"><span class="card-title">Recente leads</span></div>
@@ -106,16 +119,18 @@
       try {
         try { await API.post('/leads/auto-expire', { days: 7 }); } catch(e) {}
 
-        const [dashboard, funnel, revenue, recentLeads] = await Promise.all([
+        const [dashboard, funnel, revenue, recentLeads, locations] = await Promise.all([
           API.get('/stats/dashboard'),
           API.get('/stats/funnel'),
           API.get('/stats/revenue'),
-          API.get('/stats/recent-leads')
+          API.get('/stats/recent-leads'),
+          API.get('/stats/locations')
         ]);
 
         renderKPIs(dashboard);
         renderFunnelChart(funnel);
         renderRevenueChart(revenue);
+        renderLocationStats(locations);
         renderRecentLeads(recentLeads);
         renderFinancialSummary(dashboard, revenue);
       } catch (err) {
@@ -237,6 +252,112 @@
           }
         }
       });
+    }
+
+    function renderLocationStats(locations) {
+      const topLocations = locations.slice(0, 10);
+      
+      const ctx = document.getElementById('location-chart').getContext('2d');
+      const cities = topLocations.map(l => l.city);
+      const totals = topLocations.map(l => l.total);
+      const verstuurd = topLocations.map(l => l.verstuurd);
+      const gereageerd = topLocations.map(l => l.gereageerd);
+      const klanten = topLocations.map(l => l.klanten);
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: cities,
+          datasets: [
+            {
+              label: 'Totaal leads',
+              data: totals,
+              backgroundColor: 'rgba(107, 114, 128, 0.8)',
+              borderRadius: 4
+            },
+            {
+              label: 'Verstuurd',
+              data: verstuurd,
+              backgroundColor: 'rgba(96, 165, 250, 0.8)',
+              borderRadius: 4
+            },
+            {
+              label: 'Gereageerd',
+              data: gereageerd,
+              backgroundColor: 'rgba(251, 146, 60, 0.8)',
+              borderRadius: 4
+            },
+            {
+              label: 'Klanten',
+              data: klanten,
+              backgroundColor: 'rgba(34, 197, 94, 0.8)',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { color: '#9CA3AF', font: { size: 11 } }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#9CA3AF', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { color: '#9CA3AF' }
+            }
+          }
+        }
+      });
+
+      const tableContainer = document.getElementById('location-table-container');
+      if (locations.length === 0) {
+        tableContainer.innerHTML = '<div class="empty-state"><div class="empty-state-text">Nog geen locatie data</div></div>';
+        return;
+      }
+
+      tableContainer.innerHTML = `
+        <table class="data-table" style="font-size:12px;">
+          <thead>
+            <tr>
+              <th>Gemeente</th>
+              <th style="text-align:right;">Totaal</th>
+              <th style="text-align:right;">Verstuurd</th>
+              <th style="text-align:right;">Reactie</th>
+              <th style="text-align:right;">Klanten</th>
+              <th style="text-align:right;">Omzet</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${locations.map(loc => `
+              <tr>
+                <td style="font-weight:600;">${loc.city}</td>
+                <td style="text-align:right;">${loc.total}</td>
+                <td style="text-align:right;">${loc.verstuurd}</td>
+                <td style="text-align:right;">
+                  ${loc.gereageerd}
+                  <span style="color:var(--text-muted);font-size:11px;">(${loc.responseRate}%)</span>
+                </td>
+                <td style="text-align:right;">
+                  ${loc.klanten}
+                  <span style="color:var(--text-muted);font-size:11px;">(${loc.conversionRate}%)</span>
+                </td>
+                <td style="text-align:right;font-weight:600;color:var(--accent-green);">
+                  ${loc.revenue > 0 ? formatCurrency(loc.revenue) : '-'}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
     }
 
     function renderRecentLeads(leads) {

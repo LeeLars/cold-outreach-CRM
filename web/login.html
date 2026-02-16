@@ -6,6 +6,7 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Login - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     body {
       display: flex;
@@ -76,6 +77,30 @@
       padding: 12px;
       font-size: 14px;
     }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .password-toggle:hover {
+      color: var(--text-primary);
+    }
   </style>
 </head>
 <body>
@@ -95,7 +120,12 @@
       </div>
       <div class="form-group">
         <label class="form-label" for="password">Wachtwoord</label>
-        <input type="password" id="password" class="form-input" placeholder="Wachtwoord" required>
+        <div class="password-wrapper">
+          <input type="password" id="password" class="form-input" placeholder="Wachtwoord" required>
+          <button type="button" class="password-toggle" id="password-toggle" aria-label="Toggle password visibility">
+            <i data-lucide="eye" id="eye-icon" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary login-btn" id="login-btn">Inloggen</button>
     </form>
@@ -109,6 +139,19 @@
   <script src="assets/js/config.js"></script>
   <script src="assets/js/api.js"></script>
   <script>
+    lucide.createIcons();
+
+    const passwordInput = document.getElementById('password');
+    const passwordToggle = document.getElementById('password-toggle');
+    const eyeIcon = document.getElementById('eye-icon');
+
+    passwordToggle.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      eyeIcon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+      lucide.createIcons();
+    });
+
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('login-btn');

@@ -56,11 +56,21 @@
                 <tr>
                   <th class="checkbox-cell"><input type="checkbox" id="select-all"></th>
                   <th>#</th>
-                  <th>Bedrijfsnaam</th>
-                  <th>Gemeente</th>
-                  <th>Website</th>
-                  <th>Status</th>
-                  <th>Datum</th>
+                  <th style="cursor:pointer;" onclick="sortLeads('companyName')">
+                    Bedrijfsnaam <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                  </th>
+                  <th style="cursor:pointer;" onclick="sortLeads('city')">
+                    Gemeente <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                  </th>
+                  <th style="cursor:pointer;" onclick="sortLeads('website')">
+                    Website <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                  </th>
+                  <th style="cursor:pointer;" onclick="sortLeads('status')">
+                    Status <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                  </th>
+                  <th style="cursor:pointer;" onclick="sortLeads('createdAt')">
+                    Datum <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                  </th>
                   <th>Acties</th>
                 </tr>
               </thead>
@@ -195,7 +205,11 @@
     let currentPage = 1;
     let currentLimit = 100;
     let selectedIds = new Set();
-    let csvFile = null;
+    let currentLeadIndex = 0;
+    let allLeads = [];
+    let sortColumn = null;
+    let sortDirection = 'asc';
+    let cachedLeadsData = null;
 
     async function init() {
       if (!await requireLogin()) return;
@@ -255,10 +269,47 @@
 
       try {
         const data = await API.get(`/leads?${params}`);
+        cachedLeadsData = data;
         renderLeads(data);
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    function sortLeads(column) {
+      if (!cachedLeadsData || !cachedLeadsData.leads) return;
+      
+      if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+      }
+
+      const sorted = [...cachedLeadsData.leads].sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+
+        if (column === 'createdAt') {
+          aVal = new Date(aVal);
+          bVal = new Date(bVal);
+        } else if (typeof aVal === 'string') {
+          aVal = (aVal || '').toLowerCase();
+          bVal = (bVal || '').toLowerCase();
+        }
+
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+
+        if (sortDirection === 'asc') {
+          return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+        } else {
+          return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+        }
+      });
+
+      cachedLeadsData.leads = sorted;
+      renderLeads(cachedLeadsData);
     }
 
     function renderLeads(data) {

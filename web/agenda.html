@@ -651,16 +651,38 @@
       const dateFmt = (d) => new Date(d).toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' });
 
       popover.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <div class="event-popover-title">${ev.title}</div>
           <button class="modal-close" onclick="closePopover()" style="width:24px;height:24px;"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
         </div>
-        <div class="event-popover-row"><i data-lucide="clock"></i> ${dateFmt(ev.start)}, ${fmt(ev.start)} - ${fmt(ev.end)}</div>
-        ${ev.location ? `<div class="event-popover-row"><i data-lucide="map-pin"></i> ${ev.location}</div>` : ''}
-        ${ev.lead ? `<div class="event-popover-row"><i data-lucide="building-2"></i> ${ev.lead.companyName}${ev.lead.city ? ', ' + ev.lead.city : ''}</div>` : ''}
-        ${ev.lead?.phone ? `<div class="event-popover-row"><i data-lucide="phone"></i> <a href="tel:${ev.lead.phone}" style="color:var(--accent-brand);">${ev.lead.phone}</a></div>` : ''}
-        ${ev.createdBy ? `<div class="event-popover-row"><i data-lucide="user"></i> ${ev.createdBy}</div>` : ''}
-        ${ev.description ? `<div class="event-popover-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);"><i data-lucide="file-text"></i> ${ev.description}</div>` : ''}
+        
+        <div style="margin-bottom:12px;">
+          <div class="event-popover-row"><i data-lucide="clock"></i> ${dateFmt(ev.start)}, ${fmt(ev.start)} - ${fmt(ev.end)}</div>
+          ${ev.location ? `<div class="event-popover-row"><i data-lucide="map-pin"></i> ${ev.location}</div>` : ''}
+          ${ev.meetingType ? `<div class="event-popover-row"><i data-lucide="video"></i> ${ev.meetingType}</div>` : ''}
+        </div>
+
+        ${ev.lead ? `
+          <div style="padding:12px;background:var(--bg-input);border-radius:var(--radius-sm);margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Lead informatie</div>
+            <div class="event-popover-row"><i data-lucide="building-2"></i> ${ev.lead.companyName}</div>
+            ${ev.lead.contactPerson ? `<div class="event-popover-row"><i data-lucide="user"></i> ${ev.lead.contactPerson}</div>` : ''}
+            ${ev.lead.phone ? `<div class="event-popover-row"><i data-lucide="phone"></i> <a href="tel:${ev.lead.phone}" style="color:var(--accent-brand);">${ev.lead.phone}</a></div>` : ''}
+            ${ev.lead.city ? `<div class="event-popover-row"><i data-lucide="map-pin"></i> ${ev.lead.city}</div>` : ''}
+          </div>
+        ` : ''}
+
+        ${ev.description || ev.notes ? `
+          <div style="padding:12px;background:var(--bg-input);border-radius:var(--radius-sm);margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">
+              ${ev.description ? 'Beschrijving' : 'Notities'}
+            </div>
+            <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;">${ev.description || ev.notes}</div>
+          </div>
+        ` : ''}
+
+        ${ev.createdBy ? `<div class="event-popover-row"><i data-lucide="user-circle"></i> Aangemaakt door: ${ev.createdBy}</div>` : ''}
+        
         <div style="display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-color);">
           <span class="day-event-badge ${ev.source}" style="font-size:11px;padding:3px 10px;">${ev.source === 'crm' ? 'CRM Afspraak' : 'Google Calendar'}</span>
           ${ev.source === 'crm' && ev.lead ? `<a href="${basePath('/leads.html')}?view=${ev.lead.id}" class="btn btn-ghost btn-sm" style="font-size:11px;">Bekijk lead</a>` : ''}
@@ -671,8 +693,8 @@
       const rect = e.target.getBoundingClientRect();
       let top = rect.bottom + 8;
       let left = rect.left;
-      if (left + 320 > window.innerWidth) left = window.innerWidth - 340;
-      if (top + 300 > window.innerHeight) top = rect.top - 300;
+      if (left + 380 > window.innerWidth) left = window.innerWidth - 400;
+      if (top + 400 > window.innerHeight) top = rect.top - 400;
       popover.style.top = Math.max(10, top) + 'px';
       popover.style.left = Math.max(10, left) + 'px';
       popover.classList.add('active');

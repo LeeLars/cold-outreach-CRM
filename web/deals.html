@@ -694,8 +694,72 @@
           `<span style="background:var(--accent-purple-dim);color:var(--accent-purple);padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-right:4px;">${u.upsell.name} - ${formatCurrency(u.upsell.price)}${u.upsell.billingType === 'MONTHLY' ? '/mnd' : ''}</span>`
         ).join('') || '<span class="text-muted">Geen</span>';
 
+        const websiteGoalLabels = {
+          'leads': 'Leads genereren',
+          'sales': 'Online verkopen',
+          'branding': 'Merkbekendheid',
+          'info': 'Informatievoorziening',
+          'portfolio': 'Portfolio tonen'
+        };
+        
+        const moodLabels = {
+          'modern-minimalistisch': 'Modern & minimalistisch',
+          'professioneel-zakelijk': 'Professioneel & zakelijk',
+          'creatief-speels': 'Creatief & speels',
+          'luxe-premium': 'Luxe & premium',
+          'warm-toegankelijk': 'Warm & toegankelijk',
+          'stoer-industrieel': 'Stoer & industrieel'
+        };
+        
+        const heroTypeLabels = {
+          'foto-groot': 'Grote foto/visual',
+          'video-achtergrond': 'Video achtergrond',
+          'illustratie': 'Illustratie/grafisch',
+          'minimaal-tekst': 'Minimaal met focus op tekst',
+          'product-showcase': 'Product showcase'
+        };
+        
+        const toneLabels = {
+          'formeel': 'Formeel & professioneel',
+          'vriendelijk': 'Vriendelijk & persoonlijk',
+          'direct': 'Direct & to-the-point',
+          'inspirerend': 'Inspirerend & motiverend',
+          'humoristisch': 'Humoristisch & luchtig'
+        };
+        
+        const languageLabels = {
+          'nl': 'Nederlands',
+          'nl-en': 'Nederlands + Engels',
+          'nl-en-de': 'Nederlands + Engels + Duits',
+          'custom': 'Anders'
+        };
+        
+        const contentStatusLabels = {
+          'ready': 'Content is klaar',
+          'partial': 'Deels beschikbaar',
+          'needs-help': 'Hulp nodig bij teksten',
+          'none': 'Nog geen content'
+        };
+        
+        const urgencyLabels = {
+          'asap': 'Zo snel mogelijk',
+          '1-month': 'Binnen 1 maand',
+          '2-3-months': '2-3 maanden',
+          'flexible': 'Flexibel'
+        };
+        
+        const featureLabels = {
+          'contactform': 'Contactformulier',
+          'blog': 'Blog/nieuws',
+          'webshop': 'Webshop',
+          'booking': 'Boekingssysteem',
+          'portfolio': 'Portfolio/projecten',
+          'login': 'Inlogomgeving'
+        };
+
         document.getElementById('detail-modal-body').innerHTML = `
           <div style="display:flex;flex-direction:column;gap:14px;">
+            <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Deal informatie</h4>
             <div class="flex justify-between items-center">
               <span class="text-muted">Bedrijf</span>
               <span style="font-weight:600;">${deal.lead.companyName}</span>
@@ -737,6 +801,76 @@
               <span class="text-muted">Datum verkoop</span>
               <span>${formatDate(deal.saleDate)}</span>
             </div>
+            
+            ${deal.websiteGoal || deal.targetAudience || deal.hasExistingWebsite ? `
+              <hr style="border-color:var(--border-color);">
+              <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Website context</h4>
+              ${deal.websiteGoal ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Doel</span>
+                <span>${websiteGoalLabels[deal.websiteGoal] || deal.websiteGoal}</span>
+              </div>` : ''}
+              ${deal.targetAudience ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Doelgroep</span>
+                <span>${deal.targetAudience}</span>
+              </div>` : ''}
+              ${deal.hasExistingWebsite ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Bestaande website</span>
+                <span>${deal.existingWebsiteUrl ? `<a href="${deal.existingWebsiteUrl}" target="_blank" style="color:var(--accent-brand);">${deal.existingWebsiteUrl}</a>` : 'Ja'}</span>
+              </div>` : ''}
+            ` : ''}
+            
+            ${deal.mood || deal.heroType || deal.toneOfVoice ? `
+              <hr style="border-color:var(--border-color);">
+              <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Design & identiteit</h4>
+              ${deal.mood ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Sfeer</span>
+                <span>${moodLabels[deal.mood] || deal.mood}</span>
+              </div>` : ''}
+              ${deal.heroType ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Hero sectie</span>
+                <span>${heroTypeLabels[deal.heroType] || deal.heroType}</span>
+              </div>` : ''}
+              ${deal.toneOfVoice ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Tone of voice</span>
+                <span>${toneLabels[deal.toneOfVoice] || deal.toneOfVoice}</span>
+              </div>` : ''}
+            ` : ''}
+            
+            ${deal.usps || deal.primaryCta || deal.features || deal.languages || deal.contentStatus || deal.urgency ? `
+              <hr style="border-color:var(--border-color);">
+              <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Strategie & content</h4>
+              ${deal.usps ? `<div>
+                <span class="text-muted" style="display:block;margin-bottom:6px;">USP's</span>
+                <div style="background:var(--bg-secondary);padding:10px;border-radius:6px;font-size:13px;">${deal.usps}</div>
+              </div>` : ''}
+              ${deal.primaryCta ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Primaire CTA</span>
+                <span>${deal.primaryCta}</span>
+              </div>` : ''}
+              ${deal.features ? `<div>
+                <span class="text-muted" style="display:block;margin-bottom:6px;">Functionaliteiten</span>
+                <div>${deal.features.split(',').map(f => `<span style="background:var(--accent-blue-dim);color:var(--accent-blue);padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-right:4px;margin-bottom:4px;display:inline-block;">${featureLabels[f] || f}</span>`).join('')}</div>
+              </div>` : ''}
+              ${deal.languages ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Talen</span>
+                <span>${languageLabels[deal.languages] || deal.languages}</span>
+              </div>` : ''}
+              ${deal.contentStatus ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Content status</span>
+                <span>${contentStatusLabels[deal.contentStatus] || deal.contentStatus}</span>
+              </div>` : ''}
+              ${deal.urgency ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Urgentie</span>
+                <span>${urgencyLabels[deal.urgency] || deal.urgency}</span>
+              </div>` : ''}
+            ` : ''}
+            
+            ${deal.specialRequests ? `
+              <hr style="border-color:var(--border-color);">
+              <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Speciale wensen</h4>
+              <div style="background:var(--bg-secondary);padding:10px;border-radius:6px;font-size:13px;">${deal.specialRequests}</div>
+            ` : ''}
+            
             <hr style="border-color:var(--border-color);">
             <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button class="btn btn-secondary btn-sm" onclick="closeModal('detail-modal');editDeal('${deal.id}')">

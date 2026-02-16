@@ -201,9 +201,45 @@ router.get('/locations', async (req, res, next) => {
     });
 
     const locationStats = {};
+    const cityNameMap = {};
 
     leads.forEach(lead => {
-      const city = lead.city || 'Onbekend';
+      if (!lead.city) {
+        const city = 'Onbekend';
+        if (!locationStats[city]) {
+          locationStats[city] = {
+            total: 0,
+            verstuurd: 0,
+            gereageerd: 0,
+            klanten: 0,
+            revenue: 0
+          };
+        }
+        locationStats[city].total++;
+        if (['VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
+          locationStats[city].verstuurd++;
+        }
+        if (['GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
+          locationStats[city].gereageerd++;
+        }
+        if (lead.status === 'KLANT') {
+          locationStats[city].klanten++;
+          if (lead.deal) {
+            locationStats[city].revenue += lead.deal.totalValue;
+          }
+        }
+        return;
+      }
+
+      const normalizedKey = lead.city.toLowerCase().trim();
+      
+      if (!cityNameMap[normalizedKey]) {
+        cityNameMap[normalizedKey] = lead.city.split('-').map(part => 
+          part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        ).join('-');
+      }
+      
+      const city = cityNameMap[normalizedKey];
       
       if (!locationStats[city]) {
         locationStats[city] = {

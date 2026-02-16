@@ -361,6 +361,13 @@
       try {
         showToast('Alle leads doorzoeken op duplicaten...', 'info');
         const data = await API.get('/leads/duplicates');
+        
+        if (!data || !data.duplicates) {
+          showToast('Ongeldig antwoord van server', 'error');
+          console.error('Invalid response:', data);
+          return;
+        }
+        
         duplicateData = data;
 
         if (data.totalGroups === 0) {
@@ -455,9 +462,11 @@
       try {
         await API.delete('/leads/bulk', { ids: selectedIds });
         showToast(`${selectedIds.length} lead(s) verwijderd`);
-        checkDuplicates();
+        closeModal('duplicates-modal');
+        loadLeads();
       } catch (err) {
-        showToast(err.message, 'error');
+        console.error('Delete error:', err);
+        showToast(err.message || 'Fout bij verwijderen', 'error');
       }
     }
 
@@ -493,9 +502,11 @@
       try {
         await API.delete('/leads/bulk', { ids: selectedIds });
         showToast(`${selectedIds.length} lead(s) verwijderd`);
-        checkDuplicates();
+        closeModal('duplicates-modal');
+        loadLeads();
       } catch (err) {
-        showToast(err.message, 'error');
+        console.error('Delete all error:', err);
+        showToast(err.message || 'Fout bij verwijderen', 'error');
       }
     }
 

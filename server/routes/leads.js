@@ -4,6 +4,7 @@ const { parse } = require('csv-parse');
 const { PrismaClient } = require('@prisma/client');
 const { requireAuth } = require('../middleware/auth');
 const { normalizeCity } = require('../utils/normalize');
+const { distance } = require('fastest-levenshtein');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -356,6 +357,221 @@ router.post('/enrich', async (req, res, next) => {
       : `${enriched} van ${leads.length} leads verrijkt`;
 
     res.json({ message: msg, enriched, total: leads.length, skipped, batchSize: ENRICH_BATCH_SIZE, results });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// --- Envelope scanning ---
+
+function normalize(str) {
+  return (str || '').toLowerCase().trim().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ');
+}
+
+function similarity(a, b) {
+  const na = normalize(a);
+  const nb = normalize(b);
+  if (!na || !nb) return 0;
+  const maxLen = Math.max(na.length, nb.length);
+  if (maxLen === 0) return 1;
+  return ((maxLen - distance(na, nb)) / maxLen) * 100;
+}
+
+function extractAddressInfo(ocrText) {
+  const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  let companyName = '';
+  let street = '';
+  let city = '';
+  let postalCode = '';
+
+  for (const line of lines) {
+    const postalMatch = line.match(/(\d{4})\s+([A-Za-zÀ-ÿ\s\-]+)/);
+    if (postalMatch) {
+      postalCode = postalMatch[1];
+      city = postalMatch[2].trim();
+      continue;
+    }
+
+    const streetMatch = line.match(/^(.+?)\s+(\d+\s*[A-Za-z]?\s*(?:bus\s*\d+)?)$/i);
+    if (streetMatch && !street) {
+      street = line;
+      continue;
+    }
+
+    if (!companyName && !postalMatch && !streetMatch) {
+      companyName = line;
+    }
+  }
+
+  if (!companyName && lines.length > 0) {
+    companyName = lines[0];
+  }
+
+  return { companyName, street, city, postalCode, rawLines: lines };
+}
+
+function matchLeadToOcr(extracted, leads) {
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const lead of leads) {
+    let score = 0;
+    let factors = 0;
+
+    if (extracted.companyName && lead.companyName) {
+      const nameSim = similarity(extracted.companyName, lead.companyName);
+      score += nameSim * 3;
+      factors += 3;
+    }
+
+    if (extracted.city && lead.city) {
+      const citySim = similarity(extracted.city, lead.city);
+      score += citySim * 2;
+      factors += 2;
+    }
+
+    if (extracted.street && lead.address) {
+      const addrSim = similarity(extracted.street, lead.address);
+      score += addrSim * 1;
+      factors += 1;
+    }
+
+    const finalScore = factors > 0 ? score / factors : 0;
+
+    if (finalScore > bestScore) {
+      bestScore = finalScore;
+      bestMatch = lead;
+    }
+  }
+
+  return { lead: bestMatch, confidence: Math.round(bestScore * 10) / 10 };
+}
+
+router.post('/scan-envelopes', upload.array('images', 50), async (req, res, next) => {
+  try {
+    const apiKey = process.env.VISION_KEY || process.env.MAPS_KEY;
+    if (!apiKey) {
+      return res.status(400).json({ error: 'Google Vision API key niet geconfigureerd (VISION_KEY of MAPS_KEY)' });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Geen afbeeldingen geupload' });
+    }
+
+    const leads = await prisma.lead.findMany({
+      where: { status: 'NIEUW' },
+      select: { id: true, companyName: true, city: true, address: true }
+    });
+
+    const results = await Promise.all(req.files.map(async (file) => {
+      try {
+        const base64 = file.buffer.toString('base64');
+
+        const visionRes = await fetch(
+          `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              requests: [{
+                image: { content: base64 },
+                features: [{ type: 'TEXT_DETECTION', maxResults: 1 }]
+              }]
+            })
+          }
+        );
+
+        const visionData = await visionRes.json();
+
+        if (visionData.error) {
+          return {
+            fileName: file.originalname,
+            status: 'ocr_failed',
+            error: visionData.error.message,
+            ocrText: '',
+            extracted: {},
+            matchedLead: null,
+            confidence: 0
+          };
+        }
+
+        const annotations = visionData.responses?.[0]?.textAnnotations;
+        if (!annotations || annotations.length === 0) {
+          return {
+            fileName: file.originalname,
+            status: 'ocr_failed',
+            error: 'Geen tekst gevonden op afbeelding',
+            ocrText: '',
+            extracted: {},
+            matchedLead: null,
+            confidence: 0
+          };
+        }
+
+        const ocrText = annotations[0].description;
+        const extracted = extractAddressInfo(ocrText);
+        const { lead, confidence } = matchLeadToOcr(extracted, leads);
+
+        return {
+          fileName: file.originalname,
+          status: lead && confidence >= 60 ? 'matched' : 'no_match',
+          ocrText,
+          extracted: {
+            companyName: extracted.companyName,
+            city: extracted.city,
+            street: extracted.street
+          },
+          matchedLead: lead ? {
+            id: lead.id,
+            companyName: lead.companyName,
+            city: lead.city,
+            address: lead.address
+          } : null,
+          confidence
+        };
+      } catch (err) {
+        return {
+          fileName: file.originalname,
+          status: 'ocr_failed',
+          error: err.message,
+          ocrText: '',
+          extracted: {},
+          matchedLead: null,
+          confidence: 0
+        };
+      }
+    }));
+
+    const matched = results.filter(r => r.status === 'matched').length;
+    const noMatch = results.filter(r => r.status === 'no_match').length;
+    const failed = results.filter(r => r.status === 'ocr_failed').length;
+
+    res.json({
+      results,
+      summary: { total: results.length, matched, noMatch, failed }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/confirm-scanned', async (req, res, next) => {
+  try {
+    const { leadIds } = req.body;
+    if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
+      return res.status(400).json({ error: 'Geen lead IDs opgegeven' });
+    }
+
+    await prisma.lead.updateMany({
+      where: {
+        id: { in: leadIds },
+        status: 'NIEUW'
+      },
+      data: { status: 'VERSTUURD' }
+    });
+
+    res.json({ message: `${leadIds.length} leads als verstuurd gemarkeerd` });
   } catch (err) {
     next(err);
   }

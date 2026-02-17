@@ -43,6 +43,9 @@
               <button class="btn btn-ghost btn-sm" onclick="selectByStatus('VERSTUURD')" title="Selecteer alle VERSTUURD leads op deze pagina" style="font-size:11px;">Sel. Verstuurd</button>
             </div>
             <button class="btn btn-ghost btn-sm" onclick="checkDuplicates()" title="Zoek duplicaten op basis van bedrijfsnaam" style="font-size:11px;">Duplicaten</button>
+            <button class="btn btn-secondary" onclick="openModal('scan-modal')">
+              <i data-lucide="scan-line"></i> Scan enveloppen
+            </button>
             <button class="btn btn-secondary" onclick="openModal('import-modal')">
               <i data-lucide="upload"></i> CSV importeren
             </button>
@@ -178,6 +181,57 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('duplicates-modal')">Sluiten</button>
         <button class="btn btn-danger" id="delete-all-dupes-btn" onclick="deleteAllDuplicates()" style="display:none;">Verwijder alle geselecteerde</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Envelope Scan Modal -->
+  <div class="modal-overlay" id="scan-modal" onclick="if(event.target===this)closeScanModal()">
+    <div class="modal" style="max-width:900px;">
+      <div class="modal-header">
+        <span class="modal-title">Enveloppen scannen</span>
+        <button class="modal-close" onclick="closeScanModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="scan-upload-zone" class="upload-zone" style="cursor:pointer;">
+          <div class="upload-zone-icon"><i data-lucide="scan-line" style="width:48px;height:48px;"></i></div>
+          <div class="upload-zone-text">Sleep foto's van enveloppen hierheen of <strong>klik om te uploaden</strong></div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Meerdere foto's tegelijk mogelijk (JPG, PNG)</div>
+          <input type="file" id="scan-file-input" accept="image/*" multiple style="display:none;">
+        </div>
+
+        <div id="scan-progress" class="hidden" style="margin-top:16px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div class="spinner" style="width:20px;height:20px;border:2px solid var(--border-color);border-top-color:var(--accent-brand);border-radius:50%;animation:spin 0.6s linear infinite;"></div>
+            <span id="scan-progress-text" style="font-size:13px;">Enveloppen verwerken...</span>
+          </div>
+          <div class="progress-bar"><div class="progress-bar-fill" id="scan-progress-bar" style="width:0%;transition:width 0.3s;"></div></div>
+        </div>
+
+        <div id="scan-results" class="hidden" style="margin-top:16px;">
+          <div id="scan-summary" style="display:flex;gap:12px;margin-bottom:16px;"></div>
+          <div style="max-height:400px;overflow-y:auto;">
+            <table class="data-table" style="font-size:13px;">
+              <thead style="position:sticky;top:0;background:var(--bg-card);z-index:10;">
+                <tr>
+                  <th class="checkbox-cell"><input type="checkbox" id="scan-select-all" checked onchange="toggleAllScanResults()"></th>
+                  <th>Bestand</th>
+                  <th>Herkend</th>
+                  <th>Gematchte lead</th>
+                  <th>Match %</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="scan-results-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeScanModal()">Sluiten</button>
+        <button class="btn btn-primary hidden" id="confirm-scan-btn" onclick="confirmScanResults()">
+          <i data-lucide="check" style="width:16px;height:16px;"></i> Markeer als verstuurd
+        </button>
       </div>
     </div>
   </div>
@@ -1133,6 +1187,174 @@
       let timer;
       return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
     }
+
+    // --- Envelope Scanning ---
+    let scanResults = [];
+
+    (function initScanModal() {
+      document.addEventListener('DOMContentLoaded', () => {
+        const zone = document.getElementById('scan-upload-zone');
+        const input = document.getElementById('scan-file-input');
+        if (!zone || !input) return;
+
+        zone.addEventListener('click', () => input.click());
+        input.addEventListener('change', () => {
+          if (input.files.length > 0) uploadScanFiles(input.files);
+        });
+
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.style.borderColor = 'var(--accent-brand)';
+        });
+        zone.addEventListener('dragleave', () => {
+          zone.style.borderColor = '';
+        });
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.style.borderColor = '';
+          if (e.dataTransfer.files.length > 0) uploadScanFiles(e.dataTransfer.files);
+        });
+      });
+    })();
+
+    async function uploadScanFiles(files) {
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append('images', file);
+      }
+
+      document.getElementById('scan-upload-zone').classList.add('hidden');
+      document.getElementById('scan-progress').classList.remove('hidden');
+      document.getElementById('scan-results').classList.add('hidden');
+      document.getElementById('confirm-scan-btn').classList.add('hidden');
+      document.getElementById('scan-progress-text').textContent = `${files.length} envelop${files.length > 1 ? 'pen' : ''} verwerken...`;
+      document.getElementById('scan-progress-bar').style.width = '30%';
+
+      try {
+        const progressBar = document.getElementById('scan-progress-bar');
+        progressBar.style.width = '60%';
+
+        const res = await API.upload('/leads/scan-envelopes', formData);
+        progressBar.style.width = '100%';
+        scanResults = res.results;
+
+        setTimeout(() => {
+          document.getElementById('scan-progress').classList.add('hidden');
+          renderScanResults(res);
+        }, 300);
+      } catch (err) {
+        document.getElementById('scan-progress').classList.add('hidden');
+        document.getElementById('scan-upload-zone').classList.remove('hidden');
+        showToast(err.message || 'Fout bij scannen', 'error');
+      }
+    }
+
+    function renderScanResults(data) {
+      document.getElementById('scan-results').classList.remove('hidden');
+
+      const s = data.summary;
+      document.getElementById('scan-summary').innerHTML = `
+        <div style="flex:1;padding:10px 14px;background:var(--bg-secondary);border-radius:8px;text-align:center;">
+          <div style="font-size:20px;font-weight:700;">${s.total}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Totaal gescand</div>
+        </div>
+        <div style="flex:1;padding:10px 14px;background:var(--accent-green-dim);border-radius:8px;text-align:center;">
+          <div style="font-size:20px;font-weight:700;color:var(--accent-green);">${s.matched}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Gematcht</div>
+        </div>
+        <div style="flex:1;padding:10px 14px;background:var(--accent-orange-dim);border-radius:8px;text-align:center;">
+          <div style="font-size:20px;font-weight:700;color:var(--accent-orange);">${s.noMatch}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Geen match</div>
+        </div>
+        ${s.failed > 0 ? `
+        <div style="flex:1;padding:10px 14px;background:var(--accent-red-dim);border-radius:8px;text-align:center;">
+          <div style="font-size:20px;font-weight:700;color:var(--accent-red);">${s.failed}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Mislukt</div>
+        </div>` : ''}
+      `;
+
+      const tbody = document.getElementById('scan-results-body');
+      tbody.innerHTML = data.results.map((r, i) => {
+        const isMatched = r.status === 'matched';
+        const confidenceColor = r.confidence >= 80 ? 'var(--accent-green)' : r.confidence >= 60 ? 'var(--accent-orange)' : 'var(--accent-red)';
+
+        const statusBadge = r.status === 'matched'
+          ? `<span style="background:var(--accent-green-dim);color:var(--accent-green);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">Gematcht</span>`
+          : r.status === 'no_match'
+          ? `<span style="background:var(--accent-orange-dim);color:var(--accent-orange);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">Geen match</span>`
+          : `<span style="background:var(--accent-red-dim);color:var(--accent-red);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">OCR mislukt</span>`;
+
+        return `
+          <tr>
+            <td class="checkbox-cell">
+              ${isMatched ? `<input type="checkbox" class="scan-checkbox" data-lead-id="${r.matchedLead.id}" data-index="${i}" checked>` : ''}
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.fileName}">${r.fileName}</td>
+            <td>
+              <div style="font-weight:500;font-size:12px;">${r.extracted?.companyName || '-'}</div>
+              ${r.extracted?.city ? `<div style="font-size:11px;color:var(--text-muted);">${r.extracted.city}${r.extracted.street ? ' - ' + r.extracted.street : ''}</div>` : ''}
+            </td>
+            <td>
+              ${r.matchedLead ? `
+                <div style="font-weight:500;font-size:12px;">${r.matchedLead.companyName}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${r.matchedLead.city || ''} ${r.matchedLead.address || ''}</div>
+              ` : '<span style="color:var(--text-muted);font-size:12px;">-</span>'}
+            </td>
+            <td style="text-align:center;">
+              ${r.matchedLead ? `<span style="color:${confidenceColor};font-weight:700;font-size:13px;">${r.confidence}%</span>` : '-'}
+            </td>
+            <td>${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
+
+      if (s.matched > 0) {
+        document.getElementById('confirm-scan-btn').classList.remove('hidden');
+        updateScanConfirmBtn();
+      }
+
+      lucide.createIcons();
+    }
+
+    function toggleAllScanResults() {
+      const checked = document.getElementById('scan-select-all').checked;
+      document.querySelectorAll('.scan-checkbox').forEach(cb => cb.checked = checked);
+      updateScanConfirmBtn();
+    }
+
+    function updateScanConfirmBtn() {
+      const checked = document.querySelectorAll('.scan-checkbox:checked');
+      const btn = document.getElementById('confirm-scan-btn');
+      btn.textContent = `Markeer ${checked.length} als verstuurd`;
+    }
+
+    async function confirmScanResults() {
+      const leadIds = [...document.querySelectorAll('.scan-checkbox:checked')].map(cb => cb.dataset.leadId);
+      if (leadIds.length === 0) return showToast('Selecteer minstens 1 lead', 'warning');
+
+      try {
+        const res = await API.post('/leads/confirm-scanned', { leadIds });
+        showToast(res.message, 'success');
+        closeScanModal();
+        loadLeads();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function closeScanModal() {
+      closeModal('scan-modal');
+      scanResults = [];
+      document.getElementById('scan-upload-zone').classList.remove('hidden');
+      document.getElementById('scan-progress').classList.add('hidden');
+      document.getElementById('scan-results').classList.add('hidden');
+      document.getElementById('confirm-scan-btn').classList.add('hidden');
+      document.getElementById('scan-file-input').value = '';
+    }
+
+    document.addEventListener('change', (e) => {
+      if (e.target.classList.contains('scan-checkbox')) updateScanConfirmBtn();
+    });
 
     init();
   </script>

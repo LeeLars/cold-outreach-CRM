@@ -263,6 +263,61 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
+router.put('/:id/hosting', async (req, res, next) => {
+  try {
+    const { hostingPrice, hostingInterval, hostingStartDate, hostingEndDate, nextInvoiceDate } = req.body;
+
+    const existing = await prisma.deal.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Deal niet gevonden' });
+    }
+
+    const data = {};
+    if (hostingPrice !== undefined) data.hostingPrice = parseFloat(hostingPrice);
+    if (hostingInterval !== undefined) data.hostingInterval = hostingInterval;
+    if (hostingStartDate !== undefined) data.hostingStartDate = hostingStartDate ? new Date(hostingStartDate) : null;
+    if (hostingEndDate !== undefined) data.hostingEndDate = hostingEndDate ? new Date(hostingEndDate) : null;
+    if (nextInvoiceDate !== undefined) data.nextInvoiceDate = nextInvoiceDate ? new Date(nextInvoiceDate) : null;
+
+    const deal = await prisma.deal.update({
+      where: { id: req.params.id },
+      data,
+      include: {
+        lead: { select: { companyName: true, city: true } },
+        package: { select: { name: true } }
+      }
+    });
+
+    res.json(deal);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/:id/hosting', async (req, res, next) => {
+  try {
+    const existing = await prisma.deal.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Deal niet gevonden' });
+    }
+
+    await prisma.deal.update({
+      where: { id: req.params.id },
+      data: {
+        hasHosting: false,
+        hostingPrice: 0,
+        hostingStartDate: null,
+        hostingEndDate: null,
+        nextInvoiceDate: null
+      }
+    });
+
+    res.json({ message: 'Hosting verwijderd' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.delete('/:id', async (req, res, next) => {
   try {
     const deal = await prisma.deal.findUnique({ where: { id: req.params.id } });

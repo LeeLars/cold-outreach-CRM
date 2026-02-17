@@ -193,6 +193,7 @@
                         Volgende factuur <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th>Status</th>
+                      <th style="text-align:center;">Acties</th>
                     </tr>
                   </thead>
                   <tbody id="hosting-table-body"></tbody>
@@ -202,6 +203,54 @@
           </div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- Hosting Edit Modal -->
+  <div class="modal-overlay" id="hosting-edit-modal" style="display:none;" onclick="if(event.target===this)closeHostingModal()">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Hosting bewerken</h3>
+        <button class="btn-icon" onclick="closeHostingModal()"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="hosting-edit-id">
+        <div class="form-group">
+          <label class="form-label">Bedrijf</label>
+          <input type="text" id="hosting-edit-company" class="form-input" disabled>
+        </div>
+        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group">
+            <label class="form-label">Prijs</label>
+            <input type="number" step="0.01" id="hosting-edit-price" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Interval</label>
+            <select id="hosting-edit-interval" class="form-select">
+              <option value="MONTHLY">Maandelijks</option>
+              <option value="YEARLY">Jaarlijks</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group">
+            <label class="form-label">Startdatum</label>
+            <input type="date" id="hosting-edit-start" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Einddatum</label>
+            <input type="date" id="hosting-edit-end" class="form-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Volgende factuurdatum</label>
+          <input type="date" id="hosting-edit-invoice" class="form-input">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeHostingModal()">Annuleren</button>
+        <button class="btn btn-primary" onclick="saveHosting()">Opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -859,8 +908,15 @@
           <td>${fmtDate(c.hostingEndDate)}</td>
           <td style="${c.status === 'overdue' ? 'font-weight:600;color:var(--accent-red);' : ''}">${fmtDate(c.nextInvoiceDate)}</td>
           <td>${statusBadge(c.status)}</td>
+          <td style="text-align:center;">
+            <div style="display:flex;gap:4px;justify-content:center;">
+              <button class="btn-icon" onclick="openHostingEdit('${c.id}')" title="Bewerken"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+              <button class="btn-icon" onclick="deleteHosting('${c.id}','${c.companyName.replace(/'/g, "\\'")}')"
+                title="Verwijderen" style="color:var(--accent-red);"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+            </div>
+          </td>
         </tr>
-      `).join('') || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">Geen hosting klanten gevonden</td></tr>';
+      `).join('') || '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">Geen hosting klanten gevonden</td></tr>';
     }
 
     function sortHostingTable(column) {
@@ -881,6 +937,53 @@
         (c.packageName || '').toLowerCase().includes(search)
       );
       renderHostingTable(filtered);
+    }
+
+    function openHostingEdit(dealId) {
+      const item = hostingData.find(c => c.id === dealId);
+      if (!item) return;
+      document.getElementById('hosting-edit-id').value = item.id;
+      document.getElementById('hosting-edit-company').value = item.companyName;
+      document.getElementById('hosting-edit-price').value = item.hostingPrice;
+      document.getElementById('hosting-edit-interval').value = item.hostingInterval;
+      document.getElementById('hosting-edit-start').value = item.hostingStartDate ? item.hostingStartDate.slice(0, 10) : '';
+      document.getElementById('hosting-edit-end').value = item.hostingEndDate ? item.hostingEndDate.slice(0, 10) : '';
+      document.getElementById('hosting-edit-invoice').value = item.nextInvoiceDate ? item.nextInvoiceDate.slice(0, 10) : '';
+      document.getElementById('hosting-edit-modal').style.display = 'flex';
+      lucide.createIcons();
+    }
+
+    function closeHostingModal() {
+      document.getElementById('hosting-edit-modal').style.display = 'none';
+    }
+
+    async function saveHosting() {
+      const id = document.getElementById('hosting-edit-id').value;
+      try {
+        await API.put('/deals/' + id + '/hosting', {
+          hostingPrice: parseFloat(document.getElementById('hosting-edit-price').value),
+          hostingInterval: document.getElementById('hosting-edit-interval').value,
+          hostingStartDate: document.getElementById('hosting-edit-start').value || null,
+          hostingEndDate: document.getElementById('hosting-edit-end').value || null,
+          nextInvoiceDate: document.getElementById('hosting-edit-invoice').value || null
+        });
+        closeHostingModal();
+        showToast('Hosting bijgewerkt', 'success');
+        loadHosting();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deleteHosting(dealId, companyName) {
+      if (!confirm('Hosting verwijderen voor ' + companyName + '? De deal blijft bestaan maar hosting wordt uitgeschakeld.')) return;
+      try {
+        await API.delete('/deals/' + dealId + '/hosting');
+        showToast('Hosting verwijderd voor ' + companyName, 'success');
+        loadHosting();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
     }
 
     init();

@@ -377,8 +377,8 @@ function similarity(a, b) {
   return ((maxLen - distance(na, nb)) / maxLen) * 100;
 }
 
-function extractAddressInfo(ocrText) {
-  const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+function extractAddressFromBlock(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
   let companyName = '';
   let street = '';
@@ -399,7 +399,7 @@ function extractAddressInfo(ocrText) {
       continue;
     }
 
-    if (!companyName && !postalMatch && !streetMatch) {
+    if (!companyName) {
       companyName = line;
     }
   }
@@ -409,6 +409,86 @@ function extractAddressInfo(ocrText) {
   }
 
   return { companyName, street, city, postalCode, rawLines: lines };
+}
+
+function extractMultipleAddresses(annotations) {
+  if (!annotations || annotations.length < 2) {
+    const fullText = annotations?.[0]?.description || '';
+    return [extractAddressFromBlock(fullText)];
+  }
+
+  const wordAnnotations = annotations.slice(1);
+
+  const imageWidth = Math.max(...wordAnnotations.map(a => {
+    const verts = a.boundingPoly?.vertices || [];
+    return Math.max(...verts.map(v => v.x || 0));
+  }));
+
+  if (imageWidth === 0) {
+    return [extractAddressFromBlock(annotations[0].description)];
+  }
+
+  const clusters = [];
+  const GAP_THRESHOLD = imageWidth * 0.08;
+
+  const wordsByX = wordAnnotations.map(a => {
+    const verts = a.boundingPoly?.vertices || [];
+    const xs = verts.map(v => v.x || 0);
+    const ys = verts.map(v => v.y || 0);
+    return {
+      text: a.description,
+      xMin: Math.min(...xs),
+      xMax: Math.max(...xs),
+      xCenter: (Math.min(...xs) + Math.max(...xs)) / 2,
+      yMin: Math.min(...ys),
+      yMax: Math.max(...ys)
+    };
+  }).sort((a, b) => a.xCenter - b.xCenter);
+
+  let currentCluster = [wordsByX[0]];
+  for (let i = 1; i < wordsByX.length; i++) {
+    const prev = currentCluster[currentCluster.length - 1];
+    const curr = wordsByX[i];
+
+    const clusterMaxX = Math.max(...currentCluster.map(w => w.xMax));
+    const clusterMinX = Math.min(...currentCluster.map(w => w.xMin));
+
+    if (curr.xMin > clusterMaxX + GAP_THRESHOLD && 
+        curr.xCenter > clusterMaxX) {
+      clusters.push(currentCluster);
+      currentCluster = [curr];
+    } else {
+      currentCluster.push(curr);
+    }
+  }
+  clusters.push(currentCluster);
+
+  if (clusters.length <= 1) {
+    return [extractAddressFromBlock(annotations[0].description)];
+  }
+
+  return clusters.map(cluster => {
+    const sorted = [...cluster].sort((a, b) => {
+      if (Math.abs(a.yMin - b.yMin) < 8) return a.xMin - b.xMin;
+      return a.yMin - b.yMin;
+    });
+
+    const lineGroups = [];
+    let currentLine = [sorted[0]];
+    for (let i = 1; i < sorted.length; i++) {
+      const prevY = currentLine[0].yMin;
+      if (Math.abs(sorted[i].yMin - prevY) < 12) {
+        currentLine.push(sorted[i]);
+      } else {
+        lineGroups.push(currentLine.map(w => w.text).join(' '));
+        currentLine = [sorted[i]];
+      }
+    }
+    lineGroups.push(currentLine.map(w => w.text).join(' '));
+
+    const blockText = lineGroups.join('\n');
+    return extractAddressFromBlock(blockText);
+  }).filter(addr => addr.companyName || addr.city);
 }
 
 function matchLeadToOcr(extracted, leads) {
@@ -485,7 +565,7 @@ router.post('/scan-envelopes', upload.array('images', 50), async (req, res, next
         const visionData = await visionRes.json();
 
         if (visionData.error) {
-          return {
+          return [{
             fileName: file.originalname,
             status: 'ocr_failed',
             error: visionData.error.message,
@@ -493,12 +573,12 @@ router.post('/scan-envelopes', upload.array('images', 50), async (req, res, next
             extracted: {},
             matchedLead: null,
             confidence: 0
-          };
+          }];
         }
 
         const annotations = visionData.responses?.[0]?.textAnnotations;
         if (!annotations || annotations.length === 0) {
-          return {
+          return [{
             fileName: file.originalname,
             status: 'ocr_failed',
             error: 'Geen tekst gevonden op afbeelding',
@@ -506,32 +586,38 @@ router.post('/scan-envelopes', upload.array('images', 50), async (req, res, next
             extracted: {},
             matchedLead: null,
             confidence: 0
-          };
+          }];
         }
 
         const ocrText = annotations[0].description;
-        const extracted = extractAddressInfo(ocrText);
-        const { lead, confidence } = matchLeadToOcr(extracted, leads);
+        const addresses = extractMultipleAddresses(annotations);
 
-        return {
-          fileName: file.originalname,
-          status: lead && confidence >= 60 ? 'matched' : 'no_match',
-          ocrText,
-          extracted: {
-            companyName: extracted.companyName,
-            city: extracted.city,
-            street: extracted.street
-          },
-          matchedLead: lead ? {
-            id: lead.id,
-            companyName: lead.companyName,
-            city: lead.city,
-            address: lead.address
-          } : null,
-          confidence
-        };
+        return addresses.map((extracted, idx) => {
+          const { lead, confidence } = matchLeadToOcr(extracted, leads);
+          const label = addresses.length > 1
+            ? `${file.originalname} (#${idx + 1})`
+            : file.originalname;
+
+          return {
+            fileName: label,
+            status: lead && confidence >= 60 ? 'matched' : 'no_match',
+            ocrText: extracted.rawLines.join('\n'),
+            extracted: {
+              companyName: extracted.companyName,
+              city: extracted.city,
+              street: extracted.street
+            },
+            matchedLead: lead ? {
+              id: lead.id,
+              companyName: lead.companyName,
+              city: lead.city,
+              address: lead.address
+            } : null,
+            confidence
+          };
+        });
       } catch (err) {
-        return {
+        return [{
           fileName: file.originalname,
           status: 'ocr_failed',
           error: err.message,
@@ -539,17 +625,18 @@ router.post('/scan-envelopes', upload.array('images', 50), async (req, res, next
           extracted: {},
           matchedLead: null,
           confidence: 0
-        };
+        }];
       }
     }));
 
-    const matched = results.filter(r => r.status === 'matched').length;
-    const noMatch = results.filter(r => r.status === 'no_match').length;
-    const failed = results.filter(r => r.status === 'ocr_failed').length;
+    const flatResults = results.flat();
+    const matched = flatResults.filter(r => r.status === 'matched').length;
+    const noMatch = flatResults.filter(r => r.status === 'no_match').length;
+    const failed = flatResults.filter(r => r.status === 'ocr_failed').length;
 
     res.json({
-      results,
-      summary: { total: results.length, matched, noMatch, failed }
+      results: flatResults,
+      summary: { total: flatResults.length, matched, noMatch, failed }
     });
   } catch (err) {
     next(err);

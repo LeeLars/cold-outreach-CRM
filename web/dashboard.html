@@ -130,7 +130,7 @@
         renderKPIs(dashboard);
         renderFunnelChart(funnel);
         renderRevenueChart(revenue);
-        renderLocationStats(locations);
+        renderLocationStats(locations.all || locations);
         renderRecentLeads(recentLeads);
         renderFinancialSummary(dashboard, revenue);
       } catch (err) {

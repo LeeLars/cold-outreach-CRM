@@ -54,6 +54,37 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+router.post('/', async (req, res, next) => {
+  try {
+    const { companyName, vatNumber, city, address, website, phone, email, contactPerson, source, notes } = req.body;
+    
+    if (!companyName) {
+      return res.status(400).json({ error: 'Bedrijfsnaam is verplicht' });
+    }
+
+    const lead = await prisma.lead.create({
+      data: {
+        companyName,
+        vatNumber: vatNumber || null,
+        city: normalizeCity(city),
+        address: address || null,
+        website: website || null,
+        phone: phone || null,
+        email: email || null,
+        contactPerson: contactPerson || null,
+        source: source || null,
+        notes: notes || null,
+        status: 'NIEUW',
+        createdById: req.session.userId
+      }
+    });
+
+    res.status(201).json(lead);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/duplicates', async (req, res, next) => {
   try {
     const leads = await prisma.lead.findMany({
@@ -106,11 +137,12 @@ router.get('/:id', async (req, res, next) => {
 
 router.put('/:id', async (req, res, next) => {
   try {
-    const { companyName, city, address, website, phone, email, contactPerson, status, source, notes } = req.body;
+    const { companyName, vatNumber, city, address, website, phone, email, contactPerson, status, source, notes } = req.body;
     const lead = await prisma.lead.update({
       where: { id: req.params.id },
       data: { 
         companyName, 
+        vatNumber,
         city: normalizeCity(city), 
         address, 
         website, 

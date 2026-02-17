@@ -44,6 +44,7 @@ model User {
 model Lead {
   id             String     @id @default(cuid())
   companyName    String
+  vatNumber      String?
   city           String?
   address        String?
   website        String?
@@ -93,6 +94,17 @@ model Deal {
   contentStatus   String?
   urgency         String?
   specialRequests String?
+  
+  // Hosting
+  hasHosting       Boolean   @default(true)
+  hostingStartDate DateTime?
+  hostingEndDate   DateTime?
+  hostingPrice     Float     @default(20)
+  hostingInterval  String    @default("MONTHLY")
+  nextInvoiceDate  DateTime?
+  
+  // Acquisition
+  acquisitionType  String    @default("manual")
 }
 
 model DealUpsell {

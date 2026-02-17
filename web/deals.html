@@ -92,7 +92,66 @@
           </div>
           <div class="form-group">
             <label class="form-label">Acquisitiekost</label>
-            <input type="number" class="form-input" id="deal-cost" placeholder="0.00" step="0.01" min="0">
+            <div class="radio-group" style="margin-bottom:8px;">
+              <label class="radio-label">
+                <input type="radio" name="acquisition-type" value="none" onchange="updateAcquisitionUI()">
+                <span>Geen acquisitiekost</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="acquisition-type" value="flyer" onchange="updateAcquisitionUI()">
+                <span>Flyer actie</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="acquisition-type" value="manual" checked onchange="updateAcquisitionUI()">
+                <span>Handmatig bedrag</span>
+              </label>
+            </div>
+            <div id="flyer-cost-group" style="display:none;">
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="number" class="form-input" id="deal-flyer-rate" placeholder="Vast tarief per flyer" step="0.01" min="0" style="flex:1;" value="">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="saveFlyerRate()" title="Sla tarief op als standaard" style="white-space:nowrap;">Bewaar tarief</button>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Dit tarief wordt onthouden voor volgende deals</div>
+            </div>
+            <div id="manual-cost-group">
+              <input type="number" class="form-input" id="deal-cost" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hosting</label>
+            <div class="radio-group" style="margin-bottom:8px;">
+              <label class="radio-label">
+                <input type="radio" name="has-hosting" value="true" checked onchange="updateHostingUI()">
+                <span>Klant neemt hosting af</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="has-hosting" value="false" onchange="updateHostingUI()">
+                <span>Geen hosting</span>
+              </label>
+            </div>
+            <div id="hosting-details">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div>
+                  <label class="form-label" style="font-size:11px;">Hosting prijs</label>
+                  <input type="number" class="form-input" id="deal-hosting-price" value="20" step="0.01" min="0" onchange="updateCalculation()">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:11px;">Interval</label>
+                  <select class="form-select" id="deal-hosting-interval" onchange="updateCalculation()">
+                    <option value="MONTHLY">Maandelijks</option>
+                    <option value="YEARLY">Jaarlijks</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:11px;">Startdatum hosting</label>
+                  <input type="date" class="form-input" id="deal-hosting-start">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:11px;">Einddatum (optioneel)</label>
+                  <input type="date" class="form-input" id="deal-hosting-end">
+                </div>
+              </div>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Datum verkoop</label>
@@ -269,6 +328,68 @@
         <button class="btn btn-secondary" onclick="closeModal('deal-modal')">Annuleren</button>
         <button class="btn btn-primary" id="wizard-next-btn" onclick="nextStep()">Volgende</button>
         <button class="btn btn-primary" id="save-deal-btn" onclick="saveDeal()" style="display:none;">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Lead Modal (BTW Lookup) -->
+  <div class="modal-overlay" id="new-lead-modal">
+    <div class="modal" style="max-width:560px;">
+      <div class="modal-header">
+        <span class="modal-title">Nieuwe lead toevoegen</span>
+        <button class="modal-close" onclick="closeModal('new-lead-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">BTW nummer opzoeken</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" class="form-input" id="new-lead-vat" placeholder="BE0123.456.789" style="flex:1;">
+            <button type="button" class="btn btn-primary" id="vat-lookup-btn" onclick="lookupVat()">
+              <i data-lucide="search" style="width:16px;height:16px;"></i> Opzoeken
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Voer een Belgisch BTW nummer in om bedrijfsgegevens automatisch op te halen</div>
+          <div id="vat-lookup-result" style="display:none;margin-top:8px;padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;"></div>
+        </div>
+        <hr style="border-color:var(--border-color);margin:16px 0;">
+        <div style="display:grid;gap:12px;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Bedrijfsnaam *</label>
+            <input type="text" class="form-input" id="new-lead-company" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Contactpersoon</label>
+            <input type="text" class="form-input" id="new-lead-contact">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Telefoon</label>
+              <input type="text" class="form-input" id="new-lead-phone">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="new-lead-email">
+            </div>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Adres</label>
+            <input type="text" class="form-input" id="new-lead-address">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Gemeente</label>
+              <input type="text" class="form-input" id="new-lead-city">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Website</label>
+              <input type="url" class="form-input" id="new-lead-website" placeholder="https://...">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('new-lead-modal')">Annuleren</button>
+        <button class="btn btn-primary" onclick="saveNewLead()">Lead opslaan & selecteren</button>
       </div>
     </div>
   </div>
@@ -483,7 +604,136 @@
     }
 
     function openNewLeadModal() {
-      window.location.href = basePath('/leads.html?new=true');
+      document.getElementById('new-lead-vat').value = '';
+      document.getElementById('new-lead-company').value = '';
+      document.getElementById('new-lead-contact').value = '';
+      document.getElementById('new-lead-phone').value = '';
+      document.getElementById('new-lead-email').value = '';
+      document.getElementById('new-lead-address').value = '';
+      document.getElementById('new-lead-city').value = '';
+      document.getElementById('new-lead-website').value = '';
+      const resultDiv = document.getElementById('vat-lookup-result');
+      resultDiv.style.display = 'none';
+      resultDiv.innerHTML = '';
+      openModal('new-lead-modal');
+      lucide.createIcons();
+    }
+
+    async function lookupVat() {
+      const vatInput = document.getElementById('new-lead-vat').value.trim();
+      const resultDiv = document.getElementById('vat-lookup-result');
+      const btn = document.getElementById('vat-lookup-btn');
+      
+      if (!vatInput) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'var(--accent-red-dim)';
+        resultDiv.style.color = 'var(--accent-red)';
+        resultDiv.textContent = 'Voer een BTW nummer in';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader" style="width:16px;height:16px;animation:spin 1s linear infinite;"></i> Zoeken...';
+      resultDiv.style.display = 'none';
+
+      try {
+        const data = await API.get(`/kbo/lookup/${encodeURIComponent(vatInput)}`);
+        
+        document.getElementById('new-lead-company').value = data.companyName || '';
+        document.getElementById('new-lead-phone').value = data.phone || '';
+        document.getElementById('new-lead-email').value = data.email || '';
+        document.getElementById('new-lead-address').value = data.address || '';
+        document.getElementById('new-lead-city').value = data.city || '';
+        document.getElementById('new-lead-website').value = data.website || '';
+        document.getElementById('new-lead-vat').value = data.vatNumberFormatted || vatInput;
+
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'var(--accent-green-dim)';
+        resultDiv.style.color = 'var(--accent-green)';
+        resultDiv.innerHTML = `Bedrijf gevonden: <strong>${data.companyName}</strong>${data.legalForm ? ' (' + data.legalForm + ')' : ''}`;
+      } catch (err) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'var(--accent-red-dim)';
+        resultDiv.style.color = 'var(--accent-red)';
+        resultDiv.textContent = err.message || 'Bedrijf niet gevonden';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="search" style="width:16px;height:16px;"></i> Opzoeken';
+        lucide.createIcons();
+      }
+    }
+
+    async function saveNewLead() {
+      const companyName = document.getElementById('new-lead-company').value.trim();
+      if (!companyName) {
+        showToast('Bedrijfsnaam is verplicht', 'warning');
+        return;
+      }
+
+      try {
+        const lead = await API.post('/leads', {
+          companyName,
+          vatNumber: document.getElementById('new-lead-vat').value.trim() || null,
+          contactPerson: document.getElementById('new-lead-contact').value.trim() || null,
+          phone: document.getElementById('new-lead-phone').value.trim() || null,
+          email: document.getElementById('new-lead-email').value.trim() || null,
+          address: document.getElementById('new-lead-address').value.trim() || null,
+          city: document.getElementById('new-lead-city').value.trim() || null,
+          website: document.getElementById('new-lead-website').value.trim() || null,
+          source: 'CRM'
+        });
+
+        allLeads.push(lead);
+        
+        const searchInput = document.getElementById('deal-lead-search');
+        const hiddenInput = document.getElementById('deal-lead');
+        searchInput.value = lead.companyName + (lead.city ? ' - ' + lead.city : '');
+        hiddenInput.value = lead.id;
+
+        closeModal('new-lead-modal');
+        showToast(`Lead "${lead.companyName}" aangemaakt en geselecteerd`);
+      } catch (err) {
+        showToast(err.message || 'Fout bij aanmaken lead', 'error');
+      }
+    }
+
+    function updateAcquisitionUI() {
+      const type = document.querySelector('input[name="acquisition-type"]:checked').value;
+      const flyerGroup = document.getElementById('flyer-cost-group');
+      const manualGroup = document.getElementById('manual-cost-group');
+      
+      flyerGroup.style.display = type === 'flyer' ? 'block' : 'none';
+      manualGroup.style.display = type === 'manual' ? 'block' : 'none';
+      
+      if (type === 'none') {
+        document.getElementById('deal-cost').value = '0';
+      } else if (type === 'flyer') {
+        const savedRate = localStorage.getItem('flyerRate');
+        if (savedRate) {
+          document.getElementById('deal-flyer-rate').value = savedRate;
+        }
+      }
+    }
+
+    function saveFlyerRate() {
+      const rate = document.getElementById('deal-flyer-rate').value;
+      if (rate) {
+        localStorage.setItem('flyerRate', rate);
+        showToast('Flyer tarief opgeslagen als standaard');
+      }
+    }
+
+    function getAcquisitionCost() {
+      const type = document.querySelector('input[name="acquisition-type"]:checked').value;
+      if (type === 'none') return 0;
+      if (type === 'flyer') return parseFloat(document.getElementById('deal-flyer-rate').value) || 0;
+      return parseFloat(document.getElementById('deal-cost').value) || 0;
+    }
+
+    function updateHostingUI() {
+      const hasHosting = document.querySelector('input[name="has-hosting"]:checked').value === 'true';
+      document.getElementById('hosting-details').style.display = hasHosting ? 'block' : 'none';
+      updateCalculation();
     }
 
     function updateWizardUI() {
@@ -618,15 +868,19 @@
         return upsells.find(u => u.id === cb.value);
       }).filter(Boolean);
 
+      const hasHosting = document.querySelector('input[name="has-hosting"]:checked')?.value === 'true';
+      const hostingPrice = hasHosting ? (parseFloat(document.getElementById('deal-hosting-price').value) || 0) : 0;
+      const hostingInterval = document.getElementById('deal-hosting-interval').value;
+
       const upsellOneTime = selectedUpsells.filter(u => u.billingType === 'ONE_TIME').reduce((s, u) => s + u.price, 0);
       const upsellMonthly = selectedUpsells.filter(u => u.billingType === 'MONTHLY').reduce((s, u) => s + u.price, 0);
-      const totalMonthly = pkg.monthlyPrice + upsellMonthly;
+      const totalMonthly = hostingPrice + upsellMonthly;
       const yearlyValue = pkg.oneTimePrice + upsellOneTime + (totalMonthly * 12);
 
       document.getElementById('deal-calculation').innerHTML = `
         <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalig pakket</span><span>${formatCurrency(pkg.oneTimePrice)}</span></div>
         ${upsellOneTime > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalige upsells</span><span>${formatCurrency(upsellOneTime)}</span></div>` : ''}
-        <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Maandelijks (hosting)</span><span>${formatCurrency(pkg.monthlyPrice)}/mnd</span></div>
+        ${hasHosting ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span>${formatCurrency(hostingPrice)}/${hostingInterval === 'YEARLY' ? 'jaar' : 'mnd'}</span></div>` : '<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span style="color:var(--text-muted);">Geen</span></div>'}
         ${upsellMonthly > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Maandelijkse upsells</span><span>${formatCurrency(upsellMonthly)}/mnd</span></div>` : ''}
         <hr style="border-color:var(--border-color);margin:8px 0;">
         <div class="flex justify-between"><span style="font-weight:600;">Jaarwaarde (12 mnd)</span><span style="font-weight:700;color:var(--accent-brand);">${formatCurrency(yearlyValue)}</span></div>
@@ -637,8 +891,15 @@
       const leadId = document.getElementById('deal-lead').value;
       const packageId = document.getElementById('deal-package').value;
       const upsellIds = Array.from(document.querySelectorAll('.upsell-checkbox:checked')).map(cb => cb.value);
-      const acquisitionCost = document.getElementById('deal-cost').value || 0;
+      const acquisitionCost = getAcquisitionCost();
+      const acquisitionType = document.querySelector('input[name="acquisition-type"]:checked').value;
       const saleDate = document.getElementById('deal-date').value;
+
+      const hasHosting = document.querySelector('input[name="has-hosting"]:checked').value === 'true';
+      const hostingPrice = hasHosting ? (parseFloat(document.getElementById('deal-hosting-price').value) || 20) : 0;
+      const hostingInterval = document.getElementById('deal-hosting-interval').value;
+      const hostingStartDate = document.getElementById('deal-hosting-start').value || null;
+      const hostingEndDate = document.getElementById('deal-hosting-end').value || null;
 
       if (!leadId) return showToast('Selecteer een lead', 'warning');
       if (!packageId) return showToast('Selecteer een pakket', 'warning');
@@ -660,7 +921,8 @@
       const specialRequests = document.getElementById('deal-special-requests').value || null;
 
       const dealData = {
-        packageId, upsellIds, acquisitionCost, saleDate,
+        packageId, upsellIds, acquisitionCost, acquisitionType, saleDate,
+        hasHosting, hostingPrice, hostingInterval, hostingStartDate, hostingEndDate,
         websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
         mood, heroType, toneOfVoice, usps, primaryCta,
         features, languages, contentStatus, urgency, specialRequests

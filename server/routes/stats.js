@@ -281,4 +281,57 @@ router.get('/locations', async (req, res, next) => {
   }
 });
 
+router.get('/hosting', async (req, res, next) => {
+  try {
+    const deals = await prisma.deal.findMany({
+      where: { hasHosting: true },
+      include: {
+        lead: { select: { companyName: true, city: true } },
+        package: { select: { name: true } }
+      },
+      orderBy: { nextInvoiceDate: 'asc' }
+    });
+
+    const now = new Date();
+    const in30Days = new Date();
+    in30Days.setDate(in30Days.getDate() + 30);
+
+    const totalClients = deals.length;
+    const monthlyRevenue = deals.reduce((sum, d) => sum + (d.hostingInterval === 'MONTHLY' ? d.hostingPrice : d.hostingPrice / 12), 0);
+    const yearlyRevenue = monthlyRevenue * 12;
+
+    const needsInvoicing = deals.filter(d => d.nextInvoiceDate && new Date(d.nextInvoiceDate) <= now);
+    const expiringSoon = deals.filter(d => d.hostingEndDate && new Date(d.hostingEndDate) <= in30Days && new Date(d.hostingEndDate) > now);
+    const upcomingInvoices = deals.filter(d => d.nextInvoiceDate && new Date(d.nextInvoiceDate) > now && new Date(d.nextInvoiceDate) <= in30Days);
+
+    const clients = deals.map(d => ({
+      id: d.id,
+      companyName: d.lead.companyName,
+      city: d.lead.city,
+      packageName: d.package.name,
+      hostingPrice: d.hostingPrice,
+      hostingInterval: d.hostingInterval,
+      hostingStartDate: d.hostingStartDate,
+      hostingEndDate: d.hostingEndDate,
+      nextInvoiceDate: d.nextInvoiceDate,
+      status: d.hostingEndDate && new Date(d.hostingEndDate) <= now ? 'expired' :
+              d.hostingEndDate && new Date(d.hostingEndDate) <= in30Days ? 'expiring' :
+              d.nextInvoiceDate && new Date(d.nextInvoiceDate) <= now ? 'overdue' : 'active'
+    }));
+
+    res.json({
+      totalClients,
+      monthlyRevenue,
+      yearlyRevenue,
+      avgPerClient: totalClients > 0 ? monthlyRevenue / totalClients : 0,
+      needsInvoicing: needsInvoicing.length,
+      expiringSoon: expiringSoon.length,
+      upcomingInvoices: upcomingInvoices.length,
+      clients
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

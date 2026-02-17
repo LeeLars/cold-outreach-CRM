@@ -11,6 +11,7 @@ const packagesRoutes = require('./routes/packages');
 const statsRoutes = require('./routes/stats');
 const usersRoutes = require('./routes/users');
 const calendarRoutes = require('./routes/calendar');
+const kboRoutes = require('./routes/kbo');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/packages', packagesRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/kbo', kboRoutes);
 
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {

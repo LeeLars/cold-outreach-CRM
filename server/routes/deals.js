@@ -59,10 +59,11 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const { 
-      leadId, packageId, upsellIds = [], acquisitionCost = 0, saleDate,
+      leadId, packageId, upsellIds = [], acquisitionCost = 0, acquisitionType = 'manual', saleDate,
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
       mood, heroType, toneOfVoice, usps, primaryCta,
-      features, languages, contentStatus, urgency, specialRequests
+      features, languages, contentStatus, urgency, specialRequests,
+      hasHosting = true, hostingStartDate, hostingEndDate, hostingPrice = 20, hostingInterval = 'MONTHLY'
     } = req.body;
 
     if (!leadId || !packageId) {
@@ -84,15 +85,35 @@ router.post('/', async (req, res, next) => {
       }, 0);
     }
 
-    const totalValue = pkg.oneTimePrice + (pkg.monthlyPrice * 12) + upsellTotal;
+    const hostingMonthly = hasHosting ? parseFloat(hostingPrice || pkg.monthlyPrice) : 0;
+    const totalValue = pkg.oneTimePrice + (hostingMonthly * 12) + upsellTotal;
+
+    const saleDateObj = saleDate ? new Date(saleDate) : new Date();
+    let nextInvoice = null;
+    if (hasHosting) {
+      const start = hostingStartDate ? new Date(hostingStartDate) : saleDateObj;
+      nextInvoice = new Date(start);
+      if (hostingInterval === 'YEARLY') {
+        nextInvoice.setFullYear(nextInvoice.getFullYear() + 1);
+      } else {
+        nextInvoice.setMonth(nextInvoice.getMonth() + 1);
+      }
+    }
 
     const deal = await prisma.deal.create({
       data: {
         leadId,
         packageId,
         acquisitionCost: parseFloat(acquisitionCost),
-        saleDate: saleDate ? new Date(saleDate) : new Date(),
+        acquisitionType: acquisitionType || 'manual',
+        saleDate: saleDateObj,
         totalValue,
+        hasHosting: hasHosting,
+        hostingStartDate: hasHosting && hostingStartDate ? new Date(hostingStartDate) : (hasHosting ? saleDateObj : null),
+        hostingEndDate: hasHosting && hostingEndDate ? new Date(hostingEndDate) : null,
+        hostingPrice: hostingMonthly,
+        hostingInterval: hostingInterval || 'MONTHLY',
+        nextInvoiceDate: nextInvoice,
         websiteGoal: websiteGoal || null,
         targetAudience: targetAudience || null,
         hasExistingWebsite: hasExistingWebsite || false,
@@ -132,10 +153,11 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const { 
-      packageId, upsellIds = [], acquisitionCost, saleDate,
+      packageId, upsellIds = [], acquisitionCost, acquisitionType, saleDate,
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
       mood, heroType, toneOfVoice, usps, primaryCta,
-      features, languages, contentStatus, urgency, specialRequests
+      features, languages, contentStatus, urgency, specialRequests,
+      hasHosting, hostingStartDate, hostingEndDate, hostingPrice, hostingInterval
     } = req.body;
 
     const existing = await prisma.deal.findUnique({ where: { id: req.params.id } });
@@ -156,7 +178,25 @@ router.put('/:id', async (req, res, next) => {
       }, 0);
     }
 
-    const totalValue = pkg.oneTimePrice + (pkg.monthlyPrice * 12) + upsellTotal;
+    const useHosting = hasHosting !== undefined ? hasHosting : existing.hasHosting;
+    const useHostingPrice = useHosting ? parseFloat(hostingPrice !== undefined ? hostingPrice : existing.hostingPrice) : 0;
+    const totalValue = pkg.oneTimePrice + (useHostingPrice * 12) + upsellTotal;
+
+    let nextInvoice = existing.nextInvoiceDate;
+    if (hasHosting !== undefined) {
+      if (useHosting) {
+        const start = hostingStartDate ? new Date(hostingStartDate) : (existing.hostingStartDate || new Date());
+        const interval = hostingInterval || existing.hostingInterval || 'MONTHLY';
+        nextInvoice = new Date(start);
+        if (interval === 'YEARLY') {
+          nextInvoice.setFullYear(nextInvoice.getFullYear() + 1);
+        } else {
+          nextInvoice.setMonth(nextInvoice.getMonth() + 1);
+        }
+      } else {
+        nextInvoice = null;
+      }
+    }
 
     await prisma.dealUpsell.deleteMany({ where: { dealId: req.params.id } });
 
@@ -165,8 +205,15 @@ router.put('/:id', async (req, res, next) => {
       data: {
         packageId: pkgId,
         acquisitionCost: acquisitionCost !== undefined ? parseFloat(acquisitionCost) : existing.acquisitionCost,
+        acquisitionType: acquisitionType !== undefined ? acquisitionType : existing.acquisitionType,
         saleDate: saleDate ? new Date(saleDate) : existing.saleDate,
         totalValue,
+        hasHosting: useHosting,
+        hostingStartDate: hostingStartDate !== undefined ? (hostingStartDate ? new Date(hostingStartDate) : null) : existing.hostingStartDate,
+        hostingEndDate: hostingEndDate !== undefined ? (hostingEndDate ? new Date(hostingEndDate) : null) : existing.hostingEndDate,
+        hostingPrice: useHostingPrice,
+        hostingInterval: hostingInterval !== undefined ? hostingInterval : existing.hostingInterval,
+        nextInvoiceDate: nextInvoice,
         websiteGoal: websiteGoal !== undefined ? websiteGoal : existing.websiteGoal,
         targetAudience: targetAudience !== undefined ? targetAudience : existing.targetAudience,
         hasExistingWebsite: hasExistingWebsite !== undefined ? hasExistingWebsite : existing.hasExistingWebsite,

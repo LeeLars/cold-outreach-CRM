@@ -239,6 +239,11 @@
               <option value="humoristisch">Humoristisch & luchtig</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label">Referentie websites (die ze mooi vinden / concurrenten)</label>
+            <textarea class="form-input" id="deal-reference-urls" rows="3" placeholder="Eén URL per regel, bijv:&#10;https://www.voorbeeld.be&#10;https://www.concurrent.be"></textarea>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Websites die de klant mooi vindt of van concurrenten ter inspiratie</div>
+          </div>
         </div>
 
         <!-- Step 4: Strategie & content -->
@@ -278,6 +283,38 @@
               <label class="checkbox-label">
                 <input type="checkbox" value="login">
                 <span>Inlogomgeving</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="cms">
+                <span>CMS (zelf content beheren)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="seo">
+                <span>SEO optimalisatie</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="analytics">
+                <span>Analytics / statistieken</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="newsletter">
+                <span>Nieuwsbrief integratie</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="social">
+                <span>Social media integratie</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="reviews">
+                <span>Reviews / testimonials</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="maps">
+                <span>Google Maps</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" value="chat">
+                <span>Live chat / WhatsApp</span>
               </label>
             </div>
           </div>
@@ -803,6 +840,7 @@
       const mood = document.getElementById('deal-mood').value;
       const heroType = document.getElementById('deal-hero-type').value;
       const tone = document.getElementById('deal-tone').value;
+      const referenceUrls = document.getElementById('deal-reference-urls').value;
       const usps = document.getElementById('deal-usps').value;
       const cta = document.getElementById('deal-cta').value;
       const selectedFeatures = Array.from(document.querySelectorAll('.checkbox-group input:checked')).map(cb => cb.nextElementSibling.textContent);
@@ -832,13 +870,14 @@
           </div>
           ` : ''}
           
-          ${mood || heroType || tone ? `
+          ${mood || heroType || tone || referenceUrls ? `
           <div>
             <h4 style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-primary);">Design & identiteit</h4>
             <div style="display:grid;gap:6px;font-size:13px;">
               ${mood ? `<div class="flex justify-between"><span class="text-muted">Sfeer:</span><span>${document.querySelector(`#deal-mood option[value="${mood}"]`)?.text || mood}</span></div>` : ''}
               ${heroType ? `<div class="flex justify-between"><span class="text-muted">Hero:</span><span>${document.querySelector(`#deal-hero-type option[value="${heroType}"]`)?.text || heroType}</span></div>` : ''}
               ${tone ? `<div class="flex justify-between"><span class="text-muted">Tone:</span><span>${document.querySelector(`#deal-tone option[value="${tone}"]`)?.text || tone}</span></div>` : ''}
+              ${referenceUrls ? `<div><span class="text-muted">Referentie websites:</span><div style="margin-top:4px;">${referenceUrls.split('\\n').filter(Boolean).map(u => `<a href="${u.trim()}" target="_blank" style="color:var(--accent-brand);display:block;">${u.trim()}</a>`).join('')}</div></div>` : ''}
             </div>
           </div>
           ` : ''}
@@ -911,6 +950,7 @@
       const mood = document.getElementById('deal-mood').value || null;
       const heroType = document.getElementById('deal-hero-type').value || null;
       const toneOfVoice = document.getElementById('deal-tone').value || null;
+      const referenceUrls = document.getElementById('deal-reference-urls').value || null;
       const usps = document.getElementById('deal-usps').value || null;
       const primaryCta = document.getElementById('deal-cta').value || null;
       const selectedFeatures = Array.from(document.querySelectorAll('.checkbox-group input:checked')).map(cb => cb.value);
@@ -924,7 +964,7 @@
         packageId, upsellIds, acquisitionCost, acquisitionType, saleDate,
         hasHosting, hostingPrice, hostingInterval, hostingStartDate, hostingEndDate,
         websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
-        mood, heroType, toneOfVoice, usps, primaryCta,
+        mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
         features, languages, contentStatus, urgency, specialRequests
       };
 

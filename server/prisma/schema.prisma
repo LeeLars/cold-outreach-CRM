@@ -85,6 +85,7 @@ model Deal {
   mood            String?
   heroType        String?
   toneOfVoice     String?
+  referenceUrls   String?
   usps            String?
   primaryCta      String?
   

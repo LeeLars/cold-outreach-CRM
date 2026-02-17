@@ -61,7 +61,7 @@ router.post('/', async (req, res, next) => {
     const { 
       leadId, packageId, upsellIds = [], acquisitionCost = 0, acquisitionType = 'manual', saleDate,
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
-      mood, heroType, toneOfVoice, usps, primaryCta,
+      mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
       features, languages, contentStatus, urgency, specialRequests,
       hasHosting = true, hostingStartDate, hostingEndDate, hostingPrice = 20, hostingInterval = 'MONTHLY'
     } = req.body;
@@ -121,6 +121,7 @@ router.post('/', async (req, res, next) => {
         mood: mood || null,
         heroType: heroType || null,
         toneOfVoice: toneOfVoice || null,
+        referenceUrls: referenceUrls || null,
         usps: usps || null,
         primaryCta: primaryCta || null,
         features: features || null,
@@ -155,7 +156,7 @@ router.put('/:id', async (req, res, next) => {
     const { 
       packageId, upsellIds = [], acquisitionCost, acquisitionType, saleDate,
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
-      mood, heroType, toneOfVoice, usps, primaryCta,
+      mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
       features, languages, contentStatus, urgency, specialRequests,
       hasHosting, hostingStartDate, hostingEndDate, hostingPrice, hostingInterval
     } = req.body;
@@ -221,6 +222,7 @@ router.put('/:id', async (req, res, next) => {
         mood: mood !== undefined ? mood : existing.mood,
         heroType: heroType !== undefined ? heroType : existing.heroType,
         toneOfVoice: toneOfVoice !== undefined ? toneOfVoice : existing.toneOfVoice,
+        referenceUrls: referenceUrls !== undefined ? referenceUrls : existing.referenceUrls,
         usps: usps !== undefined ? usps : existing.usps,
         primaryCta: primaryCta !== undefined ? primaryCta : existing.primaryCta,
         features: features !== undefined ? features : existing.features,

@@ -209,7 +209,7 @@
       };
 
       document.getElementById('hosting-table-body').innerHTML = sorted.map(c => `
-        <tr>
+        <tr style="cursor:pointer;" onclick="openHostingEdit('${c.id}')">
           <td style="font-weight:500;">${c.companyName}</td>
           <td>${c.city || '-'}</td>
           <td>${c.packageName}</td>
@@ -219,10 +219,10 @@
           <td>${fmtDate(c.hostingEndDate)}</td>
           <td style="${c.status === 'overdue' ? 'font-weight:600;color:var(--accent-red);' : ''}">${fmtDate(c.nextInvoiceDate)}</td>
           <td>${statusBadge(c.status)}</td>
-          <td style="text-align:center;">
+          <td style="text-align:center;" onclick="event.stopPropagation()">
             <div style="display:flex;gap:4px;justify-content:center;">
               <button class="btn-icon" onclick="openHostingEdit('${c.id}')" title="Bewerken"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
-              <button class="btn-icon" onclick="deleteHosting('${c.id}','${c.companyName.replace(/'/g, "\\'")}')"
+              <button class="btn-icon" onclick="deleteHosting('${c.id}','${c.companyName.replace(/'/g, "\\'")}')" 
                 title="Verwijderen" style="color:var(--accent-red);"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
             </div>
           </td>

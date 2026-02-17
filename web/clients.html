@@ -129,17 +129,17 @@
           : '<span style="color:var(--text-muted);font-size:12px;">Geen</span>';
 
         return `
-          <tr>
+          <tr style="cursor:pointer;" onclick="viewClient('${client.id}')">
             <td style="font-weight:500;">${client.companyName}</td>
             <td>${client.contactPerson || '-'}</td>
             <td>${client.city || '-'}</td>
-            <td>${client.phone ? `<a href="tel:${client.phone}" style="color:var(--accent-brand);">${client.phone}</a>` : '-'}</td>
-            <td>${client.email ? `<a href="mailto:${client.email}" style="color:var(--accent-brand);">${client.email}</a>` : '-'}</td>
+            <td onclick="event.stopPropagation()">${client.phone ? `<a href="tel:${client.phone}" style="color:var(--accent-brand);">${client.phone}</a>` : '-'}</td>
+            <td onclick="event.stopPropagation()">${client.email ? `<a href="mailto:${client.email}" style="color:var(--accent-brand);">${client.email}</a>` : '-'}</td>
             <td>${deal?.package ? `<span style="background:var(--accent-blue-dim);color:var(--accent-blue);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${deal.package.name}</span>` : '-'}</td>
             <td>${hostingBadge}</td>
             <td style="font-weight:700;color:var(--accent-brand);">${deal ? formatCurrency(deal.totalValue) : '-'}</td>
             <td style="color:var(--text-muted);">${formatDate(client.createdAt)}</td>
-            <td>
+            <td onclick="event.stopPropagation()">
               <div style="display:flex;gap:4px;">
                 <button class="btn-icon" onclick="viewClient('${client.id}')" title="Bekijken">
                   <i data-lucide="eye" style="width:16px;height:16px;"></i>

@@ -124,12 +124,32 @@ router.get('/revenue', async (req, res, next) => {
     const totalCost = deals.reduce((sum, d) => sum + d.acquisitionCost, 0);
     const roi = totalCost > 0 ? (((totalRevenue - totalCost) / totalCost) * 100).toFixed(1) : 0;
 
+    const flyerDeals = deals.filter(d => d.acquisitionType === 'flyer');
+    const warmDeals = deals.filter(d => d.acquisitionType !== 'flyer');
+
+    const flyerRevenue = flyerDeals.reduce((sum, d) => sum + d.totalValue, 0);
+    const flyerCost = flyerDeals.reduce((sum, d) => sum + d.acquisitionCost, 0);
+    const warmRevenue = warmDeals.reduce((sum, d) => sum + d.totalValue, 0);
+    const warmCost = warmDeals.reduce((sum, d) => sum + d.acquisitionCost, 0);
+
     res.json({
       monthlyRevenue: Object.entries(monthlyRevenue).map(([month, revenue]) => ({ month, revenue })),
       packageRevenue: Object.entries(packageRevenue).map(([name, revenue]) => ({ name, revenue })),
       totalRevenue,
       totalCost,
-      roi
+      roi,
+      flyer: {
+        revenue: flyerRevenue,
+        cost: flyerCost,
+        count: flyerDeals.length,
+        roi: flyerCost > 0 ? (((flyerRevenue - flyerCost) / flyerCost) * 100).toFixed(1) : '0'
+      },
+      warm: {
+        revenue: warmRevenue,
+        cost: warmCost,
+        count: warmDeals.length,
+        roi: warmCost > 0 ? (((warmRevenue - warmCost) / warmCost) * 100).toFixed(1) : '0'
+      }
     });
   } catch (err) {
     next(err);
@@ -153,15 +173,38 @@ router.get('/acquisition', async (req, res, next) => {
       companyName: deal.lead.companyName,
       acquisitionCost: deal.acquisitionCost,
       dealValue: deal.totalValue,
+      acquisitionType: deal.acquisitionType || 'manual',
       roi: deal.acquisitionCost > 0
         ? (((deal.totalValue - deal.acquisitionCost) / deal.acquisitionCost) * 100).toFixed(1)
         : 0,
       saleDate: deal.saleDate
     }));
 
+    const flyerDeals = deals.filter(d => d.acquisitionType === 'flyer');
+    const warmDeals = deals.filter(d => d.acquisitionType !== 'flyer');
+
+    const flyerCost = flyerDeals.reduce((sum, d) => sum + d.acquisitionCost, 0);
+    const flyerRevenue = flyerDeals.reduce((sum, d) => sum + d.totalValue, 0);
+    const warmCost = warmDeals.reduce((sum, d) => sum + d.acquisitionCost, 0);
+    const warmRevenue = warmDeals.reduce((sum, d) => sum + d.totalValue, 0);
+
     res.json({
       avgCost: avgCost.toFixed(2),
-      perClient
+      perClient,
+      flyer: {
+        count: flyerDeals.length,
+        totalCost: flyerCost,
+        totalRevenue: flyerRevenue,
+        avgCost: flyerDeals.length > 0 ? (flyerCost / flyerDeals.length).toFixed(2) : '0.00',
+        roi: flyerCost > 0 ? (((flyerRevenue - flyerCost) / flyerCost) * 100).toFixed(1) : '0'
+      },
+      warm: {
+        count: warmDeals.length,
+        totalCost: warmCost,
+        totalRevenue: warmRevenue,
+        avgCost: warmDeals.length > 0 ? (warmCost / warmDeals.length).toFixed(2) : '0.00',
+        roi: warmCost > 0 ? (((warmRevenue - warmCost) / warmCost) * 100).toFixed(1) : '0'
+      }
     });
   } catch (err) {
     next(err);
@@ -193,30 +236,44 @@ router.get('/locations', async (req, res, next) => {
       select: {
         city: true,
         status: true,
+        source: true,
         deal: {
           select: {
-            totalValue: true
+            totalValue: true,
+            acquisitionType: true
           }
         }
       }
     });
 
-    const locationStats = {};
-    const cityNameMap = {};
+    function isFlyer(lead) {
+      if (lead.deal && lead.deal.acquisitionType === 'flyer') return true;
+      if (lead.source && lead.source.toLowerCase().includes('flyer')) return true;
+      return false;
+    }
 
-    leads.forEach(lead => {
-      if (!lead.city) {
-        const city = 'Onbekend';
-        if (!locationStats[city]) {
-          locationStats[city] = {
-            total: 0,
-            verstuurd: 0,
-            gereageerd: 0,
-            klanten: 0,
-            revenue: 0
-          };
+    function buildLocationStats(filteredLeads) {
+      const locationStats = {};
+      const cityNameMap = {};
+
+      filteredLeads.forEach(lead => {
+        let city;
+        if (!lead.city) {
+          city = 'Onbekend';
+        } else {
+          const normalizedKey = lead.city.toLowerCase().trim();
+          if (!cityNameMap[normalizedKey]) {
+            cityNameMap[normalizedKey] = normalizeCity(lead.city);
+          }
+          city = cityNameMap[normalizedKey];
         }
+
+        if (!locationStats[city]) {
+          locationStats[city] = { total: 0, verstuurd: 0, gereageerd: 0, klanten: 0, revenue: 0 };
+        }
+
         locationStats[city].total++;
+
         if (['VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
           locationStats[city].verstuurd++;
         }
@@ -229,53 +286,24 @@ router.get('/locations', async (req, res, next) => {
             locationStats[city].revenue += lead.deal.totalValue;
           }
         }
-        return;
-      }
+      });
 
-      const normalizedKey = lead.city.toLowerCase().trim();
-      
-      if (!cityNameMap[normalizedKey]) {
-        cityNameMap[normalizedKey] = normalizeCity(lead.city);
-      }
-      
-      const city = cityNameMap[normalizedKey];
-      
-      if (!locationStats[city]) {
-        locationStats[city] = {
-          total: 0,
-          verstuurd: 0,
-          gereageerd: 0,
-          klanten: 0,
-          revenue: 0
-        };
-      }
+      return Object.entries(locationStats).map(([city, stats]) => ({
+        city,
+        ...stats,
+        responseRate: stats.verstuurd > 0 ? ((stats.gereageerd / stats.verstuurd) * 100).toFixed(1) : 0,
+        conversionRate: stats.gereageerd > 0 ? ((stats.klanten / stats.gereageerd) * 100).toFixed(1) : 0
+      })).sort((a, b) => b.total - a.total);
+    }
 
-      locationStats[city].total++;
+    const flyerLeads = leads.filter(l => isFlyer(l));
+    const warmLeads = leads.filter(l => !isFlyer(l));
 
-      if (['VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
-        locationStats[city].verstuurd++;
-      }
-
-      if (['GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
-        locationStats[city].gereageerd++;
-      }
-
-      if (lead.status === 'KLANT') {
-        locationStats[city].klanten++;
-        if (lead.deal) {
-          locationStats[city].revenue += lead.deal.totalValue;
-        }
-      }
+    res.json({
+      all: buildLocationStats(leads),
+      flyer: buildLocationStats(flyerLeads),
+      warm: buildLocationStats(warmLeads)
     });
-
-    const locationArray = Object.entries(locationStats).map(([city, stats]) => ({
-      city,
-      ...stats,
-      responseRate: stats.verstuurd > 0 ? ((stats.gereageerd / stats.verstuurd) * 100).toFixed(1) : 0,
-      conversionRate: stats.gereageerd > 0 ? ((stats.klanten / stats.gereageerd) * 100).toFixed(1) : 0
-    })).sort((a, b) => b.total - a.total);
-
-    res.json(locationArray);
   } catch (err) {
     next(err);
   }

@@ -39,6 +39,7 @@
         <!-- Revenue Tab -->
         <div id="tab-revenue" class="hidden">
           <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="revenue-kpis"></div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;" id="revenue-channel-kpis"></div>
           <div class="grid-2 mb-24">
             <div class="card">
               <div class="card-header"><span class="card-title">Omzet per maand</span></div>
@@ -53,12 +54,18 @@
 
         <!-- Acquisition Tab -->
         <div id="tab-acquisition" class="hidden">
+          <div style="display:flex;gap:8px;margin-bottom:20px;">
+            <button class="btn btn-primary btn-sm" id="acq-filter-all" onclick="switchAcquisitionFilter('all')" style="font-size:12px;">Alle klanten</button>
+            <button class="btn btn-secondary btn-sm" id="acq-filter-flyer" onclick="switchAcquisitionFilter('flyer')" style="font-size:12px;">Flyer acquisitie</button>
+            <button class="btn btn-secondary btn-sm" id="acq-filter-warm" onclick="switchAcquisitionFilter('warm')" style="font-size:12px;">Warme leads</button>
+          </div>
           <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);" id="acquisition-kpis"></div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:20px;" id="acquisition-channel-kpis"></div>
           <div class="card">
             <div class="card-header"><span class="card-title">Kost vs. dealwaarde per klant</span></div>
             <div class="card-body" style="padding:0;">
               <table class="data-table">
-                <thead><tr><th>Bedrijf</th><th>Acquisitiekost</th><th>Dealwaarde</th><th>ROI</th><th>Datum</th></tr></thead>
+                <thead><tr><th>Bedrijf</th><th>Type</th><th>Acquisitiekost</th><th>Dealwaarde</th><th>ROI</th><th>Datum</th></tr></thead>
                 <tbody id="acquisition-body"></tbody>
               </table>
             </div>
@@ -67,6 +74,12 @@
 
         <!-- Locations Tab -->
         <div id="tab-locations" class="hidden">
+          <div style="display:flex;gap:8px;margin-bottom:20px;">
+            <button class="btn btn-primary btn-sm" id="loc-filter-all" onclick="switchLocationFilter('all')" style="font-size:12px;">Alle leads</button>
+            <button class="btn btn-secondary btn-sm" id="loc-filter-flyer" onclick="switchLocationFilter('flyer')" style="font-size:12px;">Flyer acquisitie</button>
+            <button class="btn btn-secondary btn-sm" id="loc-filter-warm" onclick="switchLocationFilter('warm')" style="font-size:12px;">Warme leads</button>
+          </div>
+
           <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);" id="location-kpis"></div>
 
           <div class="card mb-24">
@@ -200,9 +213,14 @@
   <script>
     let charts = {};
 
+    let locationDataAll = {};
     let locationData = [];
+    let locationFilter = 'all';
     let locationSortColumn = 'total';
     let locationSortDirection = 'desc';
+
+    let acquisitionDataAll = null;
+    let acquisitionFilter = 'all';
 
     let hostingData = [];
     let hostingSortColumn = 'nextInvoiceDate';
@@ -320,6 +338,29 @@
           </div>
         `;
 
+        document.getElementById('revenue-channel-kpis').innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">Omzet flyer acquisitie</div>
+            <div class="kpi-value text-green">${formatCurrency(data.flyer.revenue)}</div>
+            <span class="kpi-badge neutral">${data.flyer.count} klant${data.flyer.count !== 1 ? 'en' : ''}</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">ROI flyer</div>
+            <div class="kpi-value">${data.flyer.roi}%</div>
+            <span class="kpi-badge neutral">Kost: ${formatCurrency(data.flyer.cost)}</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Omzet warme leads</div>
+            <div class="kpi-value text-green">${formatCurrency(data.warm.revenue)}</div>
+            <span class="kpi-badge neutral">${data.warm.count} klant${data.warm.count !== 1 ? 'en' : ''}</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">ROI warm</div>
+            <div class="kpi-value">${data.warm.roi}%</div>
+            <span class="kpi-badge neutral">Kost: ${formatCurrency(data.warm.cost)}</span>
+          </div>
+        `;
+
         const ctx1 = document.getElementById('monthly-revenue-chart').getContext('2d');
         if (charts.monthly) charts.monthly.destroy();
         charts.monthly = new Chart(ctx1, {
@@ -372,87 +413,148 @@
 
     async function loadAcquisition() {
       try {
-        const data = await API.get('/stats/acquisition');
-
-        document.getElementById('acquisition-kpis').innerHTML = `
-          <div class="kpi-card">
-            <div class="kpi-label">Gem. acquisitiekost</div>
-            <div class="kpi-value">${formatCurrency(parseFloat(data.avgCost))}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Aantal klanten</div>
-            <div class="kpi-value">${data.perClient.length}</div>
-          </div>
-        `;
-
-        const tbody = document.getElementById('acquisition-body');
-        if (data.perClient.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:40px;">Nog geen klanten</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = data.perClient.map(c => `
-          <tr>
-            <td style="font-weight:500;">${c.companyName}</td>
-            <td>${formatCurrency(c.acquisitionCost)}</td>
-            <td style="color:var(--accent-brand);font-weight:600;">${formatCurrency(c.dealValue)}</td>
-            <td><span class="kpi-badge positive">${c.roi}%</span></td>
-            <td style="color:var(--text-muted);">${formatDate(c.saleDate)}</td>
-          </tr>
-        `).join('');
+        acquisitionDataAll = await API.get('/stats/acquisition');
+        renderAcquisitionView();
       } catch (err) {
         showToast(err.message, 'error');
       }
     }
 
+    function switchAcquisitionFilter(filter) {
+      acquisitionFilter = filter;
+      ['all', 'flyer', 'warm'].forEach(f => {
+        const btn = document.getElementById('acq-filter-' + f);
+        btn.className = f === filter ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+      });
+      renderAcquisitionView();
+    }
+
+    function renderAcquisitionView() {
+      const data = acquisitionDataAll;
+      if (!data) return;
+
+      const filtered = acquisitionFilter === 'all' ? data.perClient
+        : acquisitionFilter === 'flyer' ? data.perClient.filter(c => c.acquisitionType === 'flyer')
+        : data.perClient.filter(c => c.acquisitionType !== 'flyer');
+
+      const filterLabels = { all: 'Alle klanten', flyer: 'Flyer acquisitie', warm: 'Warme leads' };
+      const avgCost = filtered.length > 0
+        ? filtered.reduce((sum, c) => sum + c.acquisitionCost, 0) / filtered.length
+        : 0;
+
+      document.getElementById('acquisition-kpis').innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Gem. acquisitiekost</div>
+          <div class="kpi-value">${formatCurrency(avgCost)}</div>
+          <span class="kpi-badge neutral">${filterLabels[acquisitionFilter]}</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Aantal klanten</div>
+          <div class="kpi-value">${filtered.length}</div>
+          <span class="kpi-badge neutral">${filterLabels[acquisitionFilter]}</span>
+        </div>
+      `;
+
+      document.getElementById('acquisition-channel-kpis').innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Flyer - gem. kost</div>
+          <div class="kpi-value">${formatCurrency(parseFloat(data.flyer.avgCost))}</div>
+          <span class="kpi-badge neutral">${data.flyer.count} klant${data.flyer.count !== 1 ? 'en' : ''} | ROI ${data.flyer.roi}%</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Warm - gem. kost</div>
+          <div class="kpi-value">${formatCurrency(parseFloat(data.warm.avgCost))}</div>
+          <span class="kpi-badge neutral">${data.warm.count} klant${data.warm.count !== 1 ? 'en' : ''} | ROI ${data.warm.roi}%</span>
+        </div>
+      `;
+
+      const tbody = document.getElementById('acquisition-body');
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
+        return;
+      }
+
+      const typeLabels = { flyer: 'Flyer', none: 'Geen kost', manual: 'Handmatig' };
+      const typeColors = { flyer: 'var(--accent-orange)', none: 'var(--text-muted)', manual: 'var(--accent-blue)' };
+
+      tbody.innerHTML = filtered.map(c => `
+        <tr>
+          <td style="font-weight:500;">${c.companyName}</td>
+          <td><span style="background:${typeColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${typeColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${typeLabels[c.acquisitionType] || c.acquisitionType}</span></td>
+          <td>${formatCurrency(c.acquisitionCost)}</td>
+          <td style="color:var(--accent-brand);font-weight:600;">${formatCurrency(c.dealValue)}</td>
+          <td><span class="kpi-badge positive">${c.roi}%</span></td>
+          <td style="color:var(--text-muted);">${formatDate(c.saleDate)}</td>
+        </tr>
+      `).join('');
+    }
+
     async function loadLocations() {
       try {
         const data = await API.get('/stats/locations');
-        locationData = data;
-
-        const totalLocations = data.length;
-        const totalLeads = data.reduce((sum, loc) => sum + loc.total, 0);
-        const totalVerstuurd = data.reduce((sum, loc) => sum + loc.verstuurd, 0);
-        const totalGereageerd = data.reduce((sum, loc) => sum + loc.gereageerd, 0);
-        const totalKlanten = data.reduce((sum, loc) => sum + loc.klanten, 0);
-        const totalRevenue = data.reduce((sum, loc) => sum + loc.revenue, 0);
-
-        document.getElementById('location-kpis').innerHTML = `
-          <div class="kpi-card">
-            <div class="kpi-label">Gemeentes</div>
-            <div class="kpi-value">${totalLocations}</div>
-            <span class="kpi-badge neutral">Unieke locaties</span>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Totaal leads</div>
-            <div class="kpi-value">${totalLeads}</div>
-            <span class="kpi-badge neutral">Over alle locaties</span>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Gem. response rate</div>
-            <div class="kpi-value">${totalVerstuurd > 0 ? ((totalGereageerd / totalVerstuurd) * 100).toFixed(1) : 0}%</div>
-            <span class="kpi-badge positive">Alle locaties</span>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Totaal klanten</div>
-            <div class="kpi-value">${totalKlanten}</div>
-            <span class="kpi-badge positive">Over alle locaties</span>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Totale omzet</div>
-            <div class="kpi-value text-green">${formatCurrency(totalRevenue)}</div>
-            <span class="kpi-badge positive">Alle locaties</span>
-          </div>
-        `;
-
-        updateLocationChart();
-        renderLocationResponseChart(data);
-        renderLocationConversionChart(data);
-        renderLocationTable(data);
-        lucide.createIcons();
+        locationDataAll = data;
+        locationData = data[locationFilter] || data.all;
+        renderLocationsView();
       } catch (err) {
         showToast(err.message, 'error');
       }
+    }
+
+    function switchLocationFilter(filter) {
+      locationFilter = filter;
+      locationData = locationDataAll[filter] || locationDataAll.all;
+      ['all', 'flyer', 'warm'].forEach(f => {
+        const btn = document.getElementById('loc-filter-' + f);
+        btn.className = f === filter ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+      });
+      renderLocationsView();
+    }
+
+    function renderLocationsView() {
+      const data = locationData;
+      const filterLabels = { all: 'Alle leads', flyer: 'Flyer acquisitie', warm: 'Warme leads' };
+      const filterLabel = filterLabels[locationFilter];
+
+      const totalLocations = data.length;
+      const totalLeads = data.reduce((sum, loc) => sum + loc.total, 0);
+      const totalVerstuurd = data.reduce((sum, loc) => sum + loc.verstuurd, 0);
+      const totalGereageerd = data.reduce((sum, loc) => sum + loc.gereageerd, 0);
+      const totalKlanten = data.reduce((sum, loc) => sum + loc.klanten, 0);
+      const totalRevenue = data.reduce((sum, loc) => sum + loc.revenue, 0);
+
+      document.getElementById('location-kpis').innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-label">Gemeentes</div>
+          <div class="kpi-value">${totalLocations}</div>
+          <span class="kpi-badge neutral">${filterLabel}</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Totaal leads</div>
+          <div class="kpi-value">${totalLeads}</div>
+          <span class="kpi-badge neutral">${filterLabel}</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Gem. response rate</div>
+          <div class="kpi-value">${totalVerstuurd > 0 ? ((totalGereageerd / totalVerstuurd) * 100).toFixed(1) : 0}%</div>
+          <span class="kpi-badge positive">${filterLabel}</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Totaal klanten</div>
+          <div class="kpi-value">${totalKlanten}</div>
+          <span class="kpi-badge positive">${filterLabel}</span>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Totale omzet</div>
+          <div class="kpi-value text-green">${formatCurrency(totalRevenue)}</div>
+          <span class="kpi-badge positive">${filterLabel}</span>
+        </div>
+      `;
+
+      updateLocationChart();
+      renderLocationResponseChart(data);
+      renderLocationConversionChart(data);
+      renderLocationTable(data);
+      lucide.createIcons();
     }
 
     function updateLocationChart() {

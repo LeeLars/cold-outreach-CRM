@@ -12,6 +12,8 @@ function initSidebar() {
       { id: 'leads', label: 'Leads', icon: 'users', href: basePath('/leads.html') },
       { id: 'agenda', label: 'Agenda', icon: 'calendar', href: basePath('/agenda.html') },
       { id: 'deals', label: 'Deals', icon: 'handshake', href: basePath('/deals.html') },
+      { id: 'clients', label: 'Klanten', icon: 'building-2', href: basePath('/clients.html') },
+      { id: 'hosting', label: 'Hosting', icon: 'server', href: basePath('/hosting.html') },
       { id: 'packages', label: 'Pakketten', icon: 'package', href: basePath('/packages.html') }
     ]},
     { section: 'Analyse', items: [

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <title>Klanten - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="topbar-search">
+              <i data-lucide="search"></i>
+              <input type="text" placeholder="Zoek klanten..." id="search-input" oninput="searchClients()">
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <span id="client-count" style="font-size:13px;color:var(--text-muted);"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body" style="padding:0;">
+            <table class="data-table" id="clients-table">
+              <thead>
+                <tr>
+                  <th>Bedrijfsnaam</th>
+                  <th>Contactpersoon</th>
+                  <th>Gemeente</th>
+                  <th>Telefoon</th>
+                  <th>Email</th>
+                  <th>Pakket</th>
+                  <th>Hosting</th>
+                  <th>Dealwaarde</th>
+                  <th>Klant sinds</th>
+                  <th>Acties</th>
+                </tr>
+              </thead>
+              <tbody id="clients-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="pagination"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Client Detail Modal -->
+  <div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeModal('detail-modal')">
+    <div class="modal" style="max-width:560px;">
+      <div class="modal-header">
+        <span class="modal-title" id="detail-modal-title">Klant details</span>
+        <button class="modal-close" onclick="closeModal('detail-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="detail-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Client Edit Modal -->
+  <div class="modal-overlay" id="edit-modal" onclick="if(event.target===this)closeModal('edit-modal')">
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <span class="modal-title">Klant bewerken</span>
+        <button class="modal-close" onclick="closeModal('edit-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="edit-modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('edit-modal')">Annuleren</button>
+        <button class="btn btn-primary" onclick="saveClient()">Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    let currentPage = 1;
+    let editingClientId = null;
+
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('Klanten');
+      lucide.createIcons();
+      loadClients();
+    }
+
+    async function loadClients(search = '') {
+      try {
+        const params = new URLSearchParams({ page: currentPage, limit: 50 });
+        if (search) params.set('search', search);
+        const data = await API.get(`/clients?${params}`);
+        renderClients(data);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function searchClients() {
+      const search = document.getElementById('search-input').value.trim();
+      currentPage = 1;
+      loadClients(search);
+    }
+
+    function renderClients(data) {
+      const tbody = document.getElementById('clients-body');
+      document.getElementById('client-count').textContent = `${data.total} klant${data.total !== 1 ? 'en' : ''}`;
+
+      if (data.clients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.clients.map(client => {
+        const deal = client.deal;
+        const hasHosting = deal?.hasHosting;
+        const hostingBadge = hasHosting
+          ? `<span style="background:var(--accent-green-dim);color:var(--accent-green);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${formatCurrency(deal.hostingPrice)}/mnd</span>`
+          : '<span style="color:var(--text-muted);font-size:12px;">Geen</span>';
+
+        return `
+          <tr>
+            <td style="font-weight:500;">${client.companyName}</td>
+            <td>${client.contactPerson || '-'}</td>
+            <td>${client.city || '-'}</td>
+            <td>${client.phone ? `<a href="tel:${client.phone}" style="color:var(--accent-brand);">${client.phone}</a>` : '-'}</td>
+            <td>${client.email ? `<a href="mailto:${client.email}" style="color:var(--accent-brand);">${client.email}</a>` : '-'}</td>
+            <td>${deal?.package ? `<span style="background:var(--accent-blue-dim);color:var(--accent-blue);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${deal.package.name}</span>` : '-'}</td>
+            <td>${hostingBadge}</td>
+            <td style="font-weight:700;color:var(--accent-brand);">${deal ? formatCurrency(deal.totalValue) : '-'}</td>
+            <td style="color:var(--text-muted);">${formatDate(client.createdAt)}</td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <button class="btn-icon" onclick="viewClient('${client.id}')" title="Bekijken">
+                  <i data-lucide="eye" style="width:16px;height:16px;"></i>
+                </button>
+                <button class="btn-icon" onclick="openEditClient('${client.id}')" title="Bewerken">
+                  <i data-lucide="pencil" style="width:16px;height:16px;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      renderPagination(document.getElementById('pagination'), {
+        page: data.page,
+        totalPages: data.totalPages,
+        total: data.total
+      }, (p) => { currentPage = p; loadClients(document.getElementById('search-input').value.trim()); });
+
+      lucide.createIcons();
+    }
+
+    async function viewClient(id) {
+      try {
+        const client = await API.get(`/clients/${id}`);
+        const deal = client.deal;
+        document.getElementById('detail-modal-title').textContent = client.companyName;
+
+        const upsellList = deal?.upsells?.map(u =>
+          `<span style="background:var(--accent-purple-dim);color:var(--accent-purple);padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-right:4px;">${u.upsell.name}</span>`
+        ).join('') || '<span class="text-muted">Geen</span>';
+
+        document.getElementById('detail-modal-body').innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Klantgegevens</h4>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Bedrijfsnaam</span>
+              <span style="font-weight:600;">${client.companyName}</span>
+            </div>
+            ${client.vatNumber ? `<div class="flex justify-between items-center">
+              <span class="text-muted">BTW nummer</span>
+              <span>${client.vatNumber}</span>
+            </div>` : ''}
+            ${client.contactPerson ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Contactpersoon</span>
+              <span>${client.contactPerson}</span>
+            </div>` : ''}
+            ${client.phone ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Telefoon</span>
+              <span><a href="tel:${client.phone}" style="color:var(--accent-brand);">${client.phone}</a></span>
+            </div>` : ''}
+            ${client.email ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Email</span>
+              <span><a href="mailto:${client.email}" style="color:var(--accent-brand);">${client.email}</a></span>
+            </div>` : ''}
+            ${client.address ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Adres</span>
+              <span>${client.address}</span>
+            </div>` : ''}
+            ${client.city ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Gemeente</span>
+              <span>${client.city}</span>
+            </div>` : ''}
+            ${client.website ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Website</span>
+              <span><a href="${client.website}" target="_blank" style="color:var(--accent-brand);">${client.website}</a></span>
+            </div>` : ''}
+
+            ${deal ? `
+              <hr style="border-color:var(--border-color);">
+              <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Deal & pakket</h4>
+              <div class="flex justify-between items-center">
+                <span class="text-muted">Pakket</span>
+                <span style="font-weight:600;">${deal.package?.name || '-'}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-muted">Eenmalig</span>
+                <span>${formatCurrency(deal.package?.oneTimePrice || 0)}</span>
+              </div>
+              <div>
+                <span class="text-muted" style="display:block;margin-bottom:6px;">Upsells</span>
+                <div>${upsellList}</div>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-muted">Dealwaarde</span>
+                <span style="font-weight:700;color:var(--accent-brand);">${formatCurrency(deal.totalValue)}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-muted">Klant sinds</span>
+                <span>${formatDate(deal.saleDate)}</span>
+              </div>
+
+              <hr style="border-color:var(--border-color);">
+              <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Hosting</h4>
+              ${deal.hasHosting ? `
+                <div class="flex justify-between items-center">
+                  <span class="text-muted">Status</span>
+                  <span style="background:var(--accent-green-dim);color:var(--accent-green);padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">Actief</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-muted">Prijs</span>
+                  <span style="font-weight:600;">${formatCurrency(deal.hostingPrice)}/${deal.hostingInterval === 'YEARLY' ? 'jaar' : 'mnd'}</span>
+                </div>
+                ${deal.hostingStartDate ? `<div class="flex justify-between items-center">
+                  <span class="text-muted">Startdatum</span>
+                  <span>${formatDate(deal.hostingStartDate)}</span>
+                </div>` : ''}
+                ${deal.nextInvoiceDate ? `<div class="flex justify-between items-center">
+                  <span class="text-muted">Volgende factuur</span>
+                  <span>${formatDate(deal.nextInvoiceDate)}</span>
+                </div>` : ''}
+              ` : `
+                <div class="flex justify-between items-center">
+                  <span class="text-muted">Status</span>
+                  <span style="color:var(--text-muted);">Geen hosting</span>
+                </div>
+              `}
+            ` : ''}
+
+            ${client.notes ? `
+              <hr style="border-color:var(--border-color);">
+              <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Notities</h4>
+              <div style="background:var(--bg-secondary);padding:10px;border-radius:6px;font-size:13px;">${client.notes}</div>
+            ` : ''}
+
+            <hr style="border-color:var(--border-color);">
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <button class="btn btn-secondary btn-sm" onclick="closeModal('detail-modal');openEditClient('${client.id}')">
+                <i data-lucide="pencil" style="width:14px;height:14px;"></i> Bewerken
+              </button>
+            </div>
+          </div>
+        `;
+
+        openModal('detail-modal');
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function openEditClient(id) {
+      try {
+        const client = await API.get(`/clients/${id}`);
+        editingClientId = id;
+
+        document.getElementById('edit-modal-body').innerHTML = `
+          <div style="display:grid;gap:12px;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Bedrijfsnaam</label>
+              <input type="text" class="form-input" id="edit-company" value="${client.companyName || ''}">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">BTW nummer</label>
+              <input type="text" class="form-input" id="edit-vat" value="${client.vatNumber || ''}">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Contactpersoon</label>
+              <input type="text" class="form-input" id="edit-contact" value="${client.contactPerson || ''}">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Telefoon</label>
+                <input type="text" class="form-input" id="edit-phone" value="${client.phone || ''}">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" id="edit-email" value="${client.email || ''}">
+              </div>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Adres</label>
+              <input type="text" class="form-input" id="edit-address" value="${client.address || ''}">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Gemeente</label>
+                <input type="text" class="form-input" id="edit-city" value="${client.city || ''}">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Website</label>
+                <input type="url" class="form-input" id="edit-website" value="${client.website || ''}">
+              </div>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Notities</label>
+              <textarea class="form-input" id="edit-notes" rows="3">${client.notes || ''}</textarea>
+            </div>
+          </div>
+        `;
+
+        openModal('edit-modal');
+        lucide.createIcons();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function saveClient() {
+      if (!editingClientId) return;
+      try {
+        await API.put(`/clients/${editingClientId}`, {
+          companyName: document.getElementById('edit-company').value,
+          vatNumber: document.getElementById('edit-vat').value || null,
+          contactPerson: document.getElementById('edit-contact').value || null,
+          phone: document.getElementById('edit-phone').value || null,
+          email: document.getElementById('edit-email').value || null,
+          address: document.getElementById('edit-address').value || null,
+          city: document.getElementById('edit-city').value || null,
+          website: document.getElementById('edit-website').value || null,
+          notes: document.getElementById('edit-notes').value || null
+        });
+        closeModal('edit-modal');
+        showToast('Klant bijgewerkt');
+        loadClients(document.getElementById('search-input').value.trim());
+      } catch (err) {
+        showToast(err.message || 'Fout bij opslaan', 'error');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

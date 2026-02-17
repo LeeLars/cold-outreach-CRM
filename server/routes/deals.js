@@ -145,6 +145,22 @@ router.post('/', async (req, res, next) => {
       data: { status: 'KLANT' }
     });
 
+    // Auto-create client account from lead data
+    const lead = deal.lead;
+    await prisma.client.create({
+      data: {
+        companyName: lead.companyName,
+        vatNumber: lead.vatNumber || null,
+        contactPerson: lead.contactPerson || null,
+        email: lead.email || null,
+        phone: lead.phone || null,
+        address: lead.address || null,
+        city: lead.city || null,
+        website: lead.website || null,
+        dealId: deal.id
+      }
+    });
+
     res.status(201).json(deal);
   } catch (err) {
     next(err);

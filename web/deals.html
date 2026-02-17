@@ -432,7 +432,7 @@
   </div>
 
   <!-- Deal Detail Modal -->
-  <div class="modal-overlay" id="detail-modal">
+  <div class="modal-overlay" id="detail-modal" onclick="if(event.target===this)closeModal('detail-modal')">
     <div class="modal" style="max-width:560px;">
       <div class="modal-header">
         <span class="modal-title" id="detail-modal-title">Deal details</span>
@@ -1056,7 +1056,15 @@
           'webshop': 'Webshop',
           'booking': 'Boekingssysteem',
           'portfolio': 'Portfolio/projecten',
-          'login': 'Inlogomgeving'
+          'login': 'Inlogomgeving',
+          'cms': 'CMS (zelf content beheren)',
+          'seo': 'SEO optimalisatie',
+          'analytics': 'Analytics / statistieken',
+          'newsletter': 'Nieuwsbrief integratie',
+          'social': 'Social media integratie',
+          'reviews': 'Reviews / testimonials',
+          'maps': 'Google Maps',
+          'chat': 'Live chat / WhatsApp'
         };
 
         document.getElementById('detail-modal-body').innerHTML = `
@@ -1104,6 +1112,32 @@
               <span>${formatDate(deal.saleDate)}</span>
             </div>
             
+            <hr style="border-color:var(--border-color);">
+            <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Hosting</h4>
+            ${deal.hasHosting ? `
+              <div class="flex justify-between items-center">
+                <span class="text-muted">Status</span>
+                <span style="background:var(--accent-green-dim);color:var(--accent-green);padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">Actief</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-muted">Prijs</span>
+                <span style="font-weight:600;">${formatCurrency(deal.hostingPrice)}/${deal.hostingInterval === 'YEARLY' ? 'jaar' : 'mnd'}</span>
+              </div>
+              ${deal.hostingStartDate ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Startdatum</span>
+                <span>${formatDate(deal.hostingStartDate)}</span>
+              </div>` : ''}
+              ${deal.nextInvoiceDate ? `<div class="flex justify-between items-center">
+                <span class="text-muted">Volgende factuur</span>
+                <span>${formatDate(deal.nextInvoiceDate)}</span>
+              </div>` : ''}
+            ` : `
+              <div class="flex justify-between items-center">
+                <span class="text-muted">Status</span>
+                <span style="color:var(--text-muted);">Geen hosting</span>
+              </div>
+            `}
+            
             ${deal.websiteGoal || deal.targetAudience || deal.hasExistingWebsite ? `
               <hr style="border-color:var(--border-color);">
               <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Website context</h4>
@@ -1121,7 +1155,7 @@
               </div>` : ''}
             ` : ''}
             
-            ${deal.mood || deal.heroType || deal.toneOfVoice ? `
+            ${deal.mood || deal.heroType || deal.toneOfVoice || deal.referenceUrls ? `
               <hr style="border-color:var(--border-color);">
               <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Design & identiteit</h4>
               ${deal.mood ? `<div class="flex justify-between items-center">
@@ -1135,6 +1169,10 @@
               ${deal.toneOfVoice ? `<div class="flex justify-between items-center">
                 <span class="text-muted">Tone of voice</span>
                 <span>${toneLabels[deal.toneOfVoice] || deal.toneOfVoice}</span>
+              </div>` : ''}
+              ${deal.referenceUrls ? `<div>
+                <span class="text-muted" style="display:block;margin-bottom:6px;">Referentie websites</span>
+                <div style="background:var(--bg-secondary);padding:10px;border-radius:6px;font-size:13px;">${deal.referenceUrls.split('\n').filter(Boolean).map(u => `<a href="${u.trim()}" target="_blank" style="color:var(--accent-brand);display:block;">${u.trim()}</a>`).join('')}</div>
               </div>` : ''}
             ` : ''}
             

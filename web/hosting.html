@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <title>Hosting - Cold Outreach CRM</title>
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-content">
+      <header class="topbar" id="topbar"></header>
+      <main class="page-content">
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="hosting-kpis"></div>
+
+        <div id="hosting-alerts" style="margin-bottom:20px;"></div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Hosting klanten</span>
+            <input type="text" id="hosting-search" class="form-input" placeholder="Zoek klant..." style="width:250px;" oninput="filterHostingTable()">
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div style="max-height:700px;overflow-y:auto;">
+              <table class="data-table" style="font-size:13px;">
+                <thead style="position:sticky;top:0;background:var(--bg-card);z-index:10;">
+                  <tr>
+                    <th style="cursor:pointer;" onclick="sortTable('companyName')">
+                      Bedrijf <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                    </th>
+                    <th>Gemeente</th>
+                    <th>Pakket</th>
+                    <th style="text-align:right;cursor:pointer;" onclick="sortTable('hostingPrice')">
+                      Prijs <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                    </th>
+                    <th>Interval</th>
+                    <th style="cursor:pointer;" onclick="sortTable('hostingStartDate')">
+                      Startdatum <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                    </th>
+                    <th style="cursor:pointer;" onclick="sortTable('hostingEndDate')">
+                      Einddatum <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                    </th>
+                    <th style="cursor:pointer;" onclick="sortTable('nextInvoiceDate')">
+                      Volgende factuur <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                    </th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="hosting-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/components.js"></script>
+  <script src="assets/js/sidebar.js"></script>
+  <script>
+    let hostingData = [];
+    let sortColumn = 'nextInvoiceDate';
+    let sortDirection = 'asc';
+
+    async function init() {
+      if (!await requireLogin()) return;
+      initSidebar();
+      initTopbar('Hosting');
+      lucide.createIcons();
+      loadHosting();
+    }
+
+    async function loadHosting() {
+      try {
+        const data = await API.get('/stats/hosting');
+        hostingData = data.clients || [];
+
+        const fmt = (v) => formatCurrency(v);
+
+        document.getElementById('hosting-kpis').innerHTML = `
+          <div class="kpi-card">
+            <div class="kpi-label">Hosting klanten</div>
+            <div class="kpi-value">${data.totalClients}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Maandelijkse omzet</div>
+            <div class="kpi-value">${fmt(data.monthlyRevenue)}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Jaarlijkse omzet</div>
+            <div class="kpi-value">${fmt(data.yearlyRevenue)}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Gem. per klant/mnd</div>
+            <div class="kpi-value">${fmt(data.avgPerClient)}</div>
+          </div>
+        `;
+
+        let alertsHtml = '';
+        if (data.needsInvoicing > 0) {
+          alertsHtml += `
+            <div style="padding:12px 16px;background:var(--accent-red-dim);border:1px solid var(--accent-red);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13px;">
+              <strong style="color:var(--accent-red);">${data.needsInvoicing} klant(en)</strong> moeten gefactureerd worden (factuurdatum verstreken)
+            </div>`;
+        }
+        if (data.upcomingInvoices > 0) {
+          alertsHtml += `
+            <div style="padding:12px 16px;background:var(--accent-orange-dim);border:1px solid var(--accent-orange);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13px;">
+              <strong style="color:var(--accent-orange);">${data.upcomingInvoices} klant(en)</strong> moeten binnen 30 dagen gefactureerd worden
+            </div>`;
+        }
+        if (data.expiringSoon > 0) {
+          alertsHtml += `
+            <div style="padding:12px 16px;background:var(--accent-orange-dim);border:1px solid var(--accent-orange);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13px;">
+              <strong style="color:var(--accent-orange);">${data.expiringSoon} hosting(s)</strong> verlopen binnen 30 dagen
+            </div>`;
+        }
+        document.getElementById('hosting-alerts').innerHTML = alertsHtml;
+
+        renderTable(hostingData);
+        lucide.createIcons();
+      } catch (err) {
+        console.error('Hosting error:', err);
+      }
+    }
+
+    function renderTable(data) {
+      const fmtDate = (d) => d ? new Date(d).toLocaleDateString('nl-BE') : '-';
+
+      const sorted = [...data].sort((a, b) => {
+        let aVal = a[sortColumn];
+        let bVal = b[sortColumn];
+
+        if (sortColumn.includes('Date')) {
+          aVal = aVal ? new Date(aVal).getTime() : (sortDirection === 'asc' ? Infinity : -Infinity);
+          bVal = bVal ? new Date(bVal).getTime() : (sortDirection === 'asc' ? Infinity : -Infinity);
+        } else if (typeof aVal === 'string') {
+          aVal = (aVal || '').toLowerCase();
+          bVal = (bVal || '').toLowerCase();
+        }
+
+        return sortDirection === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
+      });
+
+      const statusBadge = (status) => {
+        const map = {
+          active: { label: 'Actief', color: 'var(--accent-green)', bg: 'var(--accent-green-dim)' },
+          overdue: { label: 'Te factureren', color: 'var(--accent-red)', bg: 'var(--accent-red-dim)' },
+          expiring: { label: 'Verloopt binnenkort', color: 'var(--accent-orange)', bg: 'var(--accent-orange-dim)' },
+          expired: { label: 'Verlopen', color: 'var(--accent-red)', bg: 'var(--accent-red-dim)' }
+        };
+        const s = map[status] || map.active;
+        return `<span style="background:${s.bg};color:${s.color};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">${s.label}</span>`;
+      };
+
+      document.getElementById('hosting-table-body').innerHTML = sorted.map(c => `
+        <tr>
+          <td style="font-weight:500;">${c.companyName}</td>
+          <td>${c.city || '-'}</td>
+          <td>${c.packageName}</td>
+          <td style="text-align:right;font-weight:600;">${formatCurrency(c.hostingPrice)}</td>
+          <td>${c.hostingInterval === 'YEARLY' ? 'Jaarlijks' : 'Maandelijks'}</td>
+          <td>${fmtDate(c.hostingStartDate)}</td>
+          <td>${fmtDate(c.hostingEndDate)}</td>
+          <td style="${c.status === 'overdue' ? 'font-weight:600;color:var(--accent-red);' : ''}">${fmtDate(c.nextInvoiceDate)}</td>
+          <td>${statusBadge(c.status)}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">Geen hosting klanten gevonden</td></tr>';
+    }
+
+    function sortTable(column) {
+      if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortColumn = column;
+        sortDirection = column.includes('Date') ? 'asc' : 'desc';
+      }
+      renderTable(hostingData);
+    }
+
+    function filterHostingTable() {
+      const search = document.getElementById('hosting-search').value.toLowerCase();
+      const filtered = hostingData.filter(c =>
+        c.companyName.toLowerCase().includes(search) ||
+        (c.city || '').toLowerCase().includes(search) ||
+        (c.packageName || '').toLowerCase().includes(search)
+      );
+      renderTable(filtered);
+    }
+
+    init();
+  </script>
+</body>
+</html>

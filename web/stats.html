@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Statistieken - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
@@ -207,7 +209,7 @@
   </div>
 
   <!-- Hosting Edit Modal -->
-  <div class="modal-overlay" id="hosting-edit-modal" style="display:none;" onclick="if(event.target===this)closeHostingModal()">
+  <div class="modal-overlay" id="hosting-edit-modal" onclick="if(event.target===this)closeHostingModal()">
     <div class="modal" style="max-width:500px;">
       <div class="modal-header">
         <h3 class="modal-title">Hosting bewerken</h3>
@@ -949,12 +951,12 @@
       document.getElementById('hosting-edit-start').value = item.hostingStartDate ? item.hostingStartDate.slice(0, 10) : '';
       document.getElementById('hosting-edit-end').value = item.hostingEndDate ? item.hostingEndDate.slice(0, 10) : '';
       document.getElementById('hosting-edit-invoice').value = item.nextInvoiceDate ? item.nextInvoiceDate.slice(0, 10) : '';
-      document.getElementById('hosting-edit-modal').style.display = 'flex';
+      document.getElementById('hosting-edit-modal').classList.add('active');
       lucide.createIcons();
     }
 
     function closeHostingModal() {
-      document.getElementById('hosting-edit-modal').style.display = 'none';
+      document.getElementById('hosting-edit-modal').classList.remove('active');
     }
 
     async function saveHosting() {

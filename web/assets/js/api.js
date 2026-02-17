@@ -3,6 +3,10 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
   : 'https://cold-outreach-crm-production.up.railway.app';
 
 const API = {
+  _cache: new Map(),
+  _inflight: new Map(),
+  _cacheTTL: 30000,
+
   async request(url, options = {}) {
     const config = {
       headers: { 'Content-Type': 'application/json' },
@@ -28,26 +32,58 @@ const API = {
     return data;
   },
 
-  get(url) {
-    return this.request(url);
+  get(url, { cache = false } = {}) {
+    if (cache) {
+      const cached = this._cache.get(url);
+      if (cached && Date.now() - cached.ts < this._cacheTTL) {
+        return Promise.resolve(cached.data);
+      }
+    }
+
+    if (this._inflight.has(url)) {
+      return this._inflight.get(url);
+    }
+
+    const promise = this.request(url).then(data => {
+      this._inflight.delete(url);
+      if (cache) {
+        this._cache.set(url, { data, ts: Date.now() });
+      }
+      return data;
+    }).catch(err => {
+      this._inflight.delete(url);
+      throw err;
+    });
+
+    this._inflight.set(url, promise);
+    return promise;
   },
 
   post(url, body) {
+    this._cache.clear();
     return this.request(url, { method: 'POST', body });
   },
 
   put(url, body) {
+    this._cache.clear();
     return this.request(url, { method: 'PUT', body });
   },
 
   delete(url, body) {
+    this._cache.clear();
     return this.request(url, { method: 'DELETE', body });
   },
 
   upload(url, formData) {
+    this._cache.clear();
     return this.request(url, {
       method: 'POST',
       body: formData
     });
+  },
+
+  invalidate(url) {
+    if (url) this._cache.delete(url);
+    else this._cache.clear();
   }
 };

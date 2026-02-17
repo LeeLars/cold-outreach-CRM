@@ -74,6 +74,9 @@ function initTopbar(title) {
 
   topbarEl.innerHTML = `
     <div class="topbar-left">
+      <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
+        <i data-lucide="menu"></i>
+      </button>
       <h1 class="topbar-title">${title}</h1>
     </div>
     <div class="topbar-right">
@@ -84,5 +87,29 @@ function initTopbar(title) {
     </div>
   `;
 
+  if (!document.getElementById('sidebar-backdrop')) {
+    const backdrop = document.createElement('div');
+    backdrop.id = 'sidebar-backdrop';
+    backdrop.className = 'sidebar-backdrop';
+    backdrop.onclick = () => toggleSidebar(false);
+    document.body.appendChild(backdrop);
+  }
+
   if (window.lucide) lucide.createIcons();
+}
+
+function toggleSidebar(forceState) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (!sidebar) return;
+
+  const isOpen = typeof forceState === 'boolean' ? forceState : !sidebar.classList.contains('open');
+
+  if (isOpen) {
+    sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('active');
+  } else {
+    sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+  }
 }

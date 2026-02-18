@@ -215,10 +215,10 @@ router.put('/:id', async (req, res, next) => {
       }
     });
 
-    // Handle hosting updates
-    const existingDeal = await prisma.deal.findFirst({
-      where: { clientId: client.id }
-    });
+    // Handle hosting updates - get deal via client's dealId
+    const existingDeal = client.dealId ? await prisma.deal.findUnique({
+      where: { id: client.dealId }
+    }) : null;
 
     if (hasHosting) {
       const hostingMonthly = parseFloat(hostingPrice) || 20;
@@ -257,8 +257,7 @@ router.put('/:id', async (req, res, next) => {
             data: {
               name: 'Direct klant',
               oneTimePrice: 0,
-              monthlyPrice: hostingMonthly,
-              description: 'Standaard pakket voor directe klanten'
+              monthlyPrice: hostingMonthly
             }
           });
         }
@@ -280,15 +279,15 @@ router.put('/:id', async (req, res, next) => {
               city: client.city,
               website: client.website,
               source: 'CRM',
-              status: 'KLANT'
+              status: 'KLANT',
+              createdById: req.session.userId
             }
           });
         }
 
-        await prisma.deal.create({
+        const newDeal = await prisma.deal.create({
           data: {
             leadId: lead.id,
-            clientId: client.id,
             packageId: defaultPackage.id,
             acquisitionCost: 0,
             acquisitionType: 'none',
@@ -301,6 +300,12 @@ router.put('/:id', async (req, res, next) => {
             hostingEndDate: hostingEndDate ? new Date(hostingEndDate) : null,
             nextInvoiceDate: nextInvoice
           }
+        });
+
+        // Update client with the new dealId
+        await prisma.client.update({
+          where: { id: client.id },
+          data: { dealId: newDeal.id }
         });
       }
     } else if (existingDeal && existingDeal.hasHosting) {

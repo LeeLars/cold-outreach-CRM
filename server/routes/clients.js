@@ -90,7 +90,7 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'Bedrijfsnaam is verplicht' });
     }
 
-    // Create a lead first (required for client relationship)
+    // Create a lead first (required for deal relationship)
     const lead = await prisma.lead.create({
       data: {
         companyName,
@@ -108,7 +108,57 @@ router.post('/', async (req, res, next) => {
       }
     });
 
-    // Create client
+    // Get or create a default package for direct clients
+    let defaultPackage = await prisma.package.findFirst({
+      where: { name: 'Direct klant' }
+    });
+
+    if (!defaultPackage) {
+      defaultPackage = await prisma.package.create({
+        data: {
+          name: 'Direct klant',
+          oneTimePrice: 0,
+          monthlyPrice: hasHosting ? (parseFloat(hostingPrice) || 20) : 0,
+          description: 'Standaard pakket voor directe klanten'
+        }
+      });
+    }
+
+    // Create deal (required before client since client needs dealId)
+    const saleDateObj = new Date();
+    const start = hostingStartDate ? new Date(hostingStartDate) : saleDateObj;
+    let nextInvoice = null;
+    
+    if (hasHosting) {
+      nextInvoice = new Date(start);
+      if (hostingInterval === 'YEARLY') {
+        nextInvoice.setFullYear(nextInvoice.getFullYear() + 1);
+      } else {
+        nextInvoice.setMonth(nextInvoice.getMonth() + 1);
+      }
+    }
+
+    const hostingMonthly = hasHosting ? (parseFloat(hostingPrice) || 20) : 0;
+    const totalValue = hostingMonthly * 12;
+
+    const deal = await prisma.deal.create({
+      data: {
+        leadId: lead.id,
+        packageId: defaultPackage.id,
+        acquisitionCost: 0,
+        acquisitionType: 'none',
+        totalValue,
+        saleDate: saleDateObj,
+        hasHosting,
+        hostingPrice: hostingMonthly,
+        hostingInterval: hostingInterval || 'MONTHLY',
+        hostingStartDate: hasHosting ? start : null,
+        hostingEndDate: null,
+        nextInvoiceDate: nextInvoice
+      }
+    });
+
+    // Now create client with the dealId
     const client = await prisma.client.create({
       data: {
         companyName,
@@ -119,58 +169,10 @@ router.post('/', async (req, res, next) => {
         address,
         city,
         website,
-        notes
+        notes,
+        dealId: deal.id
       }
     });
-
-    // If hosting is requested, create a minimal deal
-    if (hasHosting) {
-      // Get or create a default package for direct clients
-      let defaultPackage = await prisma.package.findFirst({
-        where: { name: 'Direct klant' }
-      });
-
-      if (!defaultPackage) {
-        defaultPackage = await prisma.package.create({
-          data: {
-            name: 'Direct klant',
-            oneTimePrice: 0,
-            monthlyPrice: parseFloat(hostingPrice) || 20,
-            description: 'Standaard pakket voor directe klanten'
-          }
-        });
-      }
-
-      const saleDateObj = new Date();
-      const start = hostingStartDate ? new Date(hostingStartDate) : saleDateObj;
-      let nextInvoice = new Date(start);
-      if (hostingInterval === 'YEARLY') {
-        nextInvoice.setFullYear(nextInvoice.getFullYear() + 1);
-      } else {
-        nextInvoice.setMonth(nextInvoice.getMonth() + 1);
-      }
-
-      const hostingMonthly = parseFloat(hostingPrice) || 20;
-      const totalValue = hostingMonthly * 12;
-
-      await prisma.deal.create({
-        data: {
-          leadId: lead.id,
-          clientId: client.id,
-          packageId: defaultPackage.id,
-          acquisitionCost: 0,
-          acquisitionType: 'none',
-          totalValue,
-          saleDate: saleDateObj,
-          hasHosting: true,
-          hostingPrice: hostingMonthly,
-          hostingInterval,
-          hostingStartDate: start,
-          hostingEndDate: null,
-          nextInvoiceDate: nextInvoice
-        }
-      });
-    }
 
     // Return client with deal info
     const clientWithDeal = await prisma.client.findUnique({

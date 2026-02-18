@@ -581,30 +581,30 @@
       const container = document.getElementById('financial-summary');
       container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.06);border-radius:8px;border-left:3px solid #34d399;">
-            <span style="color:#a0a0a0;font-size:13px;">Totale omzet</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.1);border-radius:8px;border-left:3px solid #34d399;">
+            <span style="color:var(--dash-text-muted);font-size:13px;">Totale omzet</span>
             <span style="font-weight:800;font-size:18px;color:#34d399;">${formatCurrency(dashboard.totalRevenue)}</span>
           </div>
           <div class="flex justify-between items-center" style="padding:0 4px;">
-            <span class="text-muted" style="font-size:13px;">Gem. dealwaarde</span>
-            <span style="font-weight:600;font-size:14px;">${formatCurrency(dashboard.avgDealValue)}</span>
+            <span style="color:var(--dash-text-muted);font-size:13px;">Gem. dealwaarde</span>
+            <span style="font-weight:600;font-size:14px;color:var(--dash-text);">${formatCurrency(dashboard.avgDealValue)}</span>
           </div>
           <div class="flex justify-between items-center" style="padding:0 4px;">
-            <span class="text-muted" style="font-size:13px;">Gem. acquisitiekost</span>
-            <span style="font-weight:600;font-size:14px;">${formatCurrency(dashboard.avgAcquisitionCost)}</span>
+            <span style="color:var(--dash-text-muted);font-size:13px;">Gem. acquisitiekost</span>
+            <span style="font-weight:600;font-size:14px;color:var(--dash-text);">${formatCurrency(dashboard.avgAcquisitionCost)}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.06);border-radius:8px;border-left:3px solid #34d399;">
-            <span style="color:#a0a0a0;font-size:13px;">ROI</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.1);border-radius:8px;border-left:3px solid #34d399;">
+            <span style="color:var(--dash-text-muted);font-size:13px;">ROI</span>
             <span style="font-weight:800;font-size:18px;color:#34d399;">${revenue.roi}%</span>
           </div>
-          <hr style="border-color:rgba(255,255,255,0.04);margin:4px 0;">
-          <div style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:0.5px;">Omzet per pakket</div>
+          <hr style="border-color:var(--dash-border);margin:4px 0;">
+          <div style="font-size:11px;font-weight:600;color:var(--dash-text-muted);text-transform:uppercase;letter-spacing:0.5px;">Omzet per pakket</div>
           ${revenue.packageRevenue.length > 0 ? revenue.packageRevenue.map(p => `
             <div class="flex justify-between items-center" style="padding:0 4px;">
-              <span style="font-size:13px;color:#a0a0a0;">${p.name}</span>
-              <span style="font-weight:600;font-size:13px;">${formatCurrency(p.revenue)}</span>
+              <span style="font-size:13px;color:var(--dash-text-muted);">${p.name}</span>
+              <span style="font-weight:600;font-size:13px;color:var(--dash-text);">${formatCurrency(p.revenue)}</span>
             </div>
-          `).join('') : '<span style="font-size:13px;color:#666;">Nog geen deals</span>'}
+          `).join('') : '<span style="font-size:13px;color:var(--dash-text-muted);">Nog geen deals</span>'}
         </div>
       `;
     }

@@ -57,11 +57,11 @@
   --accent-yellow: #fbbf24;
 
   /* Dashboard Dark Theme Tokens */
-  --dash-bg: #0f172a; /* Dark background for dashboard specific elements */
-  --dash-card: #1e293b;
-  --dash-border: rgba(255, 255, 255, 0.1);
-  --dash-text: #f1f5f9;
-  --dash-text-muted: #94a3b8;
+  --dash-bg: #09090b; /* Zinc 950 */
+  --dash-card: #18181b; /* Zinc 900 */
+  --dash-border: #27272a; /* Zinc 800 */
+  --dash-text: #f4f4f5; /* Zinc 100 */
+  --dash-text-muted: #a1a1aa; /* Zinc 400 */
 
   /* Layout */
   --sidebar-width: 260px;

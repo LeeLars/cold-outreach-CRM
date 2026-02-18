@@ -103,7 +103,8 @@ router.post('/', async (req, res, next) => {
         website,
         notes,
         source: 'CRM',
-        status: 'KLANT'
+        status: 'KLANT',
+        createdById: req.session.userId
       }
     });
 

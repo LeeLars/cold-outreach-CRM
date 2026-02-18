@@ -244,11 +244,8 @@ router.get('/recent-leads', async (req, res, next) => {
 
 router.get('/locations', async (req, res, next) => {
   try {
-    // Exclude direct clients (source: CRM) from location stats
+    // Include all leads for location stats (CRM leads count as warm leads)
     const leads = await prisma.lead.findMany({
-      where: {
-        source: { not: 'CRM' }
-      },
       select: {
         city: true,
         status: true,

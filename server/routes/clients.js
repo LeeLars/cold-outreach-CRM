@@ -118,8 +118,7 @@ router.post('/', async (req, res, next) => {
         data: {
           name: 'Direct klant',
           oneTimePrice: 0,
-          monthlyPrice: hasHosting ? (parseFloat(hostingPrice) || 20) : 0,
-          description: 'Standaard pakket voor directe klanten'
+          monthlyPrice: hasHosting ? (parseFloat(hostingPrice) || 20) : 0
         }
       });
     }

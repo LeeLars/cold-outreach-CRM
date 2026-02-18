@@ -320,13 +320,26 @@ router.delete('/:id/hosting', async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    const deal = await prisma.deal.findUnique({ where: { id: req.params.id } });
+    const deal = await prisma.deal.findUnique({ 
+      where: { id: req.params.id },
+      include: { client: { select: { id: true } } }
+    });
     if (!deal) {
       return res.status(404).json({ error: 'Deal niet gevonden' });
     }
 
+    // Delete related records in correct order
     await prisma.dealUpsell.deleteMany({ where: { dealId: req.params.id } });
+    if (deal.client) {
+      await prisma.client.delete({ where: { id: deal.client.id } });
+    }
     await prisma.deal.delete({ where: { id: req.params.id } });
+
+    // Reset lead status since deal is removed
+    await prisma.lead.update({
+      where: { id: deal.leadId },
+      data: { status: 'AFSPRAAK' }
+    });
 
     res.json({ message: 'Deal verwijderd' });
   } catch (err) {

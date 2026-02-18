@@ -10,26 +10,31 @@ router.use(requireAuth);
 
 router.get('/dashboard', async (req, res, next) => {
   try {
-    // Exclude leads with source 'CRM' (direct clients) from funnel stats
+    // Count ALL leads (including CRM) for total overview
     const statuses = ['NIEUW', 'VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'];
-    const [counts, deals] = await Promise.all([
+    const [allCounts, pipelineCounts, deals, clientCount] = await Promise.all([
+      // All leads for totals
+      Promise.all(statuses.map(status => prisma.lead.count({ where: { status } }))),
+      // Pipeline-only leads for funnel conversions (exclude direct clients)
       Promise.all(statuses.map(status => prisma.lead.count({ 
-        where: { 
-          status,
-          source: { not: 'CRM' }
-        } 
+        where: { status, source: { not: 'CRM' } } 
       }))),
-      prisma.deal.aggregate({ _sum: { totalValue: true }, _avg: { totalValue: true, acquisitionCost: true } })
+      prisma.deal.aggregate({ _sum: { totalValue: true }, _avg: { totalValue: true, acquisitionCost: true } }),
+      prisma.client.count()
     ]);
 
+    // All leads for display
     const current = {};
-    statuses.forEach((s, i) => current[s] = counts[i]);
-    const totalLeads = counts.reduce((a, b) => a + b, 0);
+    statuses.forEach((s, i) => current[s] = allCounts[i]);
+    const totalLeads = allCounts.reduce((a, b) => a + b, 0);
 
-    const funnelVerstuurd = totalLeads - current.NIEUW;
-    const funnelGereageerd = current.GEREAGEERD + current.AFSPRAAK + current.KLANT + current.NIET_GEINTERESSEERD;
-    const funnelInteresse = current.AFSPRAAK + current.KLANT;
-    const funnelKlant = current.KLANT;
+    // Pipeline-only for funnel conversions
+    const pipelineTotal = pipelineCounts.reduce((a, b) => a + b, 0);
+    const pNieuw = pipelineCounts[0];
+    const pVerstuurd = pipelineTotal - pNieuw;
+    const pGereageerd = pipelineCounts[3] + pipelineCounts[4] + pipelineCounts[5] + pipelineCounts[6];
+    const pInteresse = pipelineCounts[4] + pipelineCounts[5];
+    const pKlant = pipelineCounts[5];
 
     const totalRevenue = deals._sum.totalValue || 0;
     const avgDealValue = deals._avg.totalValue || 0;
@@ -37,21 +42,22 @@ router.get('/dashboard', async (req, res, next) => {
 
     res.json({
       totalLeads,
+      totalClients: clientCount,
       current,
       funnel: {
-        verstuurd: funnelVerstuurd,
-        gereageerd: funnelGereageerd,
-        interesse: funnelInteresse,
-        klant: funnelKlant
+        verstuurd: pVerstuurd,
+        gereageerd: pGereageerd,
+        interesse: pInteresse,
+        klant: pKlant
       },
       totalRevenue,
       avgDealValue,
       avgAcquisitionCost,
       conversions: {
-        sendRate: totalLeads > 0 ? ((funnelVerstuurd / totalLeads) * 100).toFixed(1) : 0,
-        responseRate: funnelVerstuurd > 0 ? ((funnelGereageerd / funnelVerstuurd) * 100).toFixed(1) : 0,
-        interestRate: funnelGereageerd > 0 ? ((funnelInteresse / funnelGereageerd) * 100).toFixed(1) : 0,
-        closeRate: funnelInteresse > 0 ? ((funnelKlant / funnelInteresse) * 100).toFixed(1) : 0
+        sendRate: pipelineTotal > 0 ? ((pVerstuurd / pipelineTotal) * 100).toFixed(1) : 0,
+        responseRate: pVerstuurd > 0 ? ((pGereageerd / pVerstuurd) * 100).toFixed(1) : 0,
+        interestRate: pGereageerd > 0 ? ((pInteresse / pGereageerd) * 100).toFixed(1) : 0,
+        closeRate: pInteresse > 0 ? ((pKlant / pInteresse) * 100).toFixed(1) : 0
       }
     });
   } catch (err) {

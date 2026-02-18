@@ -139,12 +139,13 @@ router.get('/:id', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const { companyName, vatNumber, city, address, website, phone, email, contactPerson, status, source, notes } = req.body;
+    const normalizedCity = normalizeCity(city);
     const lead = await prisma.lead.update({
       where: { id: req.params.id },
       data: { 
         companyName, 
         vatNumber,
-        city: normalizeCity(city), 
+        city: normalizedCity, 
         address, 
         website, 
         phone, 
@@ -153,8 +154,28 @@ router.put('/:id', async (req, res, next) => {
         status, 
         source, 
         notes 
-      }
+      },
+      include: { deal: { select: { client: { select: { id: true } } } } }
     });
+
+    // Sync client data if this lead has a client
+    if (lead.deal && lead.deal.client) {
+      await prisma.client.update({
+        where: { id: lead.deal.client.id },
+        data: {
+          companyName,
+          vatNumber,
+          contactPerson,
+          email,
+          phone,
+          address,
+          city: normalizedCity,
+          website,
+          notes
+        }
+      });
+    }
+
     res.json(lead);
   } catch (err) {
     next(err);
@@ -199,9 +220,26 @@ router.delete('/bulk', async (req, res, next) => {
     if (!ids || !Array.isArray(ids)) {
       return res.status(400).json({ error: 'IDs zijn verplicht' });
     }
-    await prisma.lead.deleteMany({
-      where: { id: { in: ids } }
+
+    // First delete related records that depend on deals/leads
+    // DealUpsells -> Clients -> Deals -> Appointments are all cascade from Lead
+    // But deleteMany doesn't trigger cascades, so we need to clean up manually
+    const leads = await prisma.lead.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, deal: { select: { id: true } } }
     });
+
+    const dealIds = leads.filter(l => l.deal).map(l => l.deal.id);
+
+    if (dealIds.length > 0) {
+      await prisma.dealUpsell.deleteMany({ where: { dealId: { in: dealIds } } });
+      await prisma.client.deleteMany({ where: { dealId: { in: dealIds } } });
+      await prisma.deal.deleteMany({ where: { id: { in: dealIds } } });
+    }
+
+    await prisma.appointment.deleteMany({ where: { leadId: { in: ids } } });
+    await prisma.lead.deleteMany({ where: { id: { in: ids } } });
+
     res.json({ message: `${ids.length} leads verwijderd` });
   } catch (err) {
     next(err);

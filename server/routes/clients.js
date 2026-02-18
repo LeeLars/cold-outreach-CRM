@@ -212,8 +212,27 @@ router.put('/:id', async (req, res, next) => {
         city,
         website,
         notes
-      }
+      },
+      include: { deal: { select: { leadId: true } } }
     });
+
+    // Sync lead data with client data
+    if (client.deal && client.deal.leadId) {
+      await prisma.lead.update({
+        where: { id: client.deal.leadId },
+        data: {
+          companyName,
+          vatNumber,
+          contactPerson,
+          email,
+          phone,
+          address,
+          city,
+          website,
+          notes
+        }
+      });
+    }
 
     // Handle hosting updates - get deal via client's dealId
     const existingDeal = client.dealId ? await prisma.deal.findUnique({
@@ -332,6 +351,39 @@ router.put('/:id', async (req, res, next) => {
     });
 
     res.json(updatedClient);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Delete client (cascades to deal and lead)
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const client = await prisma.client.findUnique({
+      where: { id: req.params.id },
+      include: { deal: { select: { id: true, leadId: true } } }
+    });
+
+    if (!client) {
+      return res.status(404).json({ error: 'Klant niet gevonden' });
+    }
+
+    // Delete in correct order: client -> deal -> lead
+    // Client has onDelete: Cascade on deal, so deleting deal removes client
+    // Deal has onDelete: Cascade on lead, so deleting lead removes deal
+    // So we just delete the lead and everything cascades
+    if (client.deal && client.deal.leadId) {
+      await prisma.lead.delete({
+        where: { id: client.deal.leadId }
+      });
+    } else {
+      // Fallback: delete client directly if no deal/lead chain
+      await prisma.client.delete({
+        where: { id: req.params.id }
+      });
+    }
+
+    res.json({ message: 'Klant verwijderd' });
   } catch (err) {
     next(err);
   }

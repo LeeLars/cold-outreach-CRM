@@ -240,10 +240,10 @@
               <span class="dashboard-label">Klanten</span>
               <i data-lucide="building-2" style="color:var(--accent-green);width:18px;height:18px;"></i>
             </div>
-            <div class="dashboard-value">${c.KLANT}</div>
+            <div class="dashboard-value">${data.totalClients || c.KLANT}</div>
             <div class="dashboard-subtext">
-              <span style="color:var(--accent-green);">${conv.closeRate}%</span>
-              <span>close rate</span>
+              <span style="color:var(--accent-green);">${data.totalClients || c.KLANT}</span>
+              <span>actieve klanten</span>
             </div>
             <div class="dashboard-chart-container">
               <canvas id="chart-clients"></canvas>

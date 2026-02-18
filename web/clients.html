@@ -377,7 +377,10 @@
             ` : ''}
 
             <hr style="border-color:var(--border-color);">
-            <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <div style="display:flex;gap:8px;justify-content:space-between;">
+              <button class="btn btn-sm" style="color:var(--accent-red);border:1px solid var(--accent-red);background:transparent;" onclick="deleteClient('${client.id}','${client.companyName.replace(/'/g, "\\'")}')">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Verwijderen
+              </button>
               <button class="btn btn-secondary btn-sm" onclick="closeModal('detail-modal');openEditClient('${client.id}')">
                 <i data-lucide="pencil" style="width:14px;height:14px;"></i> Bewerken
               </button>
@@ -632,6 +635,18 @@
         loadClients();
       } catch (err) {
         showToast(err.message || 'Fout bij aanmaken klant', 'error');
+      }
+    }
+
+    async function deleteClient(id, name) {
+      if (!confirm(`Weet je zeker dat je "${name}" wilt verwijderen? Dit verwijdert ook de bijbehorende lead en deal.`)) return;
+      try {
+        await API.delete(`/clients/${id}`);
+        closeModal('detail-modal');
+        showToast(`Klant "${name}" verwijderd`);
+        loadClients();
+      } catch (err) {
+        showToast(err.message || 'Fout bij verwijderen', 'error');
       }
     }
 

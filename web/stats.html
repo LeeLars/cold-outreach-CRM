@@ -27,28 +27,36 @@
 
         <!-- Funnel Tab -->
         <div id="tab-funnel">
+          <div class="section-header">
+            <div class="section-header-icon lead-theme"><i data-lucide="users" style="width:18px;height:18px;"></i></div>
+            <span class="section-header-title lead-theme">Lead Pipeline Analyse</span>
+          </div>
           <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="funnel-kpis"></div>
-          <div class="card mb-24">
-            <div class="card-header"><span class="card-title">Pipeline per status</span></div>
+          <div class="card mb-24" style="border-top:2px solid #60a5fa;">
+            <div class="card-header"><span class="card-title" style="color:#60a5fa;">Pipeline per status</span></div>
             <div class="card-body"><canvas id="funnel-bar-chart" height="300"></canvas></div>
           </div>
-          <div class="card">
-            <div class="card-header"><span class="card-title">Conversieratio per stap</span></div>
+          <div class="card" style="border-top:2px solid #60a5fa;">
+            <div class="card-header"><span class="card-title" style="color:#60a5fa;">Conversieratio per stap</span></div>
             <div class="card-body" id="conversion-steps"></div>
           </div>
         </div>
 
         <!-- Revenue Tab -->
         <div id="tab-revenue" class="hidden">
+          <div class="section-header">
+            <div class="section-header-icon client-theme"><i data-lucide="building-2" style="width:18px;height:18px;"></i></div>
+            <span class="section-header-title client-theme">Klant Omzet & ROI</span>
+          </div>
           <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="revenue-kpis"></div>
           <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;" id="revenue-channel-kpis"></div>
           <div class="grid-2 mb-24">
-            <div class="card">
-              <div class="card-header"><span class="card-title">Omzet per maand</span></div>
+            <div class="card" style="border-top:2px solid #34d399;">
+              <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet per maand</span></div>
               <div class="card-body"><canvas id="monthly-revenue-chart" height="280"></canvas></div>
             </div>
-            <div class="card">
-              <div class="card-header"><span class="card-title">Omzet per pakket</span></div>
+            <div class="card" style="border-top:2px solid #34d399;">
+              <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet per pakket</span></div>
               <div class="card-body"><canvas id="package-revenue-chart" height="280"></canvas></div>
             </div>
           </div>
@@ -305,24 +313,24 @@
         data.funnel.forEach(f => cur[f.status] = f.count);
 
         document.getElementById('funnel-kpis').innerHTML = `
-          <div class="kpi-card">
+          <div class="kpi-card lead-theme">
             <div class="kpi-label">Verstuurd ratio</div>
-            <div class="kpi-value">${data.conversions.sendRate}%</div>
-            <span class="kpi-badge neutral">${cur.VERSTUURD + cur.GEEN_REACTIE} nu verstuurd / ${data.counts.totalVerstuurd} door funnel</span>
+            <div class="kpi-value" style="color:#60a5fa;">${data.conversions.sendRate}%</div>
+            <span class="kpi-badge neutral">${cur.VERSTUURD + cur.GEEN_REACTIE} nu verstuurd</span>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card lead-theme">
             <div class="kpi-label">Reactie ratio</div>
-            <div class="kpi-value">${data.conversions.responseRate}%</div>
-            <span class="kpi-badge positive">${cur.GEREAGEERD + cur.NIET_GEINTERESSEERD} nu gereageerd / ${data.counts.totalGereageerd} door funnel</span>
+            <div class="kpi-value" style="color:#fb923c;">${data.conversions.responseRate}%</div>
+            <span class="kpi-badge positive">${cur.GEREAGEERD + cur.NIET_GEINTERESSEERD} gereageerd</span>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card lead-theme">
             <div class="kpi-label">Interesse ratio</div>
-            <div class="kpi-value">${data.conversions.interestRate}%</div>
-            <span class="kpi-badge positive">${cur.AFSPRAAK} nu interesse / ${data.counts.totalInteresse} door funnel</span>
+            <div class="kpi-value" style="color:#a78bfa;">${data.conversions.interestRate}%</div>
+            <span class="kpi-badge positive">${cur.AFSPRAAK} interesse</span>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card client-theme">
             <div class="kpi-label">Close ratio</div>
-            <div class="kpi-value">${data.conversions.closeRate}%</div>
+            <div class="kpi-value" style="color:#34d399;">${data.conversions.closeRate}%</div>
             <span class="kpi-badge positive">${cur.KLANT} klanten</span>
           </div>
         `;
@@ -376,17 +384,17 @@
         const data = await API.get('/stats/revenue');
 
         document.getElementById('revenue-kpis').innerHTML = `
-          <div class="kpi-card">
+          <div class="kpi-card client-theme">
             <div class="kpi-label">Totale omzet</div>
-            <div class="kpi-value text-green">${formatCurrency(data.totalRevenue)}</div>
+            <div class="kpi-value" style="color:#34d399;">${formatCurrency(data.totalRevenue)}</div>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card" style="border-left-color:#f87171;">
             <div class="kpi-label">Totale kosten</div>
-            <div class="kpi-value">${formatCurrency(data.totalCost)}</div>
+            <div class="kpi-value" style="color:#f87171;">${formatCurrency(data.totalCost)}</div>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card client-theme">
             <div class="kpi-label">ROI</div>
-            <div class="kpi-value text-green">${data.roi}%</div>
+            <div class="kpi-value" style="color:#34d399;">${data.roi}%</div>
           </div>
         `;
 

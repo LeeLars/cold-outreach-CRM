@@ -70,6 +70,7 @@
                   <th style="cursor:pointer;" onclick="sortLeads('website')">
                     Website <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                   </th>
+                  <th>Bron</th>
                   <th style="cursor:pointer;" onclick="sortLeads('status')">
                     Status <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                   </th>
@@ -309,6 +310,7 @@
           <td><div class="skeleton-cell md"></div></td>
           <td><div class="skeleton-cell lg"></div></td>
           <td><div class="skeleton-cell badge"></div></td>
+          <td><div class="skeleton-cell badge"></div></td>
           <td><div class="skeleton-cell md"></div></td>
           <td><div class="skeleton-cell sm"></div></td>
         </tr>
@@ -371,17 +373,31 @@
     function renderLeads(data) {
       const tbody = document.getElementById('leads-body');
       if (data.leads.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted" style="padding:40px;">Geen leads gevonden</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted" style="padding:40px;">Geen leads gevonden</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = data.leads.map((lead, i) => `
+      tbody.innerHTML = data.leads.map((lead, i) => {
+        const sourceMap = {
+          'cold-outreach': { label: 'Cold outreach', cls: 'cold-outreach' },
+          'flyer': { label: 'Flyer', cls: 'flyer' },
+          'website': { label: 'Website', cls: 'warm' },
+          'referral': { label: 'Doorverwijzing', cls: 'warm' },
+          'social': { label: 'Social media', cls: 'warm' },
+          'CRM': { label: 'CRM', cls: 'cold-outreach' },
+          'other': { label: 'Anders', cls: 'cold-outreach' }
+        };
+        const src = sourceMap[lead.source] || { label: '-', cls: '' };
+        const sourceBadge = lead.source ? `<span class="source-badge ${src.cls}">${src.label}</span>` : '<span style="color:#666;font-size:11px;">-</span>';
+
+        return `
         <tr style="cursor:pointer;" onclick="if(!event.target.closest('input,select,a,button')){viewLead('${lead.id}')}">
           <td class="checkbox-cell"><input type="checkbox" data-id="${lead.id}" data-status="${lead.status}" class="lead-checkbox" ${selectedIds.has(lead.id) ? 'checked' : ''}></td>
           <td style="color:var(--text-muted);">${((data.page - 1) * currentLimit) + i + 1}</td>
           <td style="color:var(--text-primary);font-weight:500;">${lead.companyName}</td>
           <td>${lead.city || '-'}</td>
           <td>${lead.website ? `<a href="${lead.website}" target="_blank" style="color:var(--accent-blue);" onclick="event.stopPropagation()">${lead.website}</a>` : '-'}</td>
+          <td>${sourceBadge}</td>
           <td class="status-cell ${lead.status}">
             <select class="status-select ${lead.status}" data-id="${lead.id}" onchange="quickStatusChange(this)">
               ${Object.entries(STATUS_LABELS).map(([val, label]) =>
@@ -396,7 +412,8 @@
             </button>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
 
       document.querySelectorAll('.lead-checkbox').forEach(cb => {
         cb.addEventListener('change', () => {

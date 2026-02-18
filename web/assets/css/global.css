@@ -1525,6 +1525,102 @@ textarea.form-input {
   }
 }
 
+/* ===== SECTION HEADERS (Lead vs Client distinction) ===== */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.section-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.section-header-icon.lead-theme {
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+}
+
+.section-header-icon.client-theme {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+}
+
+.section-header-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-header-title.lead-theme { color: #60a5fa; }
+.section-header-title.client-theme { color: #34d399; }
+
+/* ===== SOURCE / ORIGIN BADGES ===== */
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.source-badge.cold-outreach {
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+}
+
+.source-badge.flyer {
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+}
+
+.source-badge.warm {
+  background: rgba(251, 146, 60, 0.12);
+  color: #fb923c;
+}
+
+.source-badge.referral {
+  background: rgba(167, 139, 250, 0.12);
+  color: #a78bfa;
+}
+
+.source-badge.website {
+  background: rgba(34, 211, 238, 0.12);
+  color: #22d3ee;
+}
+
+.source-badge.social {
+  background: rgba(251, 146, 60, 0.12);
+  color: #fb923c;
+}
+
+.source-badge.direct {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+}
+
+/* ===== KPI CARD THEME VARIANTS ===== */
+.kpi-card.lead-theme {
+  border-left-color: #60a5fa;
+}
+
+.kpi-card.client-theme {
+  border-left-color: #34d399;
+}
+
 /* ===== UTILITIES ===== */
 .hidden { display: none !important; }
 .text-green { color: var(--accent-green); }

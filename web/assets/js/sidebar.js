@@ -8,11 +8,13 @@ function initSidebar() {
     { section: 'Overzicht', items: [
       { id: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', href: basePath('/dashboard.html') }
     ]},
-    { section: 'Beheer', items: [
-      { id: 'leads', label: 'Leads', icon: 'users', href: basePath('/leads.html') },
-      { id: 'agenda', label: 'Agenda', icon: 'calendar', href: basePath('/agenda.html') },
-      { id: 'deals', label: 'Deals', icon: 'handshake', href: basePath('/deals.html') },
-      { id: 'clients', label: 'Klanten', icon: 'building-2', href: basePath('/clients.html') },
+    { section: 'Lead Pipeline', items: [
+      { id: 'leads', label: 'Leads', icon: 'users', href: basePath('/leads.html'), color: '#60a5fa' },
+      { id: 'agenda', label: 'Agenda', icon: 'calendar', href: basePath('/agenda.html') }
+    ]},
+    { section: 'Klanten & Deals', items: [
+      { id: 'clients', label: 'Klanten', icon: 'building-2', href: basePath('/clients.html'), color: '#34d399' },
+      { id: 'deals', label: 'Deals', icon: 'handshake', href: basePath('/deals.html'), color: '#34d399' },
       { id: 'hosting', label: 'Hosting', icon: 'server', href: basePath('/hosting.html') },
       { id: 'packages', label: 'Pakketten', icon: 'package', href: basePath('/packages.html') }
     ]},
@@ -33,9 +35,10 @@ function initSidebar() {
     section.items.forEach(item => {
       if (item.adminOnly && (!currentUser || currentUser.role !== 'ADMIN')) return;
       const isActive = currentPage === item.id;
+      const colorStyle = item.color ? ` style="color:${item.color}"` : '';
       navHTML += `
         <a href="${item.href}" class="sidebar-link ${isActive ? 'active' : ''}">
-          <i data-lucide="${item.icon}"></i>
+          <i data-lucide="${item.icon}"${colorStyle}></i>
           <span>${item.label}</span>
         </a>`;
     });

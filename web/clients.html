@@ -28,12 +28,13 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card" style="border-top:2px solid #34d399;">
           <div class="card-body" style="padding:0;">
             <table class="data-table" id="clients-table">
               <thead>
                 <tr>
                   <th>Bedrijfsnaam</th>
+                  <th>Herkomst</th>
                   <th>Contactpersoon</th>
                   <th>Gemeente</th>
                   <th>Telefoon</th>
@@ -116,10 +117,10 @@
 
     function renderClients(data) {
       const tbody = document.getElementById('clients-body');
-      document.getElementById('client-count').textContent = `${data.total} klant${data.total !== 1 ? 'en' : ''}`;
+      document.getElementById('client-count').innerHTML = `<span style="color:#34d399;font-weight:600;">${data.total}</span> klant${data.total !== 1 ? 'en' : ''}`;
 
       if (data.clients.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
         return;
       }
 
@@ -130,16 +131,26 @@
           ? `<span style="background:var(--accent-green-dim);color:var(--accent-green);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${formatCurrency(deal.hostingPrice)}/mnd</span>`
           : '<span style="color:var(--text-muted);font-size:12px;">Geen</span>';
 
+        let originBadge = '<span class="source-badge direct">Direct</span>';
+        if (deal?.acquisitionType === 'flyer') {
+          originBadge = '<span class="source-badge flyer">Via lead (flyer)</span>';
+        } else if (deal?.acquisitionType === 'manual' && deal?.acquisitionCost > 0) {
+          originBadge = '<span class="source-badge cold-outreach">Via lead pipeline</span>';
+        } else if (deal?.acquisitionType === 'none') {
+          originBadge = '<span class="source-badge warm">Warm / direct</span>';
+        }
+
         return `
           <tr style="cursor:pointer;" onclick="viewClient('${client.id}')">
             <td style="font-weight:500;">${client.companyName}</td>
+            <td>${originBadge}</td>
             <td>${client.contactPerson || '-'}</td>
             <td>${client.city || '-'}</td>
             <td onclick="event.stopPropagation()">${client.phone ? `<a href="tel:${client.phone}" style="color:var(--accent-brand);">${client.phone}</a>` : '-'}</td>
             <td onclick="event.stopPropagation()">${client.email ? `<a href="mailto:${client.email}" style="color:var(--accent-brand);">${client.email}</a>` : '-'}</td>
             <td>${deal?.package ? `<span style="background:var(--accent-blue-dim);color:var(--accent-blue);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${deal.package.name}</span>` : '-'}</td>
             <td>${hostingBadge}</td>
-            <td style="font-weight:700;color:var(--accent-brand);">${deal ? formatCurrency(deal.totalValue) : '-'}</td>
+            <td style="font-weight:700;color:#34d399;">${deal ? formatCurrency(deal.totalValue) : '-'}</td>
             <td style="color:var(--text-muted);">${formatDate(client.createdAt)}</td>
             <td onclick="event.stopPropagation()">
               <div style="display:flex;gap:4px;">

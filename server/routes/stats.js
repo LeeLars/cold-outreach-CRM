@@ -10,9 +10,15 @@ router.use(requireAuth);
 
 router.get('/dashboard', async (req, res, next) => {
   try {
+    // Exclude leads with source 'CRM' (direct clients) from funnel stats
     const statuses = ['NIEUW', 'VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'];
     const [counts, deals] = await Promise.all([
-      Promise.all(statuses.map(status => prisma.lead.count({ where: { status } }))),
+      Promise.all(statuses.map(status => prisma.lead.count({ 
+        where: { 
+          status,
+          source: { not: 'CRM' }
+        } 
+      }))),
       prisma.deal.aggregate({ _sum: { totalValue: true }, _avg: { totalValue: true, acquisitionCost: true } })
     ]);
 
@@ -55,9 +61,15 @@ router.get('/dashboard', async (req, res, next) => {
 
 router.get('/funnel', async (req, res, next) => {
   try {
+    // Exclude leads with source 'CRM' (direct clients that didn't go through pipeline)
     const statuses = ['NIEUW', 'VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'];
     const counts = await Promise.all(
-      statuses.map(status => prisma.lead.count({ where: { status } }))
+      statuses.map(status => prisma.lead.count({ 
+        where: { 
+          status,
+          source: { not: 'CRM' } // Exclude direct clients
+        } 
+      }))
     );
 
     const funnel = statuses.map((status, i) => ({
@@ -232,7 +244,11 @@ router.get('/recent-leads', async (req, res, next) => {
 
 router.get('/locations', async (req, res, next) => {
   try {
+    // Exclude direct clients (source: CRM) from location stats
     const leads = await prisma.lead.findMany({
+      where: {
+        source: { not: 'CRM' }
+      },
       select: {
         city: true,
         status: true,

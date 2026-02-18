@@ -25,6 +25,9 @@
           </div>
           <div class="toolbar-right">
             <span id="client-count" style="font-size:13px;color:var(--text-muted);"></span>
+            <button class="btn btn-primary" onclick="openNewClientModal()">
+              <i data-lucide="plus"></i> Nieuwe klant
+            </button>
           </div>
         </div>
 
@@ -63,6 +66,72 @@
         <button class="modal-close" onclick="closeModal('detail-modal')"><i data-lucide="x"></i></button>
       </div>
       <div class="modal-body" id="detail-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- New Client Modal -->
+  <div class="modal-overlay" id="new-client-modal" onclick="if(event.target===this)closeModal('new-client-modal')">
+    <div class="modal" style="max-width:560px;">
+      <div class="modal-header">
+        <span class="modal-title">Nieuwe klant toevoegen</span>
+        <button class="modal-close" onclick="closeModal('new-client-modal')"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">BTW nummer opzoeken (optioneel)</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" class="form-input" id="new-client-vat" placeholder="BE0866.477.739" style="flex:1;">
+            <button type="button" class="btn btn-primary" id="new-vat-lookup-btn" onclick="lookupNewClientVat()">
+              <i data-lucide="search" style="width:16px;height:16px;"></i> Opzoeken
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Alle formaten werken: BE0866.477.739 / BE0866477739 / 0866.477.739 / 0866477739</div>
+          <div id="new-vat-lookup-result" style="display:none;margin-top:8px;padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;"></div>
+        </div>
+        <hr style="border-color:var(--border-color);margin:16px 0;">
+        <div style="display:grid;gap:12px;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Bedrijfsnaam *</label>
+            <input type="text" class="form-input" id="new-client-company" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Contactpersoon</label>
+            <input type="text" class="form-input" id="new-client-contact">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Telefoon</label>
+              <input type="text" class="form-input" id="new-client-phone">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="new-client-email">
+            </div>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Adres</label>
+            <input type="text" class="form-input" id="new-client-address">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Gemeente</label>
+              <input type="text" class="form-input" id="new-client-city">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Website</label>
+              <input type="url" class="form-input" id="new-client-website" placeholder="https://...">
+            </div>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Notities</label>
+            <textarea class="form-input" id="new-client-notes" rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('new-client-modal')">Annuleren</button>
+        <button class="btn btn-primary" onclick="saveNewClient()">Klant opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -370,6 +439,95 @@
         loadClients(document.getElementById('search-input').value.trim());
       } catch (err) {
         showToast(err.message || 'Fout bij opslaan', 'error');
+      }
+    }
+
+    function openNewClientModal() {
+      document.getElementById('new-client-vat').value = '';
+      document.getElementById('new-client-company').value = '';
+      document.getElementById('new-client-contact').value = '';
+      document.getElementById('new-client-phone').value = '';
+      document.getElementById('new-client-email').value = '';
+      document.getElementById('new-client-address').value = '';
+      document.getElementById('new-client-city').value = '';
+      document.getElementById('new-client-website').value = '';
+      document.getElementById('new-client-notes').value = '';
+      const resultDiv = document.getElementById('new-vat-lookup-result');
+      resultDiv.style.display = 'none';
+      resultDiv.innerHTML = '';
+      openModal('new-client-modal');
+      lucide.createIcons();
+    }
+
+    async function lookupNewClientVat() {
+      const vatInput = document.getElementById('new-client-vat').value.trim();
+      const resultDiv = document.getElementById('new-vat-lookup-result');
+      const btn = document.getElementById('new-vat-lookup-btn');
+      
+      if (!vatInput) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'var(--accent-red-dim)';
+        resultDiv.style.color = 'var(--accent-red)';
+        resultDiv.textContent = 'Voer een BTW nummer in';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader" style="width:16px;height:16px;animation:spin 1s linear infinite;"></i> Zoeken...';
+      resultDiv.style.display = 'none';
+
+      try {
+        const data = await API.get(`/kbo/lookup/${encodeURIComponent(vatInput)}`);
+        
+        document.getElementById('new-client-company').value = data.companyName || '';
+        document.getElementById('new-client-phone').value = data.phone || '';
+        document.getElementById('new-client-email').value = data.email || '';
+        document.getElementById('new-client-address').value = data.address || '';
+        document.getElementById('new-client-city').value = data.city || '';
+        document.getElementById('new-client-website').value = data.website || '';
+        document.getElementById('new-client-vat').value = data.vatNumberFormatted || vatInput;
+
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'var(--accent-green-dim)';
+        resultDiv.style.color = 'var(--accent-green)';
+        resultDiv.innerHTML = `Bedrijf gevonden: <strong>${data.companyName}</strong>${data.legalForm ? ' (' + data.legalForm + ')' : ''}`;
+      } catch (err) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'var(--accent-red-dim)';
+        resultDiv.style.color = 'var(--accent-red)';
+        resultDiv.textContent = err.message || 'Bedrijf niet gevonden';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="search" style="width:16px;height:16px;"></i> Opzoeken';
+        lucide.createIcons();
+      }
+    }
+
+    async function saveNewClient() {
+      const companyName = document.getElementById('new-client-company').value.trim();
+      if (!companyName) {
+        showToast('Bedrijfsnaam is verplicht', 'warning');
+        return;
+      }
+
+      try {
+        const client = await API.post('/clients', {
+          companyName,
+          vatNumber: document.getElementById('new-client-vat').value.trim() || null,
+          contactPerson: document.getElementById('new-client-contact').value.trim() || null,
+          phone: document.getElementById('new-client-phone').value.trim() || null,
+          email: document.getElementById('new-client-email').value.trim() || null,
+          address: document.getElementById('new-client-address').value.trim() || null,
+          city: document.getElementById('new-client-city').value.trim() || null,
+          website: document.getElementById('new-client-website').value.trim() || null,
+          notes: document.getElementById('new-client-notes').value.trim() || null
+        });
+
+        closeModal('new-client-modal');
+        showToast(`Klant "${client.companyName}" aangemaakt`);
+        loadClients();
+      } catch (err) {
+        showToast(err.message || 'Fout bij aanmaken klant', 'error');
       }
     }
 

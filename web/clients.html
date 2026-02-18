@@ -606,6 +606,7 @@
       }
 
       const hasHosting = document.getElementById('new-client-has-hosting').checked;
+      const currentUser = JSON.parse(localStorage.getItem('user'));
       const payload = {
         companyName,
         vatNumber: document.getElementById('new-client-vat').value.trim() || null,
@@ -616,7 +617,8 @@
         city: document.getElementById('new-client-city').value.trim() || null,
         website: document.getElementById('new-client-website').value.trim() || null,
         notes: document.getElementById('new-client-notes').value.trim() || null,
-        hasHosting
+        hasHosting,
+        createdById: currentUser.id
       };
 
       if (hasHosting) {

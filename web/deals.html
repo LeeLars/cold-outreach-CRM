@@ -1247,16 +1247,22 @@
         editingDealId = id;
         document.getElementById('deal-modal-title').textContent = 'Deal bewerken';
 
-        const [pkgs, ups] = await Promise.all([
+        const [pkgs, ups, leadsData] = await Promise.all([
           API.get('/packages'),
-          API.get('/packages/upsells')
+          API.get('/packages/upsells'),
+          API.get('/leads?limit=1000&status=')
         ]);
         packages = pkgs;
         upsells = ups;
+        allLeads = leadsData.leads;
 
-        const leadSelect = document.getElementById('deal-lead');
-        leadSelect.innerHTML = `<option value="${deal.leadId}" selected>${deal.lead.companyName}${deal.lead.city ? ' - ' + deal.lead.city : ''}</option>`;
-        leadSelect.disabled = true;
+        const leadSearchInput = document.getElementById('deal-lead-search');
+        const leadHiddenInput = document.getElementById('deal-lead');
+        leadSearchInput.value = `${deal.lead.companyName}${deal.lead.city ? ' - ' + deal.lead.city : ''}`;
+        leadHiddenInput.value = deal.leadId;
+        leadSearchInput.disabled = true;
+        
+        initLeadSearch();
 
         const pkgSelect = document.getElementById('deal-package');
         pkgSelect.innerHTML = packages.map(p =>
@@ -1275,9 +1281,65 @@
         document.getElementById('deal-cost').value = deal.acquisitionCost || '';
         document.getElementById('deal-date').value = deal.saleDate ? deal.saleDate.split('T')[0] : '';
 
+        const acquisitionTypeRadio = document.querySelector(`input[name="acquisition-type"][value="${deal.acquisitionType || 'cold-outreach'}"]`);
+        if (acquisitionTypeRadio) acquisitionTypeRadio.checked = true;
+        updateAcquisitionUI();
+
+        if (deal.hasHosting) {
+          document.querySelector('input[name="has-hosting"][value="true"]').checked = true;
+          document.getElementById('deal-hosting-price').value = deal.hostingPrice || 20;
+          document.getElementById('deal-hosting-interval').value = deal.hostingInterval || 'MONTHLY';
+          document.getElementById('deal-hosting-start').value = deal.hostingStartDate ? deal.hostingStartDate.split('T')[0] : '';
+          document.getElementById('deal-hosting-end').value = deal.hostingEndDate ? deal.hostingEndDate.split('T')[0] : '';
+        } else {
+          document.querySelector('input[name="has-hosting"][value="false"]').checked = true;
+        }
+        updateHostingUI();
+
+        if (deal.websiteGoal) document.getElementById('deal-website-goal').value = deal.websiteGoal;
+        if (deal.targetAudience) document.getElementById('deal-target-audience').value = deal.targetAudience;
+        
+        if (deal.hasExistingWebsite !== null) {
+          const hasExistingRadio = document.querySelector(`input[name="has-existing"][value="${deal.hasExistingWebsite}"]`);
+          if (hasExistingRadio) hasExistingRadio.checked = true;
+          if (deal.hasExistingWebsite && deal.existingWebsiteUrl) {
+            document.getElementById('existing-url-group').style.display = 'block';
+            document.getElementById('deal-existing-url').value = deal.existingWebsiteUrl;
+          }
+        }
+
+        if (deal.mood) document.getElementById('deal-mood').value = deal.mood;
+        if (deal.heroType) document.getElementById('deal-hero-type').value = deal.heroType;
+        if (deal.toneOfVoice) document.getElementById('deal-tone').value = deal.toneOfVoice;
+        if (deal.referenceUrls) document.getElementById('deal-reference-urls').value = deal.referenceUrls;
+
+        if (deal.usps) document.getElementById('deal-usps').value = deal.usps;
+        if (deal.primaryCta) document.getElementById('deal-cta').value = deal.primaryCta;
+        
+        if (deal.features) {
+          const selectedFeatures = deal.features.split(',');
+          document.querySelectorAll('.checkbox-group input[type="checkbox"]').forEach(cb => {
+            if (selectedFeatures.includes(cb.value)) cb.checked = true;
+          });
+        }
+
+        if (deal.languages) document.getElementById('deal-languages').value = deal.languages;
+        if (deal.contentStatus) document.getElementById('deal-content-status').value = deal.contentStatus;
+        if (deal.urgency) document.getElementById('deal-urgency').value = deal.urgency;
+        if (deal.specialRequests) document.getElementById('deal-special-requests').value = deal.specialRequests;
+
         pkgSelect.addEventListener('change', updateCalculation);
         document.querySelectorAll('.upsell-checkbox').forEach(cb => cb.addEventListener('change', updateCalculation));
         updateCalculation();
+
+        currentWizardStep = 1;
+        updateWizardUI();
+
+        document.querySelectorAll('input[name="has-existing"]').forEach(radio => {
+          radio.addEventListener('change', (e) => {
+            document.getElementById('existing-url-group').style.display = e.target.value === 'true' ? 'block' : 'none';
+          });
+        });
 
         openModal('deal-modal');
         lucide.createIcons();

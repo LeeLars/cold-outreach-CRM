@@ -8,38 +8,37 @@
 
 :root {
   /* ============================================
-     MINIMALIST LIGHT - Design System
-     Clean white with dark dashboard accents
+     DARK MODE - Design System
      ============================================ */
 
   /* Layer 0: Page background */
-  --bg-primary: #ffffff;
+  --bg-primary: #050505;
   /* Layer 1: Topbar / secondary surfaces */
-  --bg-secondary: #f9fafb;
+  --bg-secondary: #0c0c0c;
   /* Layer 2: Cards */
-  --bg-card: #ffffff;
+  --bg-card: #111111;
   /* Layer 3: Card hover / elevated elements */
-  --bg-card-hover: #f3f4f6;
+  --bg-card-hover: #181818;
   /* Inputs */
-  --bg-input: #ffffff;
+  --bg-input: #0e0e0e;
 
   /* Sidebar */
-  --sidebar-bg: #ffffff;
-  --sidebar-border: #e5e7eb;
+  --sidebar-bg: #080808;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
 
   /* Borders */
-  --border-color: #e5e7eb;
-  --border-color-hover: #d1d5db;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-hover: rgba(255, 255, 255, 0.12);
 
   /* Text hierarchy */
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-muted: #9ca3af;
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
 
   /* Brand accent */
-  --accent-brand: #2563eb;
-  --accent-brand-dim: rgba(37, 99, 235, 0.1);
-  --accent-brand-strong: #1d4ed8;
+  --accent-brand: #3b82f6;
+  --accent-brand-dim: rgba(59, 130, 246, 0.15);
+  --accent-brand-strong: #60a5fa;
 
   /* Semantic colors */
   --accent-green: #10b981;
@@ -56,12 +55,6 @@
   --accent-red-dim: rgba(239, 68, 68, 0.1);
   --accent-yellow: #fbbf24;
 
-  /* Dashboard Dark Theme Tokens */
-  --dash-bg: #09090b; /* Zinc 950 */
-  --dash-card: #18181b; /* Zinc 900 */
-  --dash-border: #27272a; /* Zinc 800 */
-  --dash-text: #f4f4f5; /* Zinc 100 */
-  --dash-text-muted: #a1a1aa; /* Zinc 400 */
 
   /* Layout */
   --sidebar-width: 260px;
@@ -78,9 +71,9 @@
   --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.15);
   --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Glass effect tokens - Light mode glass */
-  --glass-bg: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(0, 0, 0, 0.05);
+  /* Glass effect tokens */
+  --glass-bg: rgba(17, 17, 17, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 /* ===== BASE ===== */
@@ -208,13 +201,13 @@ table { width: 100%; border-collapse: collapse; }
 }
 
 .sidebar-link.active {
-  background: var(--accent-brand-dim);
-  color: var(--accent-brand-strong);
-  border-color: transparent;
+  background: var(--bg-card);
+  color: #fff;
+  border-color: var(--accent-brand);
 }
 
 .sidebar-link.active i {
-  color: var(--accent-brand-strong);
+  color: var(--accent-brand);
 }
 
 
@@ -359,12 +352,11 @@ table { width: 100%; border-collapse: collapse; }
 }
 
 .dashboard-card {
-  background: var(--dash-card);
-  border: 1px solid var(--dash-border);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius);
   padding: 24px;
-  color: var(--dash-text);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
 }
@@ -379,45 +371,26 @@ table { width: 100%; border-collapse: collapse; }
 .dashboard-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--dash-text-muted);
+  color: var(--text-muted);
 }
 
 .dashboard-value {
   font-size: 28px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.2;
   margin-bottom: 4px;
 }
 
 .dashboard-subtext {
   font-size: 12px;
-  color: var(--dash-text-muted);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.dashboard-card .data-table th {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--dash-text-muted);
-  border-bottom-color: var(--dash-border);
-}
-
-.dashboard-card .data-table td {
-  color: var(--dash-text);
-  border-bottom-color: var(--dash-border);
-}
-
-.dashboard-card .data-table tr:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dashboard-card .data-table tr:nth-child(even):hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* ===== STANDARD KPI CARDS (Light Mode) ===== */
+/* ===== STANDARD KPI CARDS ===== */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -895,14 +868,14 @@ textarea.form-input {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: #ffffff;
+  background: #111111;
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
   padding: 14px 22px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   z-index: 800;
   transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }

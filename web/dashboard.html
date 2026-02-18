@@ -20,20 +20,24 @@
         <div id="dashboard-reminders"></div>
         <div id="kpi-grid"></div>
         <div class="grid-2 mb-24" id="charts-row">
-          <div class="card" style="border-top:2px solid #60a5fa;">
-            <div class="card-header"><span class="card-title" style="color:#60a5fa;">Lead Pipeline Funnel</span></div>
-            <div class="card-body"><canvas id="funnel-chart" height="260"></canvas></div>
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Lead Pipeline Funnel</span>
+            </div>
+            <div class="card-body" style="padding:0;"><canvas id="funnel-chart" height="260"></canvas></div>
           </div>
-          <div class="card" style="border-top:2px solid #34d399;">
-            <div class="card-header"><span class="card-title" style="color:#34d399;">Klant Omzet over tijd</span></div>
-            <div class="card-body"><canvas id="revenue-chart" height="260"></canvas></div>
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Klant Omzet over tijd</span>
+            </div>
+            <div class="card-body" style="padding:0;"><canvas id="revenue-chart" height="260"></canvas></div>
           </div>
         </div>
-        <div class="card mb-24">
-          <div class="card-header">
-            <span class="card-title">Statistieken per locatie</span>
+        <div class="dashboard-card mb-24">
+          <div class="dashboard-card-header">
+            <span class="dashboard-label">Statistieken per locatie</span>
           </div>
-          <div class="card-body">
+          <div class="card-body" style="padding:0;">
             <div class="grid-2" style="gap:24px;">
               <div>
                 <canvas id="location-chart" height="300"></canvas>
@@ -43,13 +47,17 @@
           </div>
         </div>
         <div class="grid-2 mb-24">
-          <div class="card" style="border-top:2px solid #60a5fa;">
-            <div class="card-header"><span class="card-title" style="color:#60a5fa;">Recente leads</span></div>
-            <div class="card-body" id="recent-leads"></div>
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Recente leads</span>
+            </div>
+            <div class="card-body" style="padding:0;" id="recent-leads"></div>
           </div>
-          <div class="card" style="border-top:2px solid #34d399;">
-            <div class="card-header"><span class="card-title" style="color:#34d399;">Klant Financieel overzicht</span></div>
-            <div class="card-body" id="financial-summary"></div>
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Klant Financieel overzicht</span>
+            </div>
+            <div class="card-body" style="padding:0;" id="financial-summary"></div>
           </div>
         </div>
       </main>
@@ -145,59 +153,161 @@
       const f = data.funnel;
       const conv = data.conversions;
       const grid = document.getElementById('kpi-grid');
+      
+      // Helper to create small sparkline charts
+      setTimeout(() => {
+        createSparkline('chart-leads', [12, 19, 15, 25, 22, 30, data.totalLeads], '#60a5fa');
+        createSparkline('chart-sent', [c.NIEUW, c.VERSTUURD + c.GEEN_REACTIE], '#60a5fa');
+        createSparkline('chart-response', [5, 8, 12, 15, c.GEREAGEERD + c.NIET_GEINTERESSEERD], '#fb923c');
+        createSparkline('chart-interest', [1, 2, 3, 5, c.AFSPRAAK], '#a78bfa');
+        createSparkline('chart-clients', [10, 15, 20, c.KLANT], '#34d399');
+        createSparkline('chart-revenue', [1000, 5000, 8000, data.totalRevenue], '#34d399');
+      }, 100);
+
       grid.innerHTML = `
-        <div class="section-header">
-          <div class="section-header-icon lead-theme"><i data-lucide="users" style="width:18px;height:18px;"></i></div>
-          <span class="section-header-title lead-theme">Lead Pipeline</span>
-          <span style="font-size:12px;color:#666;margin-left:auto;">Cold outreach & acquisitie</span>
+        <div class="section-header" style="border-bottom:1px solid #e5e7eb;margin-bottom:20px;padding-bottom:10px;">
+          <span class="section-header-title" style="color:#111827;font-size:16px;">Lead Pipeline</span>
         </div>
-        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
-          <div class="kpi-card lead-theme">
-            <div class="kpi-label">Totaal leads</div>
-            <div class="kpi-value" style="color:#60a5fa;">${data.totalLeads}</div>
-            <span class="kpi-badge neutral">${c.NIEUW} nieuw</span>
+        <div class="dashboard-kpi-grid">
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Total Leads</span>
+              <i data-lucide="users" style="color:var(--accent-blue);width:18px;height:18px;"></i>
+            </div>
+            <div class="dashboard-value">${data.totalLeads}</div>
+            <div class="dashboard-subtext">
+              <span style="color:var(--accent-blue);">+${c.NIEUW}</span>
+              <span>nieuw toegevoegd</span>
+            </div>
+            <div class="dashboard-chart-container">
+              <canvas id="chart-leads"></canvas>
+            </div>
           </div>
-          <div class="kpi-card lead-theme">
-            <div class="kpi-label">Verstuurd</div>
-            <div class="kpi-value" style="color:#60a5fa;">${c.VERSTUURD + c.GEEN_REACTIE}</div>
-            <span class="kpi-badge neutral">${conv.sendRate}% van totaal</span>
+
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Verstuurd</span>
+              <i data-lucide="send" style="color:var(--accent-blue);width:18px;height:18px;"></i>
+            </div>
+            <div class="dashboard-value">${c.VERSTUURD + c.GEEN_REACTIE}</div>
+            <div class="dashboard-subtext">
+              <span>${conv.sendRate}% van totaal</span>
+            </div>
+            <div class="dashboard-chart-container">
+              <canvas id="chart-sent"></canvas>
+            </div>
           </div>
-          <div class="kpi-card" style="border-left-color:#fb923c;">
-            <div class="kpi-label">Gereageerd</div>
-            <div class="kpi-value" style="color:#fb923c;">${c.GEREAGEERD + c.NIET_GEINTERESSEERD}</div>
-            <span class="kpi-badge positive">${conv.responseRate}% reactieratio</span>
+
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Reacties</span>
+              <i data-lucide="message-square" style="color:var(--accent-orange);width:18px;height:18px;"></i>
+            </div>
+            <div class="dashboard-value">${c.GEREAGEERD + c.NIET_GEINTERESSEERD}</div>
+            <div class="dashboard-subtext">
+              <span style="color:var(--accent-orange);">${conv.responseRate}%</span>
+              <span>reactieratio</span>
+            </div>
+            <div class="dashboard-chart-container">
+              <canvas id="chart-response"></canvas>
+            </div>
           </div>
-          <div class="kpi-card" style="border-left-color:#a78bfa;">
-            <div class="kpi-label">Interesse / Afspraak</div>
-            <div class="kpi-value" style="color:#a78bfa;">${c.AFSPRAAK}</div>
-            <span class="kpi-badge positive">${conv.interestRate}% van reacties</span>
+
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Interesse</span>
+              <i data-lucide="thumbs-up" style="color:var(--accent-purple);width:18px;height:18px;"></i>
+            </div>
+            <div class="dashboard-value">${c.AFSPRAAK}</div>
+            <div class="dashboard-subtext">
+              <span style="color:var(--accent-purple);">${conv.interestRate}%</span>
+              <span>conversie</span>
+            </div>
+            <div class="dashboard-chart-container">
+              <canvas id="chart-interest"></canvas>
+            </div>
           </div>
         </div>
 
-        <div class="section-header">
-          <div class="section-header-icon client-theme"><i data-lucide="building-2" style="width:18px;height:18px;"></i></div>
-          <span class="section-header-title client-theme">Klanten & Omzet</span>
-          <span style="font-size:12px;color:#666;margin-left:auto;">Via leads, warme leads & directe klanten</span>
+        <div class="section-header" style="border-bottom:1px solid #e5e7eb;margin-bottom:20px;padding-bottom:10px;margin-top:40px;">
+          <span class="section-header-title" style="color:#111827;font-size:16px;">Klanten & Omzet</span>
         </div>
-        <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
-          <div class="kpi-card client-theme">
-            <div class="kpi-label">Totaal klanten</div>
-            <div class="kpi-value" style="color:#34d399;">${c.KLANT}</div>
-            <span class="kpi-badge positive">${conv.closeRate}% close ratio (via leads)</span>
+        <div class="dashboard-kpi-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Klanten</span>
+              <i data-lucide="building-2" style="color:var(--accent-green);width:18px;height:18px;"></i>
+            </div>
+            <div class="dashboard-value">${c.KLANT}</div>
+            <div class="dashboard-subtext">
+              <span style="color:var(--accent-green);">${conv.closeRate}%</span>
+              <span>close rate</span>
+            </div>
+            <div class="dashboard-chart-container">
+              <canvas id="chart-clients"></canvas>
+            </div>
           </div>
-          <div class="kpi-card client-theme">
-            <div class="kpi-label">Totale omzet</div>
-            <div class="kpi-value" style="color:#34d399;">${formatCurrency(data.totalRevenue)}</div>
-            <span class="kpi-badge positive">Alle klanten</span>
+
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Totale Omzet</span>
+              <i data-lucide="euro" style="color:var(--accent-green);width:18px;height:18px;"></i>
+            </div>
+            <div class="dashboard-value">${formatCurrency(data.totalRevenue)}</div>
+            <div class="dashboard-subtext">
+              <span>Lifetime value</span>
+            </div>
+            <div class="dashboard-chart-container">
+              <canvas id="chart-revenue"></canvas>
+            </div>
           </div>
-          <div class="kpi-card client-theme">
-            <div class="kpi-label">Gem. dealwaarde</div>
-            <div class="kpi-value" style="color:#34d399;">${formatCurrency(data.avgDealValue)}</div>
-            <span class="kpi-badge neutral">Per klant</span>
+
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Gem. Dealwaarde</span>
+              <i data-lucide="trending-up" style="color:var(--accent-green);width:18px;height:18px;"></i>
+            </div>
+            <div class="dashboard-value">${formatCurrency(data.avgDealValue)}</div>
+            <div class="dashboard-subtext">
+              <span>Per klant</span>
+            </div>
+            <!-- Geen chart hier, layout vullen met extra info of leeg laten -->
+            <div style="height:60px;display:flex;align-items:end;font-size:12px;color:var(--dash-text-muted);">
+              Gemiddelde acquisitiekost: ${formatCurrency(data.avgAcquisitionCost)}
+            </div>
           </div>
         </div>
       `;
       lucide.createIcons();
+    }
+
+    function createSparkline(id, dataPoints, color) {
+      const ctx = document.getElementById(id);
+      if(!ctx) return;
+      new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: dataPoints.map((_, i) => i),
+          datasets: [{
+            data: dataPoints,
+            borderColor: color,
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 0,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          },
+          layout: { padding: 0 }
+        }
+      });
     }
 
     function renderFunnelChart(data) {
@@ -247,12 +357,12 @@
           },
           scales: {
             x: {
-              grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
-              ticks: { color: '#666', font: { size: 11 } }
+              grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+              ticks: { color: '#94a3b8', font: { size: 11 } }
             },
             y: {
               grid: { display: false },
-              ticks: { color: '#a0a0a0', font: { size: 12, weight: 500 } }
+              ticks: { color: '#cbd5e1', font: { size: 12, weight: 500 } }
             }
           }
         }
@@ -282,7 +392,7 @@
             pointRadius: 4,
             pointHoverRadius: 6,
             pointBackgroundColor: '#34d399',
-            pointBorderColor: '#111',
+            pointBorderColor: '#1e293b',
             pointBorderWidth: 2,
             borderWidth: 2.5
           }]
@@ -293,10 +403,10 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#1a1a1a',
+              backgroundColor: '#0f172a',
               borderColor: 'rgba(255,255,255,0.1)',
               borderWidth: 1,
-              titleColor: '#f0f0f0',
+              titleColor: '#f8fafc',
               bodyColor: '#34d399',
               cornerRadius: 8,
               padding: 12
@@ -304,13 +414,13 @@
           },
           scales: {
             x: {
-              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
-              ticks: { color: '#666', font: { size: 11 } }
+              grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+              ticks: { color: '#94a3b8', font: { size: 11 } }
             },
             y: {
-              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+              grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
               ticks: {
-                color: '#666',
+                color: '#94a3b8',
                 font: { size: 11 },
                 callback: v => formatCurrency(v)
               }
@@ -376,14 +486,14 @@
             legend: {
               display: true,
               position: 'top',
-              labels: { color: '#666', font: { size: 11 }, boxWidth: 12, padding: 16 }
+              labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16 }
             },
             tooltip: {
-              backgroundColor: '#1a1a1a',
+              backgroundColor: '#0f172a',
               borderColor: 'rgba(255,255,255,0.1)',
               borderWidth: 1,
-              titleColor: '#f0f0f0',
-              bodyColor: '#a0a0a0',
+              titleColor: '#f8fafc',
+              bodyColor: '#cbd5e1',
               cornerRadius: 8,
               padding: 12
             }
@@ -391,11 +501,11 @@
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: '#666', font: { size: 10 } }
+              ticks: { color: '#94a3b8', font: { size: 10 } }
             },
             y: {
-              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
-              ticks: { color: '#666' }
+              grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+              ticks: { color: '#94a3b8' }
             }
           }
         }

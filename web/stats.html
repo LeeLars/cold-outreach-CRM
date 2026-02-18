@@ -329,19 +329,20 @@
 
         const ctx = document.getElementById('funnel-bar-chart').getContext('2d');
         if (charts.funnel) charts.funnel.destroy();
-        const colors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
+        const colors = ['rgba(107,114,128,0.8)', 'rgba(96,165,250,0.8)', 'rgba(251,146,60,0.8)', 'rgba(34,211,238,0.8)', 'rgba(167,139,250,0.8)', 'rgba(59,130,246,0.8)', 'rgba(248,113,113,0.8)'];
+        const borderColors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
         charts.funnel = new Chart(ctx, {
           type: 'bar',
           data: {
             labels: data.funnel.map(f => STATUS_LABELS[f.status] || f.status),
-            datasets: [{ data: data.funnel.map(f => f.count), backgroundColor: colors, borderRadius: 6, borderSkipped: false }]
+            datasets: [{ data: data.funnel.map(f => f.count), backgroundColor: colors, borderColor: borderColors, borderWidth: 1, borderRadius: 8, borderSkipped: false, barThickness: 32 }]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 } },
             scales: {
-              x: { grid: { display: false }, ticks: { color: '#9CA3AF' } },
-              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF' } }
+              x: { grid: { display: false }, ticks: { color: '#666', font: { size: 11 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#666' } }
             }
           }
         });
@@ -421,25 +422,26 @@
             datasets: [{
               label: 'Omzet',
               data: data.monthlyRevenue.map(m => m.revenue),
-              backgroundColor: 'rgba(59, 130, 246, 0.3)',
-              borderColor: '#3B82F6',
-              borderWidth: 2,
-              borderRadius: 6
+              backgroundColor: 'rgba(52, 211, 153, 0.5)',
+              borderColor: '#34d399',
+              borderWidth: 1,
+              borderRadius: 8
             }]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#34d399', cornerRadius: 8, padding: 12 } },
             scales: {
-              x: { grid: { display: false }, ticks: { color: '#9CA3AF' } },
-              y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9CA3AF', callback: v => formatCurrency(v) } }
+              x: { grid: { display: false }, ticks: { color: '#666', font: { size: 11 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#666', callback: v => formatCurrency(v) } }
             }
           }
         });
 
         const ctx2 = document.getElementById('package-revenue-chart').getContext('2d');
         if (charts.pkg) charts.pkg.destroy();
-        const pkgColors = ['#3B82F6', '#60A5FA', '#A78BFA', '#FB923C', '#22D3EE'];
+        const pkgColors = ['rgba(59,130,246,0.8)', 'rgba(96,165,250,0.8)', 'rgba(167,139,250,0.8)', 'rgba(251,146,60,0.8)', 'rgba(34,211,238,0.8)'];
+        const pkgBorders = ['#3B82F6', '#60A5FA', '#A78BFA', '#FB923C', '#22D3EE'];
         charts.pkg = new Chart(ctx2, {
           type: 'doughnut',
           data: {
@@ -447,13 +449,17 @@
             datasets: [{
               data: data.packageRevenue.map(p => p.revenue),
               backgroundColor: pkgColors,
-              borderWidth: 0
+              borderColor: pkgBorders,
+              borderWidth: 1,
+              hoverOffset: 8
             }]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
+            cutout: '65%',
             plugins: {
-              legend: { position: 'bottom', labels: { color: '#9CA3AF', padding: 16, font: { size: 12 } } }
+              legend: { position: 'bottom', labels: { color: '#a0a0a0', padding: 16, font: { size: 12 }, boxWidth: 12 } },
+              tooltip: { backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 }
             }
           }
         });
@@ -641,25 +647,28 @@
           datasets: [{
             label: metricLabels[metric],
             data: values,
-            backgroundColor: colors[metric],
-            borderRadius: 6
+            backgroundColor: colors[metric] + '99',
+            borderColor: colors[metric],
+            borderWidth: 1,
+            borderRadius: 8
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: { backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 }
           },
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: '#9CA3AF', font: { size: 11 } }
+              ticks: { color: '#666', font: { size: 11 } }
             },
             y: {
-              grid: { color: 'rgba(255,255,255,0.05)' },
+              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
               ticks: {
-                color: '#9CA3AF',
+                color: '#666',
                 callback: v => metric === 'revenue' ? formatCurrency(v) : v
               }
             }
@@ -684,24 +693,27 @@
           datasets: [{
             label: 'Response rate %',
             data: top10.map(l => parseFloat(l.responseRate)),
-            backgroundColor: '#FB923C',
-            borderRadius: 6
+            backgroundColor: 'rgba(251, 146, 60, 0.6)',
+            borderColor: '#FB923C',
+            borderWidth: 1,
+            borderRadius: 8,
+            barThickness: 22
           }]
         },
         options: {
           indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#fb923c', cornerRadius: 8, padding: 12 } },
           scales: {
             x: {
-              grid: { color: 'rgba(255,255,255,0.05)' },
-              ticks: { color: '#9CA3AF', callback: v => v + '%' },
+              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+              ticks: { color: '#666', callback: v => v + '%' },
               max: 100
             },
             y: {
               grid: { display: false },
-              ticks: { color: '#9CA3AF', font: { size: 11 } }
+              ticks: { color: '#a0a0a0', font: { size: 11, weight: 500 } }
             }
           }
         }
@@ -724,24 +736,27 @@
           datasets: [{
             label: 'Conversion rate %',
             data: top10.map(l => parseFloat(l.conversionRate)),
-            backgroundColor: '#22C55E',
-            borderRadius: 6
+            backgroundColor: 'rgba(52, 211, 153, 0.6)',
+            borderColor: '#34d399',
+            borderWidth: 1,
+            borderRadius: 8,
+            barThickness: 22
           }]
         },
         options: {
           indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1a1a', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#34d399', cornerRadius: 8, padding: 12 } },
           scales: {
             x: {
-              grid: { color: 'rgba(255,255,255,0.05)' },
-              ticks: { color: '#9CA3AF', callback: v => v + '%' },
+              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+              ticks: { color: '#666', callback: v => v + '%' },
               max: 100
             },
             y: {
               grid: { display: false },
-              ticks: { color: '#9CA3AF', font: { size: 11 } }
+              ticks: { color: '#a0a0a0', font: { size: 11, weight: 500 } }
             }
           }
         }

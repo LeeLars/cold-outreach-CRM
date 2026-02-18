@@ -146,34 +146,34 @@
       const conv = data.conversions;
       const grid = document.getElementById('kpi-grid');
       grid.innerHTML = `
-        <div class="kpi-card">
+        <div class="kpi-card" style="border-left-color:#6B7280;">
           <div class="kpi-label">Totaal leads</div>
           <div class="kpi-value">${data.totalLeads}</div>
           <span class="kpi-badge neutral">${c.NIEUW} nieuw</span>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" style="border-left-color:#60a5fa;">
           <div class="kpi-label">Verstuurd</div>
-          <div class="kpi-value">${c.VERSTUURD + c.GEEN_REACTIE}</div>
-          <span class="kpi-badge neutral">${conv.sendRate}% van totaal (${f.verstuurd} door funnel)</span>
+          <div class="kpi-value" style="color:#60a5fa;">${c.VERSTUURD + c.GEEN_REACTIE}</div>
+          <span class="kpi-badge neutral">${conv.sendRate}% van totaal</span>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" style="border-left-color:#fb923c;">
           <div class="kpi-label">Gereageerd</div>
-          <div class="kpi-value">${c.GEREAGEERD + c.NIET_GEINTERESSEERD}</div>
-          <span class="kpi-badge positive">${conv.responseRate}% reactieratio (${f.gereageerd} door funnel)</span>
+          <div class="kpi-value" style="color:#fb923c;">${c.GEREAGEERD + c.NIET_GEINTERESSEERD}</div>
+          <span class="kpi-badge positive">${conv.responseRate}% reactieratio</span>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" style="border-left-color:#a78bfa;">
           <div class="kpi-label">Interesse</div>
-          <div class="kpi-value">${c.AFSPRAAK}</div>
-          <span class="kpi-badge positive">${conv.interestRate}% van reacties (${f.interesse} door funnel)</span>
+          <div class="kpi-value" style="color:#a78bfa;">${c.AFSPRAAK}</div>
+          <span class="kpi-badge positive">${conv.interestRate}% van reacties</span>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" style="border-left-color:#34d399;">
           <div class="kpi-label">Klanten</div>
-          <div class="kpi-value">${c.KLANT}</div>
+          <div class="kpi-value" style="color:#34d399;">${c.KLANT}</div>
           <span class="kpi-badge positive">${conv.closeRate}% close ratio</span>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" style="border-left-color:#34d399;">
           <div class="kpi-label">Totale omzet</div>
-          <div class="kpi-value">${formatCurrency(data.totalRevenue)}</div>
+          <div class="kpi-value" style="color:#34d399;">${formatCurrency(data.totalRevenue)}</div>
           <span class="kpi-badge positive">Omzet</span>
         </div>
       `;
@@ -183,7 +183,16 @@
       const ctx = document.getElementById('funnel-chart').getContext('2d');
       const labels = data.funnel.map(f => STATUS_LABELS[f.status] || f.status);
       const values = data.funnel.map(f => f.count);
-      const colors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
+      const colors = [
+        'rgba(107, 114, 128, 0.8)',
+        'rgba(96, 165, 250, 0.8)',
+        'rgba(251, 146, 60, 0.8)',
+        'rgba(34, 211, 238, 0.8)',
+        'rgba(167, 139, 250, 0.8)',
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(248, 113, 113, 0.8)'
+      ];
+      const borderColors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
 
       new Chart(ctx, {
         type: 'bar',
@@ -192,23 +201,37 @@
           datasets: [{
             data: values,
             backgroundColor: colors,
-            borderRadius: 6,
-            borderSkipped: false
+            borderColor: borderColors,
+            borderWidth: 1,
+            borderRadius: 8,
+            borderSkipped: false,
+            barThickness: 28
           }]
         },
         options: {
           indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1a1a1a',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              titleColor: '#f0f0f0',
+              bodyColor: '#a0a0a0',
+              cornerRadius: 8,
+              padding: 12
+            }
+          },
           scales: {
             x: {
-              grid: { color: 'rgba(255,255,255,0.05)' },
-              ticks: { color: '#9CA3AF' }
+              grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+              ticks: { color: '#666', font: { size: 11 } }
             },
             y: {
               grid: { display: false },
-              ticks: { color: '#9CA3AF', font: { size: 12 } }
+              ticks: { color: '#a0a0a0', font: { size: 12, weight: 500 } }
             }
           }
         }
@@ -220,6 +243,10 @@
       const months = data.monthlyRevenue.map(m => m.month);
       const values = data.monthlyRevenue.map(m => m.revenue);
 
+      const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+      gradient.addColorStop(0, 'rgba(52, 211, 153, 0.25)');
+      gradient.addColorStop(1, 'rgba(52, 211, 153, 0)');
+
       new Chart(ctx, {
         type: 'line',
         data: {
@@ -227,27 +254,43 @@
           datasets: [{
             label: 'Omzet',
             data: values,
-            borderColor: '#3B82F6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderColor: '#34d399',
+            backgroundColor: gradient,
             fill: true,
             tension: 0.4,
             pointRadius: 4,
-            pointBackgroundColor: '#3B82F6'
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#34d399',
+            pointBorderColor: '#111',
+            pointBorderWidth: 2,
+            borderWidth: 2.5
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1a1a1a',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              titleColor: '#f0f0f0',
+              bodyColor: '#34d399',
+              cornerRadius: 8,
+              padding: 12
+            }
+          },
           scales: {
             x: {
-              grid: { color: 'rgba(100, 160, 255, 0.05)' },
-              ticks: { color: '#94A3B8' }
+              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+              ticks: { color: '#666', font: { size: 11 } }
             },
             y: {
-              grid: { color: 'rgba(100, 160, 255, 0.05)' },
+              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
               ticks: {
-                color: '#94A3B8',
+                color: '#666',
+                font: { size: 11 },
                 callback: v => formatCurrency(v)
               }
             }
@@ -274,26 +317,34 @@
             {
               label: 'Totaal leads',
               data: totals,
-              backgroundColor: 'rgba(107, 114, 128, 0.8)',
-              borderRadius: 4
+              backgroundColor: 'rgba(107, 114, 128, 0.6)',
+              borderColor: 'rgba(107, 114, 128, 0.8)',
+              borderWidth: 1,
+              borderRadius: 6
             },
             {
               label: 'Verstuurd',
               data: verstuurd,
-              backgroundColor: 'rgba(96, 165, 250, 0.8)',
-              borderRadius: 4
+              backgroundColor: 'rgba(96, 165, 250, 0.6)',
+              borderColor: 'rgba(96, 165, 250, 0.8)',
+              borderWidth: 1,
+              borderRadius: 6
             },
             {
               label: 'Gereageerd',
               data: gereageerd,
-              backgroundColor: 'rgba(251, 146, 60, 0.8)',
-              borderRadius: 4
+              backgroundColor: 'rgba(251, 146, 60, 0.6)',
+              borderColor: 'rgba(251, 146, 60, 0.8)',
+              borderWidth: 1,
+              borderRadius: 6
             },
             {
               label: 'Klanten',
               data: klanten,
-              backgroundColor: 'rgba(34, 197, 94, 0.8)',
-              borderRadius: 4
+              backgroundColor: 'rgba(52, 211, 153, 0.6)',
+              borderColor: 'rgba(52, 211, 153, 0.8)',
+              borderWidth: 1,
+              borderRadius: 6
             }
           ]
         },
@@ -304,17 +355,26 @@
             legend: {
               display: true,
               position: 'top',
-              labels: { color: '#9CA3AF', font: { size: 11 } }
+              labels: { color: '#666', font: { size: 11 }, boxWidth: 12, padding: 16 }
+            },
+            tooltip: {
+              backgroundColor: '#1a1a1a',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              titleColor: '#f0f0f0',
+              bodyColor: '#a0a0a0',
+              cornerRadius: 8,
+              padding: 12
             }
           },
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: '#9CA3AF', font: { size: 10 } }
+              ticks: { color: '#666', font: { size: 10 } }
             },
             y: {
-              grid: { color: 'rgba(255,255,255,0.05)' },
-              ticks: { color: '#9CA3AF' }
+              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+              ticks: { color: '#666' }
             }
           }
         }
@@ -389,31 +449,31 @@
     function renderFinancialSummary(dashboard, revenue) {
       const container = document.getElementById('financial-summary');
       container.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:16px;">
-          <div class="flex justify-between items-center">
-            <span class="text-muted">Totale omzet</span>
-            <span style="font-weight:700;font-size:16px;" class="text-green">${formatCurrency(dashboard.totalRevenue)}</span>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.06);border-radius:8px;border-left:3px solid #34d399;">
+            <span style="color:#a0a0a0;font-size:13px;">Totale omzet</span>
+            <span style="font-weight:800;font-size:18px;color:#34d399;">${formatCurrency(dashboard.totalRevenue)}</span>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-muted">Gem. dealwaarde</span>
-            <span style="font-weight:600;">${formatCurrency(dashboard.avgDealValue)}</span>
+          <div class="flex justify-between items-center" style="padding:0 4px;">
+            <span class="text-muted" style="font-size:13px;">Gem. dealwaarde</span>
+            <span style="font-weight:600;font-size:14px;">${formatCurrency(dashboard.avgDealValue)}</span>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-muted">Gem. acquisitiekost</span>
-            <span style="font-weight:600;">${formatCurrency(dashboard.avgAcquisitionCost)}</span>
+          <div class="flex justify-between items-center" style="padding:0 4px;">
+            <span class="text-muted" style="font-size:13px;">Gem. acquisitiekost</span>
+            <span style="font-weight:600;font-size:14px;">${formatCurrency(dashboard.avgAcquisitionCost)}</span>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-muted">ROI</span>
-            <span style="font-weight:700;font-size:16px;" class="text-green">${revenue.roi}%</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.06);border-radius:8px;border-left:3px solid #34d399;">
+            <span style="color:#a0a0a0;font-size:13px;">ROI</span>
+            <span style="font-weight:800;font-size:18px;color:#34d399;">${revenue.roi}%</span>
           </div>
-          <hr style="border-color:var(--border-color);">
-          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Omzet per pakket</div>
+          <hr style="border-color:rgba(255,255,255,0.04);margin:4px 0;">
+          <div style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:0.5px;">Omzet per pakket</div>
           ${revenue.packageRevenue.length > 0 ? revenue.packageRevenue.map(p => `
-            <div class="flex justify-between items-center">
-              <span style="font-size:13px;">${p.name}</span>
+            <div class="flex justify-between items-center" style="padding:0 4px;">
+              <span style="font-size:13px;color:#a0a0a0;">${p.name}</span>
               <span style="font-weight:600;font-size:13px;">${formatCurrency(p.revenue)}</span>
             </div>
-          `).join('') : '<span class="text-muted" style="font-size:13px;">Nog geen deals</span>'}
+          `).join('') : '<span style="font-size:13px;color:#666;">Nog geen deals</span>'}
         </div>
       `;
     }

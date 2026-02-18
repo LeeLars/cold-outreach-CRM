@@ -19,8 +19,7 @@
       <main class="page-content">
         <div class="tabs">
           <button class="tab active" data-tab="funnel" onclick="switchTab('funnel')">Funnel analyse</button>
-          <button class="tab" data-tab="revenue" onclick="switchTab('revenue')">Omzet & ROI</button>
-          <button class="tab" data-tab="acquisition" onclick="switchTab('acquisition')">Kost per acquisitie</button>
+          <button class="tab" data-tab="revenue" onclick="switchTab('revenue')">Omzet & Acquisitie</button>
           <button class="tab" data-tab="locations" onclick="switchTab('locations')">Locaties</button>
           <button class="tab" data-tab="hosting" onclick="switchTab('hosting')">Hosting</button>
         </div>
@@ -42,14 +41,23 @@
           </div>
         </div>
 
-        <!-- Revenue Tab -->
+        <!-- Revenue & Acquisition Tab -->
         <div id="tab-revenue" class="hidden">
           <div class="section-header">
-            <div class="section-header-icon client-theme"><i data-lucide="building-2" style="width:18px;height:18px;"></i></div>
-            <span class="section-header-title client-theme">Klant Omzet & ROI</span>
+            <div class="section-header-icon client-theme"><i data-lucide="trending-up" style="width:18px;height:18px;"></i></div>
+            <span class="section-header-title client-theme">Omzet & Acquisitie</span>
           </div>
-          <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="revenue-kpis"></div>
-          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;" id="revenue-channel-kpis"></div>
+
+          <!-- Main KPIs -->
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="revenue-kpis"></div>
+
+          <!-- Channel comparison -->
+          <div class="section-header" style="margin-top:24px;">
+            <span class="section-header-title" style="font-size:14px;color:var(--text-secondary);">Per kanaal</span>
+          </div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;" id="revenue-channel-kpis"></div>
+
+          <!-- Charts -->
           <div class="grid-2 mb-24">
             <div class="card" style="border-top:2px solid #34d399;">
               <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet per maand</span></div>
@@ -60,19 +68,17 @@
               <div class="card-body"><canvas id="package-revenue-chart" height="280"></canvas></div>
             </div>
           </div>
-        </div>
 
-        <!-- Acquisition Tab -->
-        <div id="tab-acquisition" class="hidden">
-          <div style="display:flex;gap:8px;margin-bottom:20px;">
-            <button class="btn btn-primary btn-sm" id="acq-filter-all" onclick="switchAcquisitionFilter('all')" style="font-size:12px;">Alle klanten</button>
-            <button class="btn btn-secondary btn-sm" id="acq-filter-flyer" onclick="switchAcquisitionFilter('flyer')" style="font-size:12px;">Flyer acquisitie</button>
-            <button class="btn btn-secondary btn-sm" id="acq-filter-warm" onclick="switchAcquisitionFilter('warm')" style="font-size:12px;">Warme leads</button>
-          </div>
-          <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);" id="acquisition-kpis"></div>
-          <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:20px;" id="acquisition-channel-kpis"></div>
+          <!-- Per client table -->
           <div class="card">
-            <div class="card-header"><span class="card-title">Kost vs. dealwaarde per klant</span></div>
+            <div class="card-header">
+              <span class="card-title">Kost vs. dealwaarde per klant</span>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary btn-sm" id="acq-filter-all" onclick="switchAcquisitionFilter('all')" style="font-size:12px;">Alle</button>
+                <button class="btn btn-secondary btn-sm" id="acq-filter-flyer" onclick="switchAcquisitionFilter('flyer')" style="font-size:12px;">Flyer</button>
+                <button class="btn btn-secondary btn-sm" id="acq-filter-warm" onclick="switchAcquisitionFilter('warm')" style="font-size:12px;">Warm</button>
+              </div>
+            </div>
             <div class="card-body" style="padding:0;">
               <table class="data-table">
                 <thead><tr><th>Bedrijf</th><th>Type</th><th>Acquisitiekost</th><th>Dealwaarde</th><th>ROI</th><th>Datum</th></tr></thead>
@@ -300,7 +306,7 @@
     function switchTab(tab) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-      ['funnel', 'revenue', 'acquisition', 'locations', 'hosting'].forEach(t => {
+      ['funnel', 'revenue', 'locations', 'hosting'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('hidden', tab !== t);
       });
     }
@@ -383,41 +389,47 @@
       try {
         const data = await API.get('/stats/revenue');
 
+        const totalClients = data.flyer.count + data.warm.count;
+        const avgDeal = totalClients > 0 ? data.totalRevenue / totalClients : 0;
+
         document.getElementById('revenue-kpis').innerHTML = `
           <div class="kpi-card client-theme">
             <div class="kpi-label">Totale omzet</div>
             <div class="kpi-value" style="color:#34d399;">${formatCurrency(data.totalRevenue)}</div>
+            <span class="kpi-badge positive">${totalClients} klant${totalClients !== 1 ? 'en' : ''}</span>
           </div>
           <div class="kpi-card" style="border-left-color:#f87171;">
             <div class="kpi-label">Totale kosten</div>
             <div class="kpi-value" style="color:#f87171;">${formatCurrency(data.totalCost)}</div>
+            <span class="kpi-badge neutral">Acquisitiekosten</span>
           </div>
           <div class="kpi-card client-theme">
             <div class="kpi-label">ROI</div>
             <div class="kpi-value" style="color:#34d399;">${data.roi}%</div>
+            <span class="kpi-badge ${parseFloat(data.roi) > 0 ? 'positive' : 'neutral'}">Rendement</span>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Gem. dealwaarde</div>
+            <div class="kpi-value">${formatCurrency(avgDeal)}</div>
+            <span class="kpi-badge neutral">Per klant</span>
           </div>
         `;
 
         document.getElementById('revenue-channel-kpis').innerHTML = `
-          <div class="kpi-card">
-            <div class="kpi-label">Omzet flyer acquisitie</div>
+          <div class="kpi-card" style="border-left-color:#fb923c;">
+            <div class="kpi-label">Flyer acquisitie</div>
             <div class="kpi-value text-green">${formatCurrency(data.flyer.revenue)}</div>
-            <span class="kpi-badge neutral">${data.flyer.count} klant${data.flyer.count !== 1 ? 'en' : ''}</span>
+            <span class="kpi-badge neutral">${data.flyer.count} klant${data.flyer.count !== 1 ? 'en' : ''} | Kost: ${formatCurrency(data.flyer.cost)} | ROI: ${data.flyer.roi}%</span>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">ROI flyer</div>
-            <div class="kpi-value">${data.flyer.roi}%</div>
-            <span class="kpi-badge neutral">Kost: ${formatCurrency(data.flyer.cost)}</span>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Omzet warme leads</div>
+          <div class="kpi-card" style="border-left-color:#60a5fa;">
+            <div class="kpi-label">Warme leads</div>
             <div class="kpi-value text-green">${formatCurrency(data.warm.revenue)}</div>
-            <span class="kpi-badge neutral">${data.warm.count} klant${data.warm.count !== 1 ? 'en' : ''}</span>
+            <span class="kpi-badge neutral">${data.warm.count} klant${data.warm.count !== 1 ? 'en' : ''} | Kost: ${formatCurrency(data.warm.cost)} | ROI: ${data.warm.roi}%</span>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">ROI warm</div>
-            <div class="kpi-value">${data.warm.roi}%</div>
-            <span class="kpi-badge neutral">Kost: ${formatCurrency(data.warm.cost)}</span>
+          <div class="kpi-card" style="border-left-color:#a78bfa;">
+            <div class="kpi-label">Beste kanaal</div>
+            <div class="kpi-value" style="font-size:18px;">${parseFloat(data.flyer.roi) >= parseFloat(data.warm.roi) && data.flyer.count > 0 ? 'Flyer' : data.warm.count > 0 ? 'Warm' : '-'}</div>
+            <span class="kpi-badge positive">Hoogste ROI</span>
           </div>
         `;
 
@@ -501,37 +513,6 @@
       const filtered = acquisitionFilter === 'all' ? data.perClient
         : acquisitionFilter === 'flyer' ? data.perClient.filter(c => c.acquisitionType === 'flyer')
         : data.perClient.filter(c => c.acquisitionType !== 'flyer');
-
-      const filterLabels = { all: 'Alle klanten', flyer: 'Flyer acquisitie', warm: 'Warme leads' };
-      const avgCost = filtered.length > 0
-        ? filtered.reduce((sum, c) => sum + c.acquisitionCost, 0) / filtered.length
-        : 0;
-
-      document.getElementById('acquisition-kpis').innerHTML = `
-        <div class="kpi-card">
-          <div class="kpi-label">Gem. acquisitiekost</div>
-          <div class="kpi-value">${formatCurrency(avgCost)}</div>
-          <span class="kpi-badge neutral">${filterLabels[acquisitionFilter]}</span>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Aantal klanten</div>
-          <div class="kpi-value">${filtered.length}</div>
-          <span class="kpi-badge neutral">${filterLabels[acquisitionFilter]}</span>
-        </div>
-      `;
-
-      document.getElementById('acquisition-channel-kpis').innerHTML = `
-        <div class="kpi-card">
-          <div class="kpi-label">Flyer - gem. kost</div>
-          <div class="kpi-value">${formatCurrency(parseFloat(data.flyer.avgCost))}</div>
-          <span class="kpi-badge neutral">${data.flyer.count} klant${data.flyer.count !== 1 ? 'en' : ''} | ROI ${data.flyer.roi}%</span>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Warm - gem. kost</div>
-          <div class="kpi-value">${formatCurrency(parseFloat(data.warm.avgCost))}</div>
-          <span class="kpi-badge neutral">${data.warm.count} klant${data.warm.count !== 1 ? 'en' : ''} | ROI ${data.warm.roi}%</span>
-        </div>
-      `;
 
       const tbody = document.getElementById('acquisition-body');
       if (filtered.length === 0) {

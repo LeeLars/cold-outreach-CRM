@@ -129,14 +129,16 @@
       try {
         try { await API.post('/leads/auto-expire', { days: 7 }); } catch(e) {}
 
-        const [dashboard, funnel, revenue, recentLeads, locations] = await Promise.all([
+        const [dashboard, funnel, revenue, recentLeads, locations, hosting] = await Promise.all([
           API.get('/stats/dashboard'),
           API.get('/stats/funnel'),
           API.get('/stats/revenue'),
           API.get('/stats/recent-leads'),
-          API.get('/stats/locations')
+          API.get('/stats/locations'),
+          API.get('/stats/hosting')
         ]);
 
+        renderHostingReminders(hosting);
         renderKPIs(dashboard);
         renderFunnelChart(funnel);
         renderRevenueChart(revenue);
@@ -281,6 +283,63 @@
       lucide.createIcons();
     }
 
+    function renderHostingReminders(hosting) {
+      const container = document.getElementById('dashboard-reminders');
+      if (!hosting || hosting.upcomingInvoices === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const upcomingClients = hosting.clients.filter(c => {
+        if (!c.nextInvoiceDate) return false;
+        const invoiceDate = new Date(c.nextInvoiceDate);
+        const now = new Date();
+        const in30Days = new Date();
+        in30Days.setDate(in30Days.getDate() + 30);
+        return invoiceDate > now && invoiceDate <= in30Days;
+      });
+
+      if (upcomingClients.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="background:var(--bg-card);border:1px solid var(--accent-orange);border-left:4px solid var(--accent-orange);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;">
+          <div style="font-size:14px;font-weight:700;color:var(--accent-orange);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <i data-lucide="alert-circle" style="width:18px;height:18px;"></i>
+              ${upcomingClients.length} klant${upcomingClients.length > 1 ? 'en' : ''} moet${upcomingClients.length === 1 ? '' : 'en'} binnen 30 dagen gefactureerd worden
+            </div>
+            <a href="hosting.html" class="btn btn-sm btn-ghost" style="color:var(--accent-orange);border-color:var(--accent-orange);">
+              <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+              Naar hosting
+            </a>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${upcomingClients.slice(0, 5).map(c => {
+              const invoiceDate = new Date(c.nextInvoiceDate);
+              const daysUntil = Math.ceil((invoiceDate - new Date()) / (1000 * 60 * 60 * 24));
+              return `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-input);border-radius:var(--radius-sm);gap:12px;">
+                  <div style="flex:1;">
+                    <div style="font-weight:600;font-size:13px;color:var(--text-primary);">${c.companyName}</div>
+                    <div style="font-size:12px;color:var(--text-muted);">${c.city || 'Geen locatie'} • ${formatCurrency(c.hostingPrice)}/${c.hostingInterval === 'MONTHLY' ? 'mnd' : 'jaar'}</div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font-size:12px;font-weight:600;color:var(--accent-orange);">${daysUntil} dag${daysUntil === 1 ? '' : 'en'}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">${invoiceDate.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })}</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+            ${upcomingClients.length > 5 ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;">+ ${upcomingClients.length - 5} meer</div>` : ''}
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
     function createSparkline(id, dataPoints, color) {
       const ctx = document.getElementById(id);
       if(!ctx) return;
@@ -294,13 +353,32 @@
             borderWidth: 2,
             tension: 0.4,
             pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHoverBackgroundColor: color,
             fill: false
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          plugins: { 
+            legend: { display: false }, 
+            tooltip: { 
+              enabled: true,
+              backgroundColor: '#111111',
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1,
+              titleColor: '#f0f0f0',
+              bodyColor: color,
+              displayColors: false,
+              padding: 8,
+              cornerRadius: 6,
+              callbacks: {
+                title: () => '',
+                label: (context) => context.parsed.y.toString()
+              }
+            } 
+          },
           scales: {
             x: { display: false },
             y: { display: false }
@@ -325,6 +403,7 @@
       ];
       const borderColors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
 
+      const totalLeads = values.reduce((a, b) => a + b, 0);
       new Chart(ctx, {
         type: 'bar',
         data: {
@@ -352,7 +431,18 @@
               titleColor: '#f0f0f0',
               bodyColor: '#a0a0a0',
               cornerRadius: 8,
-              padding: 12
+              padding: 12,
+              callbacks: {
+                label: (context) => {
+                  const value = context.parsed.x;
+                  const percentage = totalLeads > 0 ? ((value / totalLeads) * 100).toFixed(1) : 0;
+                  return [
+                    `Aantal: ${value} leads`,
+                    `Percentage: ${percentage}% van totaal`,
+                    `Totaal: ${totalLeads} leads`
+                  ];
+                }
+              }
             }
           },
           scales: {
@@ -378,6 +468,8 @@
       gradient.addColorStop(0, 'rgba(52, 211, 153, 0.25)');
       gradient.addColorStop(1, 'rgba(52, 211, 153, 0)');
 
+      const totalRevenue = values.reduce((a, b) => a + b, 0);
+      const avgRevenue = totalRevenue / values.length;
       new Chart(ctx, {
         type: 'line',
         data: {
@@ -409,7 +501,21 @@
               titleColor: '#f0f0f0',
               bodyColor: '#34d399',
               cornerRadius: 8,
-              padding: 12
+              padding: 12,
+              callbacks: {
+                label: (context) => {
+                  const value = context.parsed.y;
+                  const percentage = totalRevenue > 0 ? ((value / totalRevenue) * 100).toFixed(1) : 0;
+                  const diff = value - avgRevenue;
+                  const diffText = diff >= 0 ? `+${formatCurrency(diff)}` : formatCurrency(diff);
+                  return [
+                    `Omzet: ${formatCurrency(value)}`,
+                    `${percentage}% van totaal`,
+                    `${diffText} vs gemiddelde`,
+                    `Gem: ${formatCurrency(avgRevenue)}`
+                  ];
+                }
+              }
             }
           },
           scales: {
@@ -495,7 +601,31 @@
               titleColor: '#f0f0f0',
               bodyColor: '#a0a0a0',
               cornerRadius: 8,
-              padding: 12
+              padding: 12,
+              callbacks: {
+                label: (context) => {
+                  const datasetLabel = context.dataset.label;
+                  const value = context.parsed.y;
+                  const city = context.label;
+                  const dataIndex = context.dataIndex;
+                  
+                  // Get all values for this city
+                  const allDatasets = context.chart.data.datasets;
+                  const totaal = allDatasets[0].data[dataIndex];
+                  const verstuurd = allDatasets[1].data[dataIndex];
+                  const gereageerd = allDatasets[2].data[dataIndex];
+                  const klanten = allDatasets[3].data[dataIndex];
+                  
+                  const responseRate = verstuurd > 0 ? ((gereageerd / verstuurd) * 100).toFixed(1) : 0;
+                  const conversionRate = gereageerd > 0 ? ((klanten / gereageerd) * 100).toFixed(1) : 0;
+                  
+                  return [
+                    `${datasetLabel}: ${value}`,
+                    `Reactieratio: ${responseRate}%`,
+                    `Conversie: ${conversionRate}%`
+                  ];
+                }
+              }
             }
           },
           scales: {

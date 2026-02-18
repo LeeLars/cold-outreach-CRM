@@ -127,6 +127,35 @@
             <textarea class="form-input" id="new-client-notes" rows="3"></textarea>
           </div>
         </div>
+        <hr style="border-color:var(--border-color);margin:16px 0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:12px;">Hosting</div>
+        <div style="display:grid;gap:12px;">
+          <div class="form-group" style="margin:0;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="new-client-has-hosting" onchange="toggleNewClientHosting()">
+              <span class="form-label" style="margin:0;">Hosting toevoegen</span>
+            </label>
+          </div>
+          <div id="new-client-hosting-details" style="display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Hosting prijs</label>
+                <input type="number" class="form-input" id="new-client-hosting-price" value="20" step="0.01" min="0">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Interval</label>
+                <select class="form-input" id="new-client-hosting-interval">
+                  <option value="MONTHLY">Maandelijks</option>
+                  <option value="YEARLY">Jaarlijks</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Startdatum hosting</label>
+              <input type="date" class="form-input" id="new-client-hosting-start">
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('new-client-modal')">Annuleren</button>
@@ -411,6 +440,41 @@
               <textarea class="form-input" id="edit-notes" rows="3">${client.notes || ''}</textarea>
             </div>
           </div>
+          <hr style="border-color:var(--border-color);margin:16px 0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:12px;">Hosting</div>
+          <div style="display:grid;gap:12px;">
+            <div class="form-group" style="margin:0;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="edit-has-hosting" ${client.deal?.hasHosting ? 'checked' : ''} onchange="toggleEditHosting()">
+                <span class="form-label" style="margin:0;">Hosting actief</span>
+              </label>
+            </div>
+            <div id="edit-hosting-details" style="display:${client.deal?.hasHosting ? 'block' : 'none'};">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">Hosting prijs</label>
+                  <input type="number" class="form-input" id="edit-hosting-price" value="${client.deal?.hostingPrice || 20}" step="0.01" min="0">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">Interval</label>
+                  <select class="form-input" id="edit-hosting-interval">
+                    <option value="MONTHLY" ${client.deal?.hostingInterval === 'MONTHLY' ? 'selected' : ''}>Maandelijks</option>
+                    <option value="YEARLY" ${client.deal?.hostingInterval === 'YEARLY' ? 'selected' : ''}>Jaarlijks</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">Startdatum</label>
+                  <input type="date" class="form-input" id="edit-hosting-start" value="${client.deal?.hostingStartDate ? new Date(client.deal.hostingStartDate).toISOString().split('T')[0] : ''}">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label class="form-label">Einddatum (optioneel)</label>
+                  <input type="date" class="form-input" id="edit-hosting-end" value="${client.deal?.hostingEndDate ? new Date(client.deal.hostingEndDate).toISOString().split('T')[0] : ''}">
+                </div>
+              </div>
+            </div>
+          </div>
         `;
 
         openModal('edit-modal');
@@ -420,10 +484,17 @@
       }
     }
 
+    function toggleEditHosting() {
+      const hasHosting = document.getElementById('edit-has-hosting').checked;
+      const details = document.getElementById('edit-hosting-details');
+      details.style.display = hasHosting ? 'block' : 'none';
+    }
+
     async function saveClient() {
       if (!editingClientId) return;
       try {
-        await API.put(`/clients/${editingClientId}`, {
+        const hasHosting = document.getElementById('edit-has-hosting').checked;
+        const payload = {
           companyName: document.getElementById('edit-company').value,
           vatNumber: document.getElementById('edit-vat').value || null,
           contactPerson: document.getElementById('edit-contact').value || null,
@@ -432,8 +503,18 @@
           address: document.getElementById('edit-address').value || null,
           city: document.getElementById('edit-city').value || null,
           website: document.getElementById('edit-website').value || null,
-          notes: document.getElementById('edit-notes').value || null
-        });
+          notes: document.getElementById('edit-notes').value || null,
+          hasHosting
+        };
+
+        if (hasHosting) {
+          payload.hostingPrice = parseFloat(document.getElementById('edit-hosting-price').value) || 20;
+          payload.hostingInterval = document.getElementById('edit-hosting-interval').value;
+          payload.hostingStartDate = document.getElementById('edit-hosting-start').value || null;
+          payload.hostingEndDate = document.getElementById('edit-hosting-end').value || null;
+        }
+
+        await API.put(`/clients/${editingClientId}`, payload);
         closeModal('edit-modal');
         showToast('Klant bijgewerkt');
         loadClients(document.getElementById('search-input').value.trim());
@@ -452,6 +533,11 @@
       document.getElementById('new-client-city').value = '';
       document.getElementById('new-client-website').value = '';
       document.getElementById('new-client-notes').value = '';
+      document.getElementById('new-client-has-hosting').checked = false;
+      document.getElementById('new-client-hosting-price').value = '20';
+      document.getElementById('new-client-hosting-interval').value = 'MONTHLY';
+      document.getElementById('new-client-hosting-start').value = new Date().toISOString().split('T')[0];
+      document.getElementById('new-client-hosting-details').style.display = 'none';
       const resultDiv = document.getElementById('new-vat-lookup-result');
       resultDiv.style.display = 'none';
       resultDiv.innerHTML = '';
@@ -503,6 +589,15 @@
       }
     }
 
+    function toggleNewClientHosting() {
+      const hasHosting = document.getElementById('new-client-has-hosting').checked;
+      const details = document.getElementById('new-client-hosting-details');
+      details.style.display = hasHosting ? 'block' : 'none';
+      if (hasHosting && !document.getElementById('new-client-hosting-start').value) {
+        document.getElementById('new-client-hosting-start').value = new Date().toISOString().split('T')[0];
+      }
+    }
+
     async function saveNewClient() {
       const companyName = document.getElementById('new-client-company').value.trim();
       if (!companyName) {
@@ -510,21 +605,30 @@
         return;
       }
 
-      try {
-        const client = await API.post('/clients', {
-          companyName,
-          vatNumber: document.getElementById('new-client-vat').value.trim() || null,
-          contactPerson: document.getElementById('new-client-contact').value.trim() || null,
-          phone: document.getElementById('new-client-phone').value.trim() || null,
-          email: document.getElementById('new-client-email').value.trim() || null,
-          address: document.getElementById('new-client-address').value.trim() || null,
-          city: document.getElementById('new-client-city').value.trim() || null,
-          website: document.getElementById('new-client-website').value.trim() || null,
-          notes: document.getElementById('new-client-notes').value.trim() || null
-        });
+      const hasHosting = document.getElementById('new-client-has-hosting').checked;
+      const payload = {
+        companyName,
+        vatNumber: document.getElementById('new-client-vat').value.trim() || null,
+        contactPerson: document.getElementById('new-client-contact').value.trim() || null,
+        phone: document.getElementById('new-client-phone').value.trim() || null,
+        email: document.getElementById('new-client-email').value.trim() || null,
+        address: document.getElementById('new-client-address').value.trim() || null,
+        city: document.getElementById('new-client-city').value.trim() || null,
+        website: document.getElementById('new-client-website').value.trim() || null,
+        notes: document.getElementById('new-client-notes').value.trim() || null,
+        hasHosting
+      };
 
+      if (hasHosting) {
+        payload.hostingPrice = parseFloat(document.getElementById('new-client-hosting-price').value) || 20;
+        payload.hostingInterval = document.getElementById('new-client-hosting-interval').value;
+        payload.hostingStartDate = document.getElementById('new-client-hosting-start').value || null;
+      }
+
+      try {
+        const client = await API.post('/clients', payload);
         closeModal('new-client-modal');
-        showToast(`Klant "${client.companyName}" aangemaakt`);
+        showToast(`Klant "${client.companyName}" aangemaakt${hasHosting ? ' met hosting' : ''}`);
         loadClients();
       } catch (err) {
         showToast(err.message || 'Fout bij aanmaken klant', 'error');

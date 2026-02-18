@@ -78,11 +78,126 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
+// Create new client
+router.post('/', async (req, res, next) => {
+  try {
+    const { 
+      companyName, vatNumber, contactPerson, email, phone, address, city, website, notes,
+      hasHosting = false, hostingPrice = 20, hostingInterval = 'MONTHLY', hostingStartDate
+    } = req.body;
+
+    if (!companyName) {
+      return res.status(400).json({ error: 'Bedrijfsnaam is verplicht' });
+    }
+
+    // Create a lead first (required for client relationship)
+    const lead = await prisma.lead.create({
+      data: {
+        companyName,
+        vatNumber,
+        contactPerson,
+        email,
+        phone,
+        address,
+        city,
+        website,
+        notes,
+        source: 'CRM',
+        status: 'KLANT'
+      }
+    });
+
+    // Create client
+    const client = await prisma.client.create({
+      data: {
+        companyName,
+        vatNumber,
+        contactPerson,
+        email,
+        phone,
+        address,
+        city,
+        website,
+        notes
+      }
+    });
+
+    // If hosting is requested, create a minimal deal
+    if (hasHosting) {
+      // Get or create a default package for direct clients
+      let defaultPackage = await prisma.package.findFirst({
+        where: { name: 'Direct klant' }
+      });
+
+      if (!defaultPackage) {
+        defaultPackage = await prisma.package.create({
+          data: {
+            name: 'Direct klant',
+            oneTimePrice: 0,
+            monthlyPrice: parseFloat(hostingPrice) || 20,
+            description: 'Standaard pakket voor directe klanten'
+          }
+        });
+      }
+
+      const saleDateObj = new Date();
+      const start = hostingStartDate ? new Date(hostingStartDate) : saleDateObj;
+      let nextInvoice = new Date(start);
+      if (hostingInterval === 'YEARLY') {
+        nextInvoice.setFullYear(nextInvoice.getFullYear() + 1);
+      } else {
+        nextInvoice.setMonth(nextInvoice.getMonth() + 1);
+      }
+
+      const hostingMonthly = parseFloat(hostingPrice) || 20;
+      const totalValue = hostingMonthly * 12;
+
+      await prisma.deal.create({
+        data: {
+          leadId: lead.id,
+          clientId: client.id,
+          packageId: defaultPackage.id,
+          acquisitionCost: 0,
+          acquisitionType: 'none',
+          totalValue,
+          saleDate: saleDateObj,
+          hasHosting: true,
+          hostingPrice: hostingMonthly,
+          hostingInterval,
+          hostingStartDate: start,
+          hostingEndDate: null,
+          nextInvoiceDate: nextInvoice
+        }
+      });
+    }
+
+    // Return client with deal info
+    const clientWithDeal = await prisma.client.findUnique({
+      where: { id: client.id },
+      include: {
+        deal: {
+          include: {
+            package: true
+          }
+        }
+      }
+    });
+
+    res.status(201).json(clientWithDeal);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Update client
 router.put('/:id', async (req, res, next) => {
   try {
-    const { companyName, vatNumber, contactPerson, email, phone, address, city, website, notes } = req.body;
+    const { 
+      companyName, vatNumber, contactPerson, email, phone, address, city, website, notes,
+      hasHosting = false, hostingPrice = 20, hostingInterval = 'MONTHLY', hostingStartDate, hostingEndDate
+    } = req.body;
 
+    // Update client basic info
     const client = await prisma.client.update({
       where: { id: req.params.id },
       data: {
@@ -98,7 +213,118 @@ router.put('/:id', async (req, res, next) => {
       }
     });
 
-    res.json(client);
+    // Handle hosting updates
+    const existingDeal = await prisma.deal.findFirst({
+      where: { clientId: client.id }
+    });
+
+    if (hasHosting) {
+      const hostingMonthly = parseFloat(hostingPrice) || 20;
+      const start = hostingStartDate ? new Date(hostingStartDate) : new Date();
+      let nextInvoice = new Date(start);
+      if (hostingInterval === 'YEARLY') {
+        nextInvoice.setFullYear(nextInvoice.getFullYear() + 1);
+      } else {
+        nextInvoice.setMonth(nextInvoice.getMonth() + 1);
+      }
+
+      const totalValue = hostingMonthly * 12;
+
+      if (existingDeal) {
+        // Update existing deal
+        await prisma.deal.update({
+          where: { id: existingDeal.id },
+          data: {
+            hasHosting: true,
+            hostingPrice: hostingMonthly,
+            hostingInterval,
+            hostingStartDate: start,
+            hostingEndDate: hostingEndDate ? new Date(hostingEndDate) : null,
+            nextInvoiceDate: nextInvoice,
+            totalValue
+          }
+        });
+      } else {
+        // Create new deal with hosting
+        let defaultPackage = await prisma.package.findFirst({
+          where: { name: 'Direct klant' }
+        });
+
+        if (!defaultPackage) {
+          defaultPackage = await prisma.package.create({
+            data: {
+              name: 'Direct klant',
+              oneTimePrice: 0,
+              monthlyPrice: hostingMonthly,
+              description: 'Standaard pakket voor directe klanten'
+            }
+          });
+        }
+
+        // Find or create lead for this client
+        let lead = await prisma.lead.findFirst({
+          where: { companyName: client.companyName, status: 'KLANT' }
+        });
+
+        if (!lead) {
+          lead = await prisma.lead.create({
+            data: {
+              companyName: client.companyName,
+              vatNumber: client.vatNumber,
+              contactPerson: client.contactPerson,
+              email: client.email,
+              phone: client.phone,
+              address: client.address,
+              city: client.city,
+              website: client.website,
+              source: 'CRM',
+              status: 'KLANT'
+            }
+          });
+        }
+
+        await prisma.deal.create({
+          data: {
+            leadId: lead.id,
+            clientId: client.id,
+            packageId: defaultPackage.id,
+            acquisitionCost: 0,
+            acquisitionType: 'none',
+            totalValue,
+            saleDate: new Date(),
+            hasHosting: true,
+            hostingPrice: hostingMonthly,
+            hostingInterval,
+            hostingStartDate: start,
+            hostingEndDate: hostingEndDate ? new Date(hostingEndDate) : null,
+            nextInvoiceDate: nextInvoice
+          }
+        });
+      }
+    } else if (existingDeal && existingDeal.hasHosting) {
+      // Disable hosting if it was previously enabled
+      await prisma.deal.update({
+        where: { id: existingDeal.id },
+        data: {
+          hasHosting: false,
+          hostingEndDate: new Date()
+        }
+      });
+    }
+
+    // Return updated client with deal info
+    const updatedClient = await prisma.client.findUnique({
+      where: { id: client.id },
+      include: {
+        deal: {
+          include: {
+            package: true
+          }
+        }
+      }
+    });
+
+    res.json(updatedClient);
   } catch (err) {
     next(err);
   }

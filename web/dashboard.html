@@ -156,9 +156,13 @@
       const conv = data.conversions;
       const grid = document.getElementById('kpi-grid');
       
-      // Calculate MRR and average monthly revenue from revenue data
+      // Calculate MRR and current year revenue from revenue data
       const mrr = revenue?.breakdown ? (revenue.breakdown.actualMRR + revenue.breakdown.upsellMRR) : 0;
-      const avgMonthlyRevenue = revenue?.totalRevenue ? revenue.totalRevenue / 12 : 0;
+      const currentYear = revenue?.currentYear || new Date().getFullYear();
+      const hostingCurrentYear = revenue?.breakdown?.hostingCurrentYear || 0;
+      const upsellCurrentYear = revenue?.breakdown?.upsellCurrentYear || 0;
+      const eenmaligNetto = revenue?.breakdown ? (revenue.breakdown.eenmalig + revenue.breakdown.upsellOneTime - revenue.breakdown.discount) : 0;
+      const totalCurrentYear = eenmaligNetto + hostingCurrentYear + upsellCurrentYear;
       
       // Helper to create small sparkline charts
       setTimeout(() => {
@@ -261,8 +265,7 @@
             </div>
             <div class="dashboard-value">${formatCurrency(mrr)}</div>
             <div class="dashboard-subtext">
-              <span>${formatCurrency(mrr * 12)}</span>
-              <span>per jaar</span>
+              <span>Hosting ${currentYear}: ${formatCurrency(hostingCurrentYear)}</span>
             </div>
             <div class="dashboard-chart-container">
               <canvas id="chart-revenue"></canvas>
@@ -271,15 +274,15 @@
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Gem. Omzet/maand</span>
+              <span class="dashboard-label">Omzet ${currentYear}</span>
               <i data-lucide="trending-up" style="color:var(--accent-green);width:18px;height:18px;"></i>
             </div>
-            <div class="dashboard-value">${formatCurrency(avgMonthlyRevenue)}</div>
+            <div class="dashboard-value">${formatCurrency(totalCurrentYear)}</div>
             <div class="dashboard-subtext">
-              <span>Totaal: ${formatCurrency(revenue?.totalRevenue || 0)}</span>
+              <span style="font-size:11px;">Eenmalig: ${formatCurrency(eenmaligNetto)} | Hosting: ${formatCurrency(hostingCurrentYear)}</span>
             </div>
             <div style="height:60px;display:flex;align-items:end;font-size:12px;color:var(--text-muted);">
-              Gemiddelde acquisitiekost: ${formatCurrency(data.avgAcquisitionCost)}
+              Gem. acquisitiekost: ${formatCurrency(data.avgAcquisitionCost)}
             </div>
           </div>
         </div>
@@ -662,24 +665,48 @@
 
     function renderFinancialSummary(dashboard, revenue) {
       const container = document.getElementById('financial-summary');
+      const yr = revenue?.currentYear || new Date().getFullYear();
+      const b = revenue?.breakdown || {};
+      const hostCY = b.hostingCurrentYear || 0;
+      const upsellCY = b.upsellCurrentYear || 0;
+      const eenmalig = (b.eenmalig || 0) + (b.upsellOneTime || 0) - (b.discount || 0);
+      const totalCY = eenmalig + hostCY + upsellCY;
+      const q = revenue?.quarters || {};
+      
+      const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
+      
       container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.1);border-radius:8px;border-left:3px solid #34d399;">
-            <span style="color:var(--text-muted);font-size:13px;">Totale omzet</span>
-            <span style="font-weight:800;font-size:18px;color:#34d399;">${formatCurrency(dashboard.totalRevenue)}</span>
+            <span style="color:var(--text-muted);font-size:13px;">Omzet ${yr}</span>
+            <span style="font-weight:800;font-size:18px;color:#34d399;">${formatCurrency(totalCY)}</span>
           </div>
           <div class="flex justify-between items-center" style="padding:0 4px;">
-            <span style="color:var(--text-muted);font-size:13px;">Gem. dealwaarde</span>
-            <span style="font-weight:600;font-size:14px;color:var(--text-primary);">${formatCurrency(dashboard.avgDealValue)}</span>
+            <span style="color:var(--text-muted);font-size:13px;">Eenmalig netto</span>
+            <span style="font-weight:600;font-size:14px;color:var(--text-primary);">${formatCurrency(eenmalig)}</span>
           </div>
           <div class="flex justify-between items-center" style="padding:0 4px;">
-            <span style="color:var(--text-muted);font-size:13px;">Gem. acquisitiekost</span>
-            <span style="font-weight:600;font-size:14px;color:var(--text-primary);">${formatCurrency(dashboard.avgAcquisitionCost)}</span>
+            <span style="color:var(--text-muted);font-size:13px;">Hosting ${yr}</span>
+            <span style="font-weight:600;font-size:14px;color:var(--text-primary);">${formatCurrency(hostCY)}</span>
           </div>
+          ${upsellCY > 0 ? `<div class="flex justify-between items-center" style="padding:0 4px;">
+            <span style="color:var(--text-muted);font-size:13px;">Upsells ${yr}</span>
+            <span style="font-weight:600;font-size:14px;color:var(--text-primary);">${formatCurrency(upsellCY)}</span>
+          </div>` : ''}
           <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.1);border-radius:8px;border-left:3px solid #34d399;">
             <span style="color:var(--text-muted);font-size:13px;">ROI</span>
             <span style="font-weight:800;font-size:18px;color:#34d399;">${revenue.roi}%</span>
           </div>
+          <hr style="border-color:var(--border-color);margin:4px 0;">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Per kwartaal ${yr}</div>
+          ${['Q1','Q2','Q3','Q4'].map(qk => {
+            const qData = q[qk] || { hosting: 0, upsells: 0, eenmalig: 0 };
+            const qTotal = qData.hosting + qData.upsells + qData.eenmalig;
+            return `<div class="flex justify-between items-center" style="padding:0 4px;">
+              <span style="font-size:13px;color:var(--text-muted);">${qk} (${qLabels[qk]})</span>
+              <span style="font-weight:600;font-size:13px;color:var(--text-primary);">${formatCurrency(qTotal)}</span>
+            </div>`;
+          }).join('')}
           <hr style="border-color:var(--border-color);margin:4px 0;">
           <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Omzet per pakket</div>
           ${revenue.packageRevenue.length > 0 ? revenue.packageRevenue.map(p => `

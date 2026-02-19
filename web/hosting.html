@@ -134,18 +134,25 @@
 
         const fmt = (v) => formatCurrency(v);
 
+        const yr = data.currentYear || new Date().getFullYear();
+        const qt = data.quarterTotals || {};
+        const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
+        
         document.getElementById('hosting-kpis').innerHTML = `
           <div class="kpi-card">
             <div class="kpi-label">Hosting klanten</div>
             <div class="kpi-value">${data.totalClients}</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Maandelijkse omzet</div>
-            <div class="kpi-value">${fmt(data.monthlyRevenue)}</div>
+            <div class="kpi-label">MRR (hosting)</div>
+            <div class="kpi-value">${fmt(data.totalMRR || 0)}</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Jaarlijkse omzet</div>
-            <div class="kpi-value">${fmt(data.yearlyRevenue)}</div>
+          <div class="kpi-card" style="border-left-color:#34d399;">
+            <div class="kpi-label">Hosting omzet ${yr}</div>
+            <div class="kpi-value" style="color:#34d399;">${fmt(data.totalCurrentYear || 0)}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">
+              ${['Q1','Q2','Q3','Q4'].map(q => `${q}: ${fmt(qt[q] || 0)}`).join(' | ')}
+            </div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Gem. per klant/mnd</div>

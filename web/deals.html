@@ -989,8 +989,14 @@
       }
       
       const oneTimeTotalAfterDiscount = Math.max(0, oneTimeTotal - discountAmount);
-      const totalMonthly = hostingPrice + upsellMonthly;
-      const yearlyValue = oneTimeTotalAfterDiscount + (totalMonthly * 12);
+      
+      // Hosting yearly calculation - respect interval
+      const hostingYearly = hasHosting 
+        ? (hostingInterval === 'YEARLY' ? hostingPrice : hostingPrice * 12)
+        : 0;
+      
+      const upsellYearly = upsellMonthly * 12;
+      const yearlyValue = oneTimeTotalAfterDiscount + hostingYearly + upsellYearly;
 
       document.getElementById('deal-calculation').innerHTML = `
         <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalig pakket</span><span>${formatCurrency(pkg.oneTimePrice)}</span></div>

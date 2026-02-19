@@ -128,6 +128,49 @@ router.get('/revenue', async (req, res, next) => {
       orderBy: { saleDate: 'asc' }
     });
 
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    // Helper: calculate remaining months in a year from a given start month (1-indexed)
+    // e.g. startMonth=3 (march) => months 3..12 => 10 months remaining
+    function remainingMonthsInYear(startDate, year) {
+      const d = new Date(startDate);
+      const startYear = d.getFullYear();
+      if (startYear > year) return 0; // hasn't started yet in this year
+      if (startYear < year) return 12; // full year
+      // same year: remaining months from start month
+      const startMonth = d.getMonth(); // 0-indexed
+      return 12 - startMonth;
+    }
+
+    // Helper: get quarter for a month (0-indexed)
+    function getQuarter(month) {
+      if (month < 3) return 'Q1';
+      if (month < 6) return 'Q2';
+      if (month < 9) return 'Q3';
+      return 'Q4';
+    }
+
+    // Helper: months in a quarter from a start month
+    // e.g. Q1 = months 0,1,2 - if start is month 1 (feb), returns 2 months in Q1
+    function monthsInQuarterFromStart(startDate, quarter, year) {
+      const qRanges = { Q1: [0,1,2], Q2: [3,4,5], Q3: [6,7,8], Q4: [9,10,11] };
+      const months = qRanges[quarter];
+      const d = new Date(startDate);
+      const startYear = d.getFullYear();
+      const startMonth = d.getMonth();
+      
+      if (startYear > year) return 0;
+      
+      let count = 0;
+      for (const m of months) {
+        if (startYear < year || (startYear === year && m >= startMonth)) {
+          count++;
+        }
+      }
+      return count;
+    }
+
     // Per-deal breakdown
     const perDeal = deals.map(deal => {
       const pkgOneTime = deal.package.oneTimePrice;
@@ -146,17 +189,71 @@ router.get('/revenue', async (req, res, next) => {
         discount = deal.discountAmount;
       }
 
-      // Hosting calculation - respect interval
-      const hostingMonthly = deal.hasHosting ? deal.hostingPrice : 0;
-      const hostingYearly = deal.hasHosting 
-        ? (deal.hostingInterval === 'YEARLY' ? hostingMonthly : hostingMonthly * 12)
+      // Hosting: full year value (what they pay per 12 months)
+      const hostingFullYear = deal.hasHosting 
+        ? (deal.hostingInterval === 'YEARLY' ? deal.hostingPrice : deal.hostingPrice * 12)
         : 0;
-      const upsellMonthlyYearly = upsellMonthly * 12;
+
+      // Hosting: actual MRR (monthly cost)
+      const hostingMRR = deal.hasHosting
+        ? (deal.hostingInterval === 'YEARLY' ? deal.hostingPrice / 12 : deal.hostingPrice)
+        : 0;
+
+      // Hosting: current year revenue based on start date and quarters
+      const hostingStart = deal.hostingStartDate || deal.saleDate;
+      let hostingCurrentYear = 0;
+      let hostingQuarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
       
-      // Calculate actual monthly recurring (for MRR insight)
-      const actualMonthlyRecurring = deal.hasHosting
-        ? (deal.hostingInterval === 'YEARLY' ? hostingMonthly / 12 : hostingMonthly)
-        : 0;
+      if (deal.hasHosting && hostingStart) {
+        const startDate = new Date(hostingStart);
+        const startYear = startDate.getFullYear();
+        
+        // Check if hosting has ended
+        const hasEnded = deal.hostingEndDate && new Date(deal.hostingEndDate) < new Date(currentYear, 0, 1);
+        
+        if (!hasEnded) {
+          if (deal.hostingInterval === 'MONTHLY') {
+            // Monthly: count active months per quarter in current year
+            for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
+              const activeMonths = monthsInQuarterFromStart(hostingStart, q, currentYear);
+              hostingQuarters[q] = activeMonths * deal.hostingPrice;
+            }
+            hostingCurrentYear = Object.values(hostingQuarters).reduce((a, b) => a + b, 0);
+          } else {
+            // Yearly: the full yearly amount falls in the quarter of the start month
+            if (startYear <= currentYear) {
+              // Determine which quarter the yearly invoice falls in
+              const invoiceMonth = startDate.getMonth(); // 0-indexed
+              const invoiceQ = getQuarter(invoiceMonth);
+              
+              if (startYear < currentYear) {
+                // Renewal: falls in same quarter each year
+                hostingQuarters[invoiceQ] = deal.hostingPrice;
+                hostingCurrentYear = deal.hostingPrice;
+              } else {
+                // First year: starts this year
+                hostingQuarters[invoiceQ] = deal.hostingPrice;
+                hostingCurrentYear = deal.hostingPrice;
+              }
+            }
+          }
+        }
+      }
+
+      // Upsell monthly: current year calculation
+      const upsellStart = deal.saleDate;
+      let upsellCurrentYear = 0;
+      let upsellQuarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
+      
+      if (upsellMonthly > 0) {
+        for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
+          const activeMonths = monthsInQuarterFromStart(upsellStart, q, currentYear);
+          upsellQuarters[q] = activeMonths * upsellMonthly;
+        }
+        upsellCurrentYear = Object.values(upsellQuarters).reduce((a, b) => a + b, 0);
+      }
+
+      const upsellMonthlyYearly = upsellMonthly * 12;
 
       return {
         id: deal.id,
@@ -172,10 +269,15 @@ router.get('/revenue', async (req, res, next) => {
         upsellMonthlyYearly,
         discount,
         discountType: deal.discountType,
-        hostingMonthly,
-        hostingYearly,
+        hostingPrice: deal.hostingPrice,
         hostingInterval: deal.hostingInterval,
-        actualMonthlyRecurring,
+        hostingFullYear,
+        hostingMRR,
+        hostingCurrentYear,
+        hostingQuarters,
+        hostingStartDate: hostingStart,
+        upsellCurrentYear,
+        upsellQuarters,
         totalValue: deal.totalValue,
         upsellNames: deal.upsells.map(u => u.upsell.name)
       };
@@ -186,15 +288,32 @@ router.get('/revenue', async (req, res, next) => {
     const totUpsellOneTime = perDeal.reduce((s, d) => s + d.upsellOneTime, 0);
     const totUpsellMonthlyYearly = perDeal.reduce((s, d) => s + d.upsellMonthlyYearly, 0);
     const totDiscount = perDeal.reduce((s, d) => s + d.discount, 0);
-    const totHostingYearly = perDeal.reduce((s, d) => s + d.hostingYearly, 0);
-    const totHostingMonthly = perDeal.reduce((s, d) => s + d.hostingMonthly, 0);
-    const totActualMRR = perDeal.reduce((s, d) => s + d.actualMonthlyRecurring, 0);
+    const totHostingFullYear = perDeal.reduce((s, d) => s + d.hostingFullYear, 0);
+    const totHostingCurrentYear = perDeal.reduce((s, d) => s + d.hostingCurrentYear, 0);
+    const totHostingMRR = perDeal.reduce((s, d) => s + d.hostingMRR, 0);
     const totUpsellMRR = perDeal.reduce((s, d) => s + d.upsellMonthly, 0);
+    const totUpsellCurrentYear = perDeal.reduce((s, d) => s + d.upsellCurrentYear, 0);
     const totalRevenue = perDeal.reduce((s, d) => s + d.totalValue, 0);
     const totalCost = perDeal.reduce((s, d) => s + d.acquisitionCost, 0);
     const roi = totalCost > 0 ? (((totalRevenue - totalCost) / totalCost) * 100).toFixed(1) : 0;
     const totalClients = perDeal.length;
     const avgDeal = totalClients > 0 ? totalRevenue / totalClients : 0;
+
+    // Quarter totals for current year
+    const quarterTotals = { Q1: { hosting: 0, upsells: 0, eenmalig: 0 }, Q2: { hosting: 0, upsells: 0, eenmalig: 0 }, Q3: { hosting: 0, upsells: 0, eenmalig: 0 }, Q4: { hosting: 0, upsells: 0, eenmalig: 0 } };
+    perDeal.forEach(d => {
+      for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
+        quarterTotals[q].hosting += d.hostingQuarters[q];
+        quarterTotals[q].upsells += d.upsellQuarters[q];
+      }
+      // One-time revenue falls in the quarter of the sale date
+      const saleMonth = new Date(d.saleDate).getMonth();
+      const saleYear = new Date(d.saleDate).getFullYear();
+      if (saleYear === currentYear) {
+        const saleQ = getQuarter(saleMonth);
+        quarterTotals[saleQ].eenmalig += (d.pkgOneTime + d.upsellOneTime - d.discount);
+      }
+    });
 
     // Monthly breakdown per type
     const monthlyBreakdown = {};
@@ -202,8 +321,8 @@ router.get('/revenue', async (req, res, next) => {
       const month = d.saleDate.toISOString().slice(0, 7);
       if (!monthlyBreakdown[month]) monthlyBreakdown[month] = { eenmalig: 0, hosting: 0, upsells: 0, korting: 0, total: 0 };
       monthlyBreakdown[month].eenmalig += d.pkgOneTime;
-      monthlyBreakdown[month].hosting += d.hostingYearly;
-      monthlyBreakdown[month].upsells += d.upsellOneTime + d.upsellMonthlyYearly;
+      monthlyBreakdown[month].hosting += d.hostingCurrentYear;
+      monthlyBreakdown[month].upsells += d.upsellOneTime + d.upsellCurrentYear;
       monthlyBreakdown[month].korting += d.discount;
       monthlyBreakdown[month].total += d.totalValue;
     });
@@ -214,7 +333,7 @@ router.get('/revenue', async (req, res, next) => {
       if (!packageBreakdown[d.packageName]) packageBreakdown[d.packageName] = { count: 0, eenmalig: 0, hosting: 0, total: 0 };
       packageBreakdown[d.packageName].count++;
       packageBreakdown[d.packageName].eenmalig += d.pkgOneTime;
-      packageBreakdown[d.packageName].hosting += d.hostingYearly;
+      packageBreakdown[d.packageName].hosting += d.hostingCurrentYear;
       packageBreakdown[d.packageName].total += d.totalValue;
     });
 
@@ -225,7 +344,12 @@ router.get('/revenue', async (req, res, next) => {
         const name = u.upsell.name;
         if (!upsellBreakdown[name]) upsellBreakdown[name] = { count: 0, revenue: 0, type: u.upsell.billingType, price: u.upsell.price };
         upsellBreakdown[name].count++;
-        upsellBreakdown[name].revenue += u.upsell.billingType === 'ONE_TIME' ? u.upsell.price : u.upsell.price * 12;
+        if (u.upsell.billingType === 'ONE_TIME') {
+          upsellBreakdown[name].revenue += u.upsell.price;
+        } else {
+          const months = remainingMonthsInYear(deal.saleDate, currentYear);
+          upsellBreakdown[name].revenue += u.upsell.price * months;
+        }
       });
     });
 
@@ -238,6 +362,7 @@ router.get('/revenue', async (req, res, next) => {
     const warmCost = warmDeals.reduce((s, d) => s + d.acquisitionCost, 0);
 
     res.json({
+      currentYear,
       // Summary totals
       totalRevenue, totalCost, roi, totalClients, avgDeal,
       // Breakdown totals
@@ -246,11 +371,14 @@ router.get('/revenue', async (req, res, next) => {
         upsellOneTime: totUpsellOneTime,
         upsellMonthlyYearly: totUpsellMonthlyYearly,
         discount: totDiscount,
-        hostingYearly: totHostingYearly,
-        hostingMonthly: totHostingMonthly,
-        actualMRR: totActualMRR,
-        upsellMRR: totUpsellMRR
+        hostingFullYear: totHostingFullYear,
+        hostingCurrentYear: totHostingCurrentYear,
+        actualMRR: totHostingMRR,
+        upsellMRR: totUpsellMRR,
+        upsellCurrentYear: totUpsellCurrentYear
       },
+      // Quarter breakdown for current year
+      quarters: quarterTotals,
       // Monthly stacked
       monthlyBreakdown: Object.entries(monthlyBreakdown).map(([month, data]) => ({ month, ...data })),
       // Backward compatible for dashboard

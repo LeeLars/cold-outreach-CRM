@@ -990,23 +990,77 @@
       
       const oneTimeTotalAfterDiscount = Math.max(0, oneTimeTotal - discountAmount);
       
-      // Hosting yearly calculation - respect interval
-      const hostingYearly = hasHosting 
-        ? (hostingInterval === 'YEARLY' ? hostingPrice : hostingPrice * 12)
-        : 0;
+      // Quarter-based hosting calculation for current year
+      const curYear = new Date().getFullYear();
+      const hostingStartVal = document.getElementById('deal-hosting-start').value;
+      const hStart = hostingStartVal ? new Date(hostingStartVal) : new Date();
+      const hStartYear = hStart.getFullYear();
+      const hStartMonth = hStart.getMonth();
       
-      const upsellYearly = upsellMonthly * 12;
-      const yearlyValue = oneTimeTotalAfterDiscount + hostingYearly + upsellYearly;
+      let hostingCurrentYear = 0;
+      const qRanges = { Q1: [0,1,2], Q2: [3,4,5], Q3: [6,7,8], Q4: [9,10,11] };
+      const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
+      let hostingQDetail = '';
+      
+      if (hasHosting) {
+        if (hostingInterval === 'MONTHLY') {
+          const quarters = {};
+          for (const [q, months] of Object.entries(qRanges)) {
+            let active = 0;
+            for (const m of months) {
+              if (hStartYear < curYear || (hStartYear === curYear && m >= hStartMonth)) active++;
+            }
+            if (active > 0) quarters[q] = active * hostingPrice;
+          }
+          hostingCurrentYear = Object.values(quarters).reduce((a, b) => a + b, 0);
+          hostingQDetail = Object.entries(quarters).map(([q, v]) => 
+            `<div class="flex justify-between" style="margin-bottom:4px;font-size:12px;"><span class="text-muted">${q} (${qLabels[q]})</span><span>${formatCurrency(v)}</span></div>`
+          ).join('');
+        } else {
+          // Yearly: full amount in the quarter of the start month
+          if (hStartYear <= curYear) {
+            const getQ = (m) => m < 3 ? 'Q1' : m < 6 ? 'Q2' : m < 9 ? 'Q3' : 'Q4';
+            const invoiceQ = getQ(hStartMonth);
+            hostingCurrentYear = hostingPrice;
+            hostingQDetail = `<div class="flex justify-between" style="margin-bottom:4px;font-size:12px;"><span class="text-muted">${invoiceQ} (${qLabels[invoiceQ]})</span><span>${formatCurrency(hostingPrice)}</span></div>`;
+          }
+        }
+      }
+      
+      // Upsell monthly: current year based on sale date
+      const saleDateVal = document.getElementById('deal-date').value;
+      const uStart = saleDateVal ? new Date(saleDateVal) : new Date();
+      const uStartYear = uStart.getFullYear();
+      const uStartMonth = uStart.getMonth();
+      let upsellCurrentYear = 0;
+      if (upsellMonthly > 0) {
+        for (const months of Object.values(qRanges)) {
+          for (const m of months) {
+            if (uStartYear < curYear || (uStartYear === curYear && m >= uStartMonth)) {
+              upsellCurrentYear += upsellMonthly;
+            }
+          }
+        }
+      }
+      
+      const totalCurrentYear = oneTimeTotalAfterDiscount + hostingCurrentYear + upsellCurrentYear;
 
       document.getElementById('deal-calculation').innerHTML = `
         <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalig pakket</span><span>${formatCurrency(pkg.oneTimePrice)}</span></div>
         ${upsellOneTime > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalige upsells</span><span>${formatCurrency(upsellOneTime)}</span></div>` : ''}
         ${discountAmount > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Korting</span><span style="color:var(--accent-green);">-${formatCurrency(discountAmount)}</span></div>` : ''}
-        ${discountAmount > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span style="font-weight:600;">Eenmalig totaal</span><span style="font-weight:600;">${formatCurrency(oneTimeTotalAfterDiscount)}</span></div>` : ''}
-        ${hasHosting ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span>${formatCurrency(hostingPrice)}/${hostingInterval === 'YEARLY' ? 'jaar' : 'mnd'}</span></div>` : '<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span style="color:var(--text-muted);">Geen</span></div>'}
-        ${upsellMonthly > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Maandelijkse upsells</span><span>${formatCurrency(upsellMonthly)}/mnd</span></div>` : ''}
+        <div class="flex justify-between" style="margin-bottom:6px;"><span style="font-weight:600;">Eenmalig netto</span><span style="font-weight:600;">${formatCurrency(oneTimeTotalAfterDiscount)}</span></div>
+        ${hasHosting ? `
+          <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span>${formatCurrency(hostingPrice)}/${hostingInterval === 'YEARLY' ? 'jaar' : 'mnd'}</span></div>
+          <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting omzet ${curYear}</span><span>${formatCurrency(hostingCurrentYear)}</span></div>
+          ${hostingQDetail ? `<div style="background:var(--bg-secondary);padding:6px 10px;border-radius:6px;margin-bottom:6px;">
+            <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Per kwartaal</div>
+            ${hostingQDetail}
+          </div>` : ''}
+        ` : '<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span style="color:var(--text-muted);">Geen</span></div>'}
+        ${upsellMonthly > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Upsells ${curYear}</span><span>${formatCurrency(upsellCurrentYear)}</span></div>` : ''}
         <hr style="border-color:var(--border-color);margin:8px 0;">
-        <div class="flex justify-between"><span style="font-weight:600;">Jaarwaarde (12 mnd)</span><span style="font-weight:700;color:var(--accent-brand);">${formatCurrency(yearlyValue)}</span></div>
+        <div class="flex justify-between"><span style="font-weight:600;">Totaal omzet ${curYear}</span><span style="font-weight:700;color:var(--accent-brand);">${formatCurrency(totalCurrentYear)}</span></div>
       `;
     }
 
@@ -1159,6 +1213,76 @@
           'chat': 'Live chat / WhatsApp'
         };
 
+        // Calculate quarter-based hosting for detail view
+        const currentYear = new Date().getFullYear();
+        let hostingCurrentYearRevenue = 0;
+        let hostingQuarterDetail = '';
+        
+        if (deal.hasHosting) {
+          const hStart = new Date(deal.hostingStartDate || deal.saleDate);
+          const startYear = hStart.getFullYear();
+          const startMonth = hStart.getMonth();
+          
+          const qRanges = { Q1: [0,1,2], Q2: [3,4,5], Q3: [6,7,8], Q4: [9,10,11] };
+          const getQ = (m) => m < 3 ? 'Q1' : m < 6 ? 'Q2' : m < 9 ? 'Q3' : 'Q4';
+          
+          if (deal.hostingInterval === 'MONTHLY') {
+            const quarters = {};
+            for (const [q, months] of Object.entries(qRanges)) {
+              let activeMonths = 0;
+              for (const m of months) {
+                if (startYear < currentYear || (startYear === currentYear && m >= startMonth)) activeMonths++;
+              }
+              if (activeMonths > 0) quarters[q] = activeMonths * deal.hostingPrice;
+            }
+            hostingCurrentYearRevenue = Object.values(quarters).reduce((a, b) => a + b, 0);
+            hostingQuarterDetail = Object.entries(quarters).map(([q, v]) => 
+              `<div class="flex justify-between" style="font-size:12px;padding:2px 0;"><span class="text-muted">${q} (jan-mrt/apr-jun/jul-sep/okt-dec)</span><span>${formatCurrency(v)}</span></div>`
+            ).join('');
+            // Cleaner quarter labels
+            const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
+            hostingQuarterDetail = Object.entries(quarters).map(([q, v]) => 
+              `<div class="flex justify-between" style="font-size:12px;padding:2px 0;"><span class="text-muted">${q} (${qLabels[q]})</span><span>${formatCurrency(v)}</span></div>`
+            ).join('');
+          } else {
+            // Yearly: falls in the quarter of the start month
+            if (startYear <= currentYear) {
+              const invoiceQ = getQ(startMonth);
+              const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
+              hostingCurrentYearRevenue = deal.hostingPrice;
+              hostingQuarterDetail = `<div class="flex justify-between" style="font-size:12px;padding:2px 0;"><span class="text-muted">${invoiceQ} (${qLabels[invoiceQ]})</span><span>${formatCurrency(deal.hostingPrice)}</span></div>`;
+            }
+          }
+        }
+        
+        // Calculate upsell monthly current year
+        const upsellMonthlyItems = deal.upsells.filter(u => u.upsell.billingType === 'MONTHLY');
+        const upsellMonthlyTotal = upsellMonthlyItems.reduce((s, u) => s + u.upsell.price, 0);
+        let upsellCurrentYear = 0;
+        if (upsellMonthlyTotal > 0) {
+          const uStart = new Date(deal.saleDate);
+          const uStartYear = uStart.getFullYear();
+          const uStartMonth = uStart.getMonth();
+          const qRanges2 = { Q1: [0,1,2], Q2: [3,4,5], Q3: [6,7,8], Q4: [9,10,11] };
+          for (const months of Object.values(qRanges2)) {
+            for (const m of months) {
+              if (uStartYear < currentYear || (uStartYear === currentYear && m >= uStartMonth)) {
+                upsellCurrentYear += upsellMonthlyTotal;
+              }
+            }
+          }
+        }
+        
+        // Eenmalige berekening
+        const upsellOneTimeTotal = deal.upsells.filter(u => u.upsell.billingType === 'ONE_TIME').reduce((s, u) => s + u.upsell.price, 0);
+        let discountVal = 0;
+        if (deal.discountType === 'percentage') discountVal = ((deal.package.oneTimePrice + upsellOneTimeTotal) * deal.discountPercentage) / 100;
+        else if (deal.discountType === 'fixed') discountVal = deal.discountAmount;
+        const eenmaligNetto = deal.package.oneTimePrice + upsellOneTimeTotal - discountVal;
+        
+        // Totaal huidig jaar
+        const totalCurrentYear = eenmaligNetto + hostingCurrentYearRevenue + upsellCurrentYear;
+
         document.getElementById('detail-modal-body').innerHTML = `
           <div style="display:flex;flex-direction:column;gap:14px;">
             <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Deal informatie</h4>
@@ -1178,34 +1302,27 @@
               <span class="text-muted">Eenmalige prijs</span>
               <span>${formatCurrency(deal.package.oneTimePrice)}</span>
             </div>
+            ${upsellOneTimeTotal > 0 ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Eenmalige upsells</span>
+              <span>${formatCurrency(upsellOneTimeTotal)}</span>
+            </div>` : ''}
+            ${discountVal > 0 ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Korting</span>
+              <span style="font-weight:600;color:var(--accent-green);">-${formatCurrency(discountVal)}</span>
+            </div>` : ''}
             <div class="flex justify-between items-center">
-              <span class="text-muted">Maandelijks</span>
-              <span>${formatCurrency(deal.package.monthlyPrice)}/mnd</span>
+              <span class="text-muted">Eenmalig netto</span>
+              <span style="font-weight:600;">${formatCurrency(eenmaligNetto)}</span>
             </div>
             <div>
               <span class="text-muted" style="display:block;margin-bottom:6px;">Upsells</span>
               <div>${upsellList}</div>
             </div>
-            ${deal.discountType && deal.discountType !== 'none' ? `
-            <div class="flex justify-between items-center">
-              <span class="text-muted">Korting</span>
-              <span style="font-weight:600;color:var(--accent-green);">
-                ${deal.discountType === 'percentage' ? `${deal.discountPercentage}%` : formatCurrency(deal.discountAmount)}
-              </span>
-            </div>
-            ` : ''}
+            
             <hr style="border-color:var(--border-color);">
             <div class="flex justify-between items-center">
               <span class="text-muted">Acquisitiekost</span>
               <span style="font-weight:600;">${formatCurrency(deal.acquisitionCost)}</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-muted">Totale dealwaarde</span>
-              <span style="font-weight:700;font-size:18px;color:var(--accent-brand);">${formatCurrency(deal.totalValue)}</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="text-muted">ROI</span>
-              <span style="font-weight:700;color:var(--accent-brand);">${deal.acquisitionCost > 0 ? (((deal.totalValue - deal.acquisitionCost) / deal.acquisitionCost) * 100).toFixed(1) : '0'}%</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="text-muted">Datum verkoop</span>
@@ -1231,12 +1348,39 @@
                 <span class="text-muted">Volgende factuur</span>
                 <span>${formatDate(deal.nextInvoiceDate)}</span>
               </div>` : ''}
+              <div class="flex justify-between items-center">
+                <span class="text-muted">Hosting omzet ${currentYear}</span>
+                <span style="font-weight:600;">${formatCurrency(hostingCurrentYearRevenue)}</span>
+              </div>
+              ${hostingQuarterDetail ? `<div style="background:var(--bg-secondary);padding:8px 12px;border-radius:6px;margin-top:4px;">
+                <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Per kwartaal ${currentYear}</div>
+                ${hostingQuarterDetail}
+              </div>` : ''}
             ` : `
               <div class="flex justify-between items-center">
                 <span class="text-muted">Status</span>
                 <span style="color:var(--text-muted);">Geen hosting</span>
               </div>
             `}
+            
+            <hr style="border-color:var(--border-color);">
+            <h4 style="font-size:14px;font-weight:600;margin:0;color:var(--text-primary);">Omzet ${currentYear}</h4>
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Eenmalig netto</span>
+              <span>${formatCurrency(eenmaligNetto)}</span>
+            </div>
+            ${hostingCurrentYearRevenue > 0 ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Hosting ${currentYear}</span>
+              <span>${formatCurrency(hostingCurrentYearRevenue)}</span>
+            </div>` : ''}
+            ${upsellCurrentYear > 0 ? `<div class="flex justify-between items-center">
+              <span class="text-muted">Upsells ${currentYear}</span>
+              <span>${formatCurrency(upsellCurrentYear)}</span>
+            </div>` : ''}
+            <div class="flex justify-between items-center" style="margin-top:4px;">
+              <span style="font-weight:700;">Totaal omzet ${currentYear}</span>
+              <span style="font-weight:700;font-size:18px;color:var(--accent-brand);">${formatCurrency(totalCurrentYear)}</span>
+            </div>
             
             ${deal.websiteGoal || deal.targetAudience || deal.hasExistingWebsite ? `
               <hr style="border-color:var(--border-color);">

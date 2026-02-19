@@ -17,6 +17,13 @@
     <div class="main-content">
       <header class="topbar" id="topbar"></header>
       <main class="page-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h2 style="font-size:18px;font-weight:700;color:var(--text-primary);margin:0;">Hosting overzicht</h2>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Boekjaar</label>
+            <select id="year-selector" class="form-select" style="width:120px;" onchange="changeYear()"></select>
+          </div>
+        </div>
         <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="hosting-kpis"></div>
 
         <div id="hosting-alerts" style="margin-bottom:20px;"></div>
@@ -37,9 +44,9 @@
                     <th>Gemeente</th>
                     <th>Pakket</th>
                     <th style="text-align:right;cursor:pointer;" onclick="sortTable('hostingPrice')">
-                      Prijs <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                      Prijs/mnd <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                     </th>
-                    <th>Interval</th>
+                    <th>Per jaar</th>
                     <th style="cursor:pointer;" onclick="sortTable('hostingStartDate')">
                       Startdatum <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                     </th>
@@ -77,15 +84,16 @@
         </div>
         <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div class="form-group">
-            <label class="form-label">Prijs</label>
-            <input type="number" step="0.01" id="hosting-edit-price" class="form-input">
+            <label class="form-label">Hosting prijs per maand</label>
+            <select id="hosting-edit-price" class="form-select">
+              <option value="15">€15/mnd (€180/jaar)</option>
+              <option value="20">€20/mnd (€240/jaar)</option>
+            </select>
+            <input type="hidden" id="hosting-edit-interval" value="MONTHLY">
           </div>
           <div class="form-group">
-            <label class="form-label">Interval</label>
-            <select id="hosting-edit-interval" class="form-select">
-              <option value="MONTHLY">Maandelijks</option>
-              <option value="YEARLY">Jaarlijks</option>
-            </select>
+            <label class="form-label">Gefactureerd per</label>
+            <input type="text" class="form-input" value="Jaar" disabled style="background:var(--bg-secondary);color:var(--text-muted);cursor:not-allowed;">
           </div>
         </div>
         <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -119,17 +127,38 @@
     let hostingData = [];
     let sortColumn = 'nextInvoiceDate';
     let sortDirection = 'asc';
+    let selectedYear = new Date().getFullYear();
 
     async function init() {
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Hosting');
+      populateYearSelector();
+      loadHosting();
+    }
+
+    function populateYearSelector() {
+      const now = new Date().getFullYear();
+      const startYear = 2025;
+      const sel = document.getElementById('year-selector');
+      sel.innerHTML = '';
+      for (let y = now + 1; y >= startYear; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === selectedYear) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    }
+
+    function changeYear() {
+      selectedYear = parseInt(document.getElementById('year-selector').value);
       loadHosting();
     }
 
     async function loadHosting() {
       try {
-        const data = await API.get('/stats/hosting');
+        const data = await API.get('/stats/hosting?year=' + selectedYear);
         hostingData = data.clients || [];
 
         const fmt = (v) => formatCurrency(v);
@@ -257,8 +286,8 @@
           <td style="font-weight:500;">${c.companyName}</td>
           <td>${c.city || '-'}</td>
           <td>${c.packageName}</td>
-          <td style="text-align:right;font-weight:600;">${formatCurrency(c.hostingPrice)}</td>
-          <td>${c.hostingInterval === 'YEARLY' ? 'Jaarlijks' : 'Maandelijks'}</td>
+          <td style="text-align:right;font-weight:600;">${formatCurrency(c.hostingPrice)}/mnd</td>
+          <td>${formatCurrency(c.hostingPrice * 12)}/jaar</td>
           <td>${fmtDate(c.hostingStartDate)}</td>
           <td>${fmtDate(c.hostingEndDate)}</td>
           <td style="${c.status === 'overdue' ? 'font-weight:600;color:var(--accent-red);' : ''}">${fmtDate(c.nextInvoiceDate)}</td>
@@ -304,8 +333,17 @@
       if (!item) return;
       document.getElementById('hosting-edit-id').value = item.id;
       document.getElementById('hosting-edit-company').value = item.companyName;
-      document.getElementById('hosting-edit-price').value = item.hostingPrice;
-      document.getElementById('hosting-edit-interval').value = item.hostingInterval;
+      const priceSelect = document.getElementById('hosting-edit-price');
+      const priceVal = item.hostingPrice;
+      if (priceVal == 15 || priceVal == 20) {
+        priceSelect.value = priceVal;
+      } else {
+        const opt = document.createElement('option');
+        opt.value = priceVal;
+        opt.textContent = `€${priceVal}/mnd (€${priceVal * 12}/jaar)`;
+        priceSelect.appendChild(opt);
+        priceSelect.value = priceVal;
+      }
       document.getElementById('hosting-edit-start').value = item.hostingStartDate ? item.hostingStartDate.slice(0, 10) : '';
       document.getElementById('hosting-edit-end').value = item.hostingEndDate ? item.hostingEndDate.slice(0, 10) : '';
       document.getElementById('hosting-edit-invoice').value = item.nextInvoiceDate ? item.nextInvoiceDate.slice(0, 10) : '';
@@ -322,7 +360,7 @@
       try {
         await API.put('/deals/' + id + '/hosting', {
           hostingPrice: parseFloat(document.getElementById('hosting-edit-price').value),
-          hostingInterval: document.getElementById('hosting-edit-interval').value,
+          hostingInterval: 'MONTHLY',
           hostingStartDate: document.getElementById('hosting-edit-start').value || null,
           hostingEndDate: document.getElementById('hosting-edit-end').value || null,
           nextInvoiceDate: document.getElementById('hosting-edit-invoice').value || null
@@ -341,11 +379,8 @@
         const currentInvoiceDate = new Date(deal.nextInvoiceDate);
         const nextInvoiceDate = new Date(currentInvoiceDate);
         
-        if (deal.hostingInterval === 'YEARLY') {
-          nextInvoiceDate.setFullYear(nextInvoiceDate.getFullYear() + 1);
-        } else {
-          nextInvoiceDate.setMonth(nextInvoiceDate.getMonth() + 1);
-        }
+        // Hosting is always invoiced yearly
+        nextInvoiceDate.setFullYear(nextInvoiceDate.getFullYear() + 1);
         
         await API.put('/deals/' + dealId + '/hosting', {
           hostingPrice: deal.hostingPrice,

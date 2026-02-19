@@ -129,7 +129,8 @@ router.get('/revenue', async (req, res, next) => {
     });
 
     const now = new Date();
-    const currentYear = now.getFullYear();
+    const selectedYear = req.query.year ? parseInt(req.query.year) : now.getFullYear();
+    const currentYear = selectedYear;
 
     // Helper: calculate remaining months in a year from a given start month (1-indexed)
     // e.g. startMonth=3 (march) => months 3..12 => 10 months remaining
@@ -256,20 +257,26 @@ router.get('/revenue', async (req, res, next) => {
       };
     });
 
+    // Filter: deals sold in selected year (for one-time revenue)
+    const dealsInYear = perDeal.filter(d => new Date(d.saleDate).getFullYear() === currentYear);
+
     // Totals breakdown
-    const totOneTime = perDeal.reduce((s, d) => s + d.pkgOneTime, 0);
-    const totUpsellOneTime = perDeal.reduce((s, d) => s + d.upsellOneTime, 0);
-    const totUpsellMonthlyYearly = perDeal.reduce((s, d) => s + d.upsellMonthlyYearly, 0);
-    const totDiscount = perDeal.reduce((s, d) => s + d.discount, 0);
+    const totOneTime = dealsInYear.reduce((s, d) => s + d.pkgOneTime, 0);
+    const totUpsellOneTime = dealsInYear.reduce((s, d) => s + d.upsellOneTime, 0);
+    const totDiscount = dealsInYear.reduce((s, d) => s + d.discount, 0);
     const totHostingFullYear = perDeal.reduce((s, d) => s + d.hostingFullYear, 0);
     const totHostingCurrentYear = perDeal.reduce((s, d) => s + d.hostingCurrentYear, 0);
     const totHostingMRR = perDeal.reduce((s, d) => s + d.hostingMRR, 0);
     const totUpsellMRR = perDeal.reduce((s, d) => s + d.upsellMonthly, 0);
     const totUpsellCurrentYear = perDeal.reduce((s, d) => s + d.upsellCurrentYear, 0);
-    const totalRevenue = perDeal.reduce((s, d) => s + d.totalValue, 0);
-    const totalCost = perDeal.reduce((s, d) => s + d.acquisitionCost, 0);
+    const totUpsellMonthlyYearly = perDeal.reduce((s, d) => s + d.upsellMonthlyYearly, 0);
+
+    // Year revenue = one-time (only deals sold this year) + hosting this year + upsells this year
+    const eenmaligNetto = totOneTime + totUpsellOneTime - totDiscount;
+    const totalRevenue = eenmaligNetto + totHostingCurrentYear + totUpsellCurrentYear;
+    const totalCost = dealsInYear.reduce((s, d) => s + d.acquisitionCost, 0);
     const roi = totalCost > 0 ? (((totalRevenue - totalCost) / totalCost) * 100).toFixed(1) : 0;
-    const totalClients = perDeal.length;
+    const totalClients = dealsInYear.length;
     const avgDeal = totalClients > 0 ? totalRevenue / totalClients : 0;
 
     // Quarter totals for current year
@@ -288,31 +295,32 @@ router.get('/revenue', async (req, res, next) => {
       }
     });
 
-    // Monthly breakdown per type
+    // Monthly breakdown per type (only deals sold in selected year)
     const monthlyBreakdown = {};
-    perDeal.forEach(d => {
+    dealsInYear.forEach(d => {
       const month = d.saleDate.toISOString().slice(0, 7);
       if (!monthlyBreakdown[month]) monthlyBreakdown[month] = { eenmalig: 0, hosting: 0, upsells: 0, korting: 0, total: 0 };
       monthlyBreakdown[month].eenmalig += d.pkgOneTime;
       monthlyBreakdown[month].hosting += d.hostingCurrentYear;
       monthlyBreakdown[month].upsells += d.upsellOneTime + d.upsellCurrentYear;
       monthlyBreakdown[month].korting += d.discount;
-      monthlyBreakdown[month].total += d.totalValue;
+      monthlyBreakdown[month].total += (d.pkgOneTime + d.upsellOneTime - d.discount) + d.hostingCurrentYear + d.upsellCurrentYear;
     });
 
-    // Package breakdown
+    // Package breakdown (deals sold in selected year)
     const packageBreakdown = {};
-    perDeal.forEach(d => {
+    dealsInYear.forEach(d => {
       if (!packageBreakdown[d.packageName]) packageBreakdown[d.packageName] = { count: 0, eenmalig: 0, hosting: 0, total: 0 };
       packageBreakdown[d.packageName].count++;
       packageBreakdown[d.packageName].eenmalig += d.pkgOneTime;
       packageBreakdown[d.packageName].hosting += d.hostingCurrentYear;
-      packageBreakdown[d.packageName].total += d.totalValue;
+      packageBreakdown[d.packageName].total += (d.pkgOneTime + d.upsellOneTime - d.discount) + d.hostingCurrentYear + d.upsellCurrentYear;
     });
 
-    // Upsell breakdown
+    // Upsell breakdown (deals sold in selected year)
     const upsellBreakdown = {};
-    deals.forEach(deal => {
+    const dealsInYearIds = new Set(dealsInYear.map(d => d.id));
+    deals.filter(deal => dealsInYearIds.has(deal.id)).forEach(deal => {
       deal.upsells.forEach(u => {
         const name = u.upsell.name;
         if (!upsellBreakdown[name]) upsellBreakdown[name] = { count: 0, revenue: 0, type: u.upsell.billingType, price: u.upsell.price };
@@ -326,12 +334,12 @@ router.get('/revenue', async (req, res, next) => {
       });
     });
 
-    // Channel breakdown
-    const flyerDeals = perDeal.filter(d => d.acquisitionType === 'flyer');
-    const warmDeals = perDeal.filter(d => d.acquisitionType !== 'flyer');
-    const flyerRevenue = flyerDeals.reduce((s, d) => s + d.totalValue, 0);
+    // Channel breakdown (deals sold in selected year)
+    const flyerDeals = dealsInYear.filter(d => d.acquisitionType === 'flyer');
+    const warmDeals = dealsInYear.filter(d => d.acquisitionType !== 'flyer');
+    const flyerRevenue = flyerDeals.reduce((s, d) => (s + (d.pkgOneTime + d.upsellOneTime - d.discount) + d.hostingCurrentYear + d.upsellCurrentYear), 0);
     const flyerCost = flyerDeals.reduce((s, d) => s + d.acquisitionCost, 0);
-    const warmRevenue = warmDeals.reduce((s, d) => s + d.totalValue, 0);
+    const warmRevenue = warmDeals.reduce((s, d) => (s + (d.pkgOneTime + d.upsellOneTime - d.discount) + d.hostingCurrentYear + d.upsellCurrentYear), 0);
     const warmCost = warmDeals.reduce((s, d) => s + d.acquisitionCost, 0);
 
     res.json({
@@ -544,7 +552,8 @@ router.get('/hosting', async (req, res, next) => {
     });
 
     const now = new Date();
-    const currentYear = now.getFullYear();
+    const selectedYear = req.query.year ? parseInt(req.query.year) : now.getFullYear();
+    const currentYear = selectedYear;
     const in30Days = new Date();
     in30Days.setDate(in30Days.getDate() + 30);
 

@@ -392,8 +392,11 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" id="wizard-prev-btn" onclick="prevStep()" style="display:none;">Vorige</button>
         <button class="btn btn-secondary" onclick="closeModal('deal-modal')">Annuleren</button>
-        <button class="btn btn-primary" id="wizard-next-btn" onclick="nextStep()">Volgende</button>
-        <button class="btn btn-primary" id="save-deal-btn" onclick="saveDeal()" style="display:none;">Opslaan</button>
+        <div style="display:flex;gap:8px;margin-left:auto;">
+          <button class="btn btn-ghost" id="save-continue-btn" onclick="saveDeal(true)">Opslaan & Sluiten</button>
+          <button class="btn btn-primary" id="wizard-next-btn" onclick="nextStep()">Volgende</button>
+          <button class="btn btn-primary" id="save-deal-btn" onclick="saveDeal()" style="display:none;">Opslaan</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1001,7 +1004,7 @@
       `;
     }
 
-    async function saveDeal() {
+    async function saveDeal(closeAfterSave = false) {
       const leadId = document.getElementById('deal-lead').value;
       const packageId = document.getElementById('deal-package').value;
       const upsellIds = Array.from(document.querySelectorAll('.upsell-checkbox:checked')).map(cb => cb.value);
@@ -1060,7 +1063,10 @@
           await API.post('/deals', dealData);
           showToast('Deal aangemaakt');
         }
-        closeModal('deal-modal');
+        
+        if (closeAfterSave) {
+          closeModal('deal-modal');
+        }
         loadDeals();
       } catch (err) {
         showToast(err.message, 'error');

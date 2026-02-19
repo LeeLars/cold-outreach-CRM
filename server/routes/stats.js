@@ -253,8 +253,11 @@ router.get('/revenue', async (req, res, next) => {
       },
       // Monthly stacked
       monthlyBreakdown: Object.entries(monthlyBreakdown).map(([month, data]) => ({ month, ...data })),
+      // Backward compatible for dashboard
+      monthlyRevenue: Object.entries(monthlyBreakdown).map(([month, data]) => ({ month, revenue: data.total })),
       // Package breakdown
       packageBreakdown: Object.entries(packageBreakdown).map(([name, data]) => ({ name, ...data })),
+      packageRevenue: Object.entries(packageBreakdown).map(([name, data]) => ({ name, revenue: data.total })),
       // Upsell breakdown
       upsellBreakdown: Object.entries(upsellBreakdown).map(([name, data]) => ({ name, ...data })),
       // Per deal detail

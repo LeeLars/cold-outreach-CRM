@@ -140,15 +140,16 @@
           <div id="new-client-hosting-details" style="display:none;">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
               <div class="form-group" style="margin:0;">
-                <label class="form-label">Hosting prijs</label>
-                <input type="number" class="form-input" id="new-client-hosting-price" value="20" step="0.01" min="0">
+                <label class="form-label">Hosting prijs per maand</label>
+                <select class="form-input" id="new-client-hosting-price">
+                  <option value="15">€15/mnd (€180/jaar)</option>
+                  <option value="20" selected>€20/mnd (€240/jaar)</option>
+                </select>
+                <input type="hidden" id="new-client-hosting-interval" value="MONTHLY">
               </div>
               <div class="form-group" style="margin:0;">
-                <label class="form-label">Interval</label>
-                <select class="form-input" id="new-client-hosting-interval">
-                  <option value="MONTHLY">Maandelijks</option>
-                  <option value="YEARLY">Jaarlijks</option>
-                </select>
+                <label class="form-label">Gefactureerd per</label>
+                <input type="text" class="form-input" value="Jaar" disabled style="background:var(--bg-secondary);color:var(--text-muted);cursor:not-allowed;">
               </div>
             </div>
             <div class="form-group" style="margin:0;">
@@ -624,7 +625,7 @@
 
       if (hasHosting) {
         payload.hostingPrice = parseFloat(document.getElementById('new-client-hosting-price').value) || 20;
-        payload.hostingInterval = document.getElementById('new-client-hosting-interval').value;
+        payload.hostingInterval = 'MONTHLY';
         payload.hostingStartDate = document.getElementById('new-client-hosting-start').value || null;
       }
 

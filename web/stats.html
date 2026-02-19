@@ -964,62 +964,8 @@
           </div>
         `;
 
-        // Filter clients with upcoming invoices (within 30 days)
-        const upcomingClients = hostingData.filter(c => {
-          if (!c.nextInvoiceDate) return false;
-          const invoiceDate = new Date(c.nextInvoiceDate);
-          const now = new Date();
-          const in30Days = new Date();
-          in30Days.setDate(in30Days.getDate() + 30);
-          return invoiceDate > now && invoiceDate <= in30Days;
-        });
-
-        let alertsHtml = '';
-        if (upcomingClients.length > 0) {
-          const sortedClients = upcomingClients.sort((a, b) => new Date(a.nextInvoiceDate) - new Date(b.nextInvoiceDate));
-          const closestClient = sortedClients[0];
-          const closestDate = new Date(closestClient.nextInvoiceDate);
-          const daysUntilClosest = Math.ceil((closestDate - new Date()) / (1000 * 60 * 60 * 24));
-
-          alertsHtml = `
-            <div style="background:var(--bg-card);border:1px solid var(--accent-orange);border-left:4px solid var(--accent-orange);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;">
-              <div style="font-size:14px;font-weight:700;color:var(--accent-orange);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <i data-lucide="alert-circle" style="width:18px;height:18px;"></i>
-                  ${upcomingClients.length} klant${upcomingClients.length > 1 ? 'en' : ''} ${upcomingClients.length === 1 ? 'moet' : 'moeten'} gefactureerd worden ${daysUntilClosest === 0 ? 'vandaag' : daysUntilClosest === 1 ? 'morgen' : `binnen ${daysUntilClosest} dagen`}
-                </div>
-                <a href="hosting.html" class="btn btn-sm btn-ghost" style="color:var(--accent-orange);border-color:var(--accent-orange);">
-                  <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
-                  Naar hosting
-                </a>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;">
-                ${sortedClients.slice(0, 5).map(c => {
-                  const invoiceDate = new Date(c.nextInvoiceDate);
-                  const now = new Date();
-                  now.setHours(0, 0, 0, 0);
-                  const invDate = new Date(invoiceDate);
-                  invDate.setHours(0, 0, 0, 0);
-                  const daysUntil = Math.ceil((invDate - now) / (1000 * 60 * 60 * 24));
-                  return `
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-input);border-radius:var(--radius-sm);gap:12px;">
-                      <div style="flex:1;">
-                        <div style="font-weight:600;font-size:13px;color:var(--text-primary);">${c.companyName}</div>
-                        <div style="font-size:12px;color:var(--text-muted);">${c.city || 'Geen locatie'} • ${fmt(c.hostingPrice)}/${c.hostingInterval === 'MONTHLY' ? 'mnd' : 'jaar'}</div>
-                      </div>
-                      <div style="text-align:right;">
-                        <div style="font-size:12px;font-weight:600;color:var(--accent-orange);">${daysUntil === 0 ? 'Vandaag' : daysUntil === 1 ? 'Morgen' : `${daysUntil} dag${daysUntil === 1 ? '' : 'en'}`}</div>
-                        <div style="font-size:11px;color:var(--text-muted);">${invoiceDate.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })}</div>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-                ${upcomingClients.length > 5 ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;">+ ${upcomingClients.length - 5} meer</div>` : ''}
-              </div>
-            </div>
-          `;
-        }
-        document.getElementById('hosting-alerts').innerHTML = alertsHtml;
+        // Hosting reminders only shown on hosting.html page
+        document.getElementById('hosting-alerts').innerHTML = '';
 
         renderHostingTable(hostingData);
         lucide.createIcons();

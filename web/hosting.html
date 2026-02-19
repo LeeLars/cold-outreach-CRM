@@ -153,25 +153,60 @@
           </div>
         `;
 
+        // Filter clients needing invoicing (overdue)
+        const overdueClients = hostingData.filter(c => c.status === 'overdue');
+        
+        // Filter clients with upcoming invoices (within 30 days)
+        const upcomingClients = hostingData.filter(c => {
+          if (!c.nextInvoiceDate) return false;
+          const invoiceDate = new Date(c.nextInvoiceDate);
+          const now = new Date();
+          const in30Days = new Date();
+          in30Days.setDate(in30Days.getDate() + 30);
+          return invoiceDate > now && invoiceDate <= in30Days;
+        });
+
         let alertsHtml = '';
-        if (data.needsInvoicing > 0) {
+        
+        // Overdue invoices alert
+        if (overdueClients.length > 0) {
           alertsHtml += `
             <div style="padding:12px 16px;background:var(--accent-red-dim);border:1px solid var(--accent-red);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13px;">
-              <strong style="color:var(--accent-red);">${data.needsInvoicing} klant(en)</strong> moeten gefactureerd worden (factuurdatum verstreken)
+              <strong style="color:var(--accent-red);">${overdueClients.length} klant(en)</strong> moeten gefactureerd worden (factuurdatum verstreken):
+              <div style="margin-top:8px;padding-left:8px;">
+                ${overdueClients.map(c => `<div style="font-size:12px;margin-top:4px;">• ${c.companyName} (${new Date(c.nextInvoiceDate).toLocaleDateString('nl-BE')})</div>`).join('')}
+              </div>
             </div>`;
         }
-        if (data.upcomingInvoices > 0) {
+        
+        // Upcoming invoices alert (within 30 days)
+        if (upcomingClients.length > 0) {
           alertsHtml += `
             <div style="padding:12px 16px;background:var(--accent-orange-dim);border:1px solid var(--accent-orange);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13px;">
-              <strong style="color:var(--accent-orange);">${data.upcomingInvoices} klant(en)</strong> moeten binnen 30 dagen gefactureerd worden
+              <strong style="color:var(--accent-orange);">${upcomingClients.length} klant(en)</strong> moeten binnen 30 dagen gefactureerd worden:
+              <div style="margin-top:8px;padding-left:8px;">
+                ${upcomingClients.map(c => {
+                  const invoiceDate = new Date(c.nextInvoiceDate);
+                  const now = new Date();
+                  const daysUntil = Math.ceil((invoiceDate - now) / (1000 * 60 * 60 * 24));
+                  return `<div style="font-size:12px;margin-top:4px;">• ${c.companyName} (${invoiceDate.toLocaleDateString('nl-BE')} - ${daysUntil} dag${daysUntil === 1 ? '' : 'en'})</div>`;
+                }).join('')}
+              </div>
             </div>`;
         }
+        
+        // Expiring hosting alert
         if (data.expiringSoon > 0) {
+          const expiringClients = hostingData.filter(c => c.status === 'expiring');
           alertsHtml += `
             <div style="padding:12px 16px;background:var(--accent-orange-dim);border:1px solid var(--accent-orange);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13px;">
-              <strong style="color:var(--accent-orange);">${data.expiringSoon} hosting(s)</strong> verlopen binnen 30 dagen
+              <strong style="color:var(--accent-orange);">${data.expiringSoon} hosting(s)</strong> verlopen binnen 30 dagen:
+              <div style="margin-top:8px;padding-left:8px;">
+                ${expiringClients.map(c => `<div style="font-size:12px;margin-top:4px;">• ${c.companyName} (${new Date(c.hostingEndDate).toLocaleDateString('nl-BE')})</div>`).join('')}
+              </div>
             </div>`;
         }
+        
         document.getElementById('hosting-alerts').innerHTML = alertsHtml;
 
         renderTable(hostingData);

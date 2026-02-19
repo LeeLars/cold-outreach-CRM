@@ -571,37 +571,98 @@ router.get('/hosting', async (req, res, next) => {
     });
 
     const now = new Date();
+    const currentYear = now.getFullYear();
     const in30Days = new Date();
     in30Days.setDate(in30Days.getDate() + 30);
 
+    // Quarter helpers
+    function getQuarter(month) {
+      if (month < 3) return 'Q1';
+      if (month < 6) return 'Q2';
+      if (month < 9) return 'Q3';
+      return 'Q4';
+    }
+    
+    function monthsInQuarterFromStart(startDate, quarter, year) {
+      const qRanges = { Q1: [0,1,2], Q2: [3,4,5], Q3: [6,7,8], Q4: [9,10,11] };
+      const months = qRanges[quarter];
+      const d = new Date(startDate);
+      const startYear = d.getFullYear();
+      const startMonth = d.getMonth();
+      if (startYear > year) return 0;
+      let count = 0;
+      for (const m of months) {
+        if (startYear < year || (startYear === year && m >= startMonth)) count++;
+      }
+      return count;
+    }
+
     const totalClients = deals.length;
-    const monthlyRevenue = deals.reduce((sum, d) => sum + (d.hostingInterval === 'MONTHLY' ? d.hostingPrice : d.hostingPrice / 12), 0);
-    const yearlyRevenue = monthlyRevenue * 12;
+    const totalMRR = deals.reduce((sum, d) => sum + (d.hostingInterval === 'MONTHLY' ? d.hostingPrice : d.hostingPrice / 12), 0);
+
+    // Calculate current year revenue per client with quarters
+    const quarterTotals = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
+    let totalCurrentYear = 0;
 
     const needsInvoicing = deals.filter(d => d.nextInvoiceDate && new Date(d.nextInvoiceDate) <= now);
     const expiringSoon = deals.filter(d => d.hostingEndDate && new Date(d.hostingEndDate) <= in30Days && new Date(d.hostingEndDate) > now);
     const upcomingInvoices = deals.filter(d => d.nextInvoiceDate && new Date(d.nextInvoiceDate) > now && new Date(d.nextInvoiceDate) <= in30Days);
 
-    const clients = deals.map(d => ({
-      id: d.id,
-      companyName: d.lead.companyName,
-      city: d.lead.city,
-      packageName: d.package.name,
-      hostingPrice: d.hostingPrice,
-      hostingInterval: d.hostingInterval,
-      hostingStartDate: d.hostingStartDate,
-      hostingEndDate: d.hostingEndDate,
-      nextInvoiceDate: d.nextInvoiceDate,
-      status: d.hostingEndDate && new Date(d.hostingEndDate) <= now ? 'expired' :
-              d.hostingEndDate && new Date(d.hostingEndDate) <= in30Days ? 'expiring' :
-              d.nextInvoiceDate && new Date(d.nextInvoiceDate) <= now ? 'overdue' : 'active'
-    }));
+    const clients = deals.map(d => {
+      const hostingStart = d.hostingStartDate || d.saleDate;
+      const startDate = new Date(hostingStart);
+      const startYear = startDate.getFullYear();
+      const startMonth = startDate.getMonth();
+      const hasEnded = d.hostingEndDate && new Date(d.hostingEndDate) < new Date(currentYear, 0, 1);
+      
+      let clientCurrentYear = 0;
+      let clientQuarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
+      
+      if (!hasEnded) {
+        if (d.hostingInterval === 'MONTHLY') {
+          for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
+            const activeMonths = monthsInQuarterFromStart(hostingStart, q, currentYear);
+            clientQuarters[q] = activeMonths * d.hostingPrice;
+          }
+          clientCurrentYear = Object.values(clientQuarters).reduce((a, b) => a + b, 0);
+        } else {
+          if (startYear <= currentYear) {
+            const invoiceQ = getQuarter(startMonth);
+            clientQuarters[invoiceQ] = d.hostingPrice;
+            clientCurrentYear = d.hostingPrice;
+          }
+        }
+      }
+      
+      // Add to totals
+      for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) quarterTotals[q] += clientQuarters[q];
+      totalCurrentYear += clientCurrentYear;
+
+      return {
+        id: d.id,
+        companyName: d.lead.companyName,
+        city: d.lead.city,
+        packageName: d.package.name,
+        hostingPrice: d.hostingPrice,
+        hostingInterval: d.hostingInterval,
+        hostingStartDate: d.hostingStartDate,
+        hostingEndDate: d.hostingEndDate,
+        nextInvoiceDate: d.nextInvoiceDate,
+        currentYearRevenue: clientCurrentYear,
+        quarters: clientQuarters,
+        status: d.hostingEndDate && new Date(d.hostingEndDate) <= now ? 'expired' :
+                d.hostingEndDate && new Date(d.hostingEndDate) <= in30Days ? 'expiring' :
+                d.nextInvoiceDate && new Date(d.nextInvoiceDate) <= now ? 'overdue' : 'active'
+      };
+    });
 
     res.json({
+      currentYear,
       totalClients,
-      monthlyRevenue,
-      yearlyRevenue,
-      avgPerClient: totalClients > 0 ? monthlyRevenue / totalClients : 0,
+      totalMRR,
+      totalCurrentYear,
+      quarterTotals,
+      avgPerClient: totalClients > 0 ? totalMRR / totalClients : 0,
       needsInvoicing: needsInvoicing.length,
       expiringSoon: expiringSoon.length,
       upcomingInvoices: upcomingInvoices.length,

@@ -223,6 +223,11 @@
           <td>${statusBadge(c.status)}</td>
           <td style="text-align:center;" onclick="event.stopPropagation()">
             <div style="display:flex;gap:4px;justify-content:center;">
+              ${c.status === 'overdue' || c.status === 'due' ? `
+              <button class="btn btn-sm" onclick="markInvoiceSent('${c.id}')" title="Factuur verstuurd" style="background:var(--accent-green);color:white;padding:4px 8px;font-size:11px;white-space:nowrap;">
+                <i data-lucide="check" style="width:12px;height:12px;"></i> Verstuurd
+              </button>
+              ` : ''}
               <button class="btn-icon" onclick="openHostingEdit('${c.id}')" title="Bewerken"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
               <button class="btn-icon" onclick="deleteHosting('${c.id}','${c.companyName.replace(/'/g, "\\'")}')" 
                 title="Verwijderen" style="color:var(--accent-red);"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
@@ -282,6 +287,33 @@
         });
         closeHostingModal();
         showToast('Hosting bijgewerkt', 'success');
+        loadHosting();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function markInvoiceSent(dealId) {
+      try {
+        const deal = await API.get('/deals/' + dealId);
+        const currentInvoiceDate = new Date(deal.nextInvoiceDate);
+        const nextInvoiceDate = new Date(currentInvoiceDate);
+        
+        if (deal.hostingInterval === 'YEARLY') {
+          nextInvoiceDate.setFullYear(nextInvoiceDate.getFullYear() + 1);
+        } else {
+          nextInvoiceDate.setMonth(nextInvoiceDate.getMonth() + 1);
+        }
+        
+        await API.put('/deals/' + dealId + '/hosting', {
+          hostingPrice: deal.hostingPrice,
+          hostingInterval: deal.hostingInterval,
+          hostingStartDate: deal.hostingStartDate,
+          hostingEndDate: deal.hostingEndDate,
+          nextInvoiceDate: nextInvoiceDate.toISOString().split('T')[0]
+        });
+        
+        showToast('Factuur gemarkeerd als verstuurd', 'success');
         loadHosting();
       } catch (err) {
         showToast(err.message, 'error');

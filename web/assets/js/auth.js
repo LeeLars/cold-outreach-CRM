@@ -1,13 +1,19 @@
 let currentUser = null;
+let _authPromise = null;
 
 async function checkAuth() {
-  try {
-    currentUser = await API.get('/auth/me');
-    return true;
-  } catch {
-    currentUser = null;
-    return false;
-  }
+  if (currentUser) return true;
+  if (_authPromise) return _authPromise;
+  _authPromise = (async () => {
+    try {
+      currentUser = await API.get('/auth/me');
+      return true;
+    } catch {
+      currentUser = null;
+      return false;
+    }
+  })();
+  return _authPromise;
 }
 
 async function requireLogin() {

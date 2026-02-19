@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Hosting - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -123,7 +124,6 @@
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Hosting');
-      lucide.createIcons();
       loadHosting();
     }
 
@@ -217,7 +217,7 @@
         document.getElementById('hosting-alerts').innerHTML = alertsHtml;
 
         renderTable(hostingData);
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         console.error('Hosting error:', err);
       }
@@ -310,7 +310,7 @@
       document.getElementById('hosting-edit-end').value = item.hostingEndDate ? item.hostingEndDate.slice(0, 10) : '';
       document.getElementById('hosting-edit-invoice').value = item.nextInvoiceDate ? item.nextInvoiceDate.slice(0, 10) : '';
       document.getElementById('hosting-edit-modal').classList.add('active');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function closeHostingModal() {

@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Dashboard - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -74,7 +76,8 @@
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Dashboard');
-      lucide.createIcons();
+      // Fire-and-forget auto-expire, load reminders + dashboard in parallel
+      API.post('/leads/auto-expire', { days: 7 }).catch(() => {});
       loadDashboardReminders();
       loadDashboard();
     }
@@ -111,7 +114,7 @@
             }).join('')}
           </div>
         `;
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         console.error('Reminders error:', err);
       }
@@ -127,8 +130,6 @@
 
     async function loadDashboard() {
       try {
-        try { await API.post('/leads/auto-expire', { days: 7 }); } catch(e) {}
-
         const [dashboard, funnel, revenue, recentLeads, locations, hosting] = await Promise.all([
           API.get('/stats/dashboard'),
           API.get('/stats/funnel'),
@@ -287,7 +288,7 @@
           </div>
         </div>
       `;
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function renderHostingReminders(hosting) {

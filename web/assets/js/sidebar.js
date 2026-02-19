@@ -68,7 +68,7 @@ function initSidebar() {
     </div>
   `;
 
-  if (window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 
 function initTopbar(title) {
@@ -98,7 +98,7 @@ function initTopbar(title) {
     document.body.appendChild(backdrop);
   }
 
-  if (window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 
 function toggleSidebar(forceState) {

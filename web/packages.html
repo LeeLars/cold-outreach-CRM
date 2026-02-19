@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Pakketten - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -118,16 +119,14 @@
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Pakketten & Prijzen');
-      lucide.createIcons();
 
       if (isAdmin()) {
         document.getElementById('add-package-btn-wrap').innerHTML = '<button class="btn btn-primary" onclick="openPackageModal()"><i data-lucide="plus"></i> Pakket toevoegen</button>';
         document.getElementById('add-upsell-btn-wrap').innerHTML = '<button class="btn btn-primary" onclick="openUpsellModal()"><i data-lucide="plus"></i> Upsell toevoegen</button>';
-        lucide.createIcons();
+        refreshIcons();
       }
 
-      loadPackages();
-      loadUpsells();
+      Promise.all([loadPackages(), loadUpsells()]);
     }
 
     function switchTab(tab) {
@@ -166,7 +165,7 @@
           </div>
         `).join('');
 
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -191,7 +190,7 @@
           </tr>
         `).join('');
 
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }

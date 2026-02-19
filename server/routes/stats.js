@@ -189,54 +189,27 @@ router.get('/revenue', async (req, res, next) => {
         discount = deal.discountAmount;
       }
 
-      // Hosting: full year value (what they pay per 12 months)
-      const hostingFullYear = deal.hasHosting 
-        ? (deal.hostingInterval === 'YEARLY' ? deal.hostingPrice : deal.hostingPrice * 12)
-        : 0;
+      // Hosting: price is ALWAYS monthly (e.g. 15 or 20 EUR/month)
+      // Invoiced yearly. First year = pro-rata (remaining months), next years = 12 months
+      const monthlyHostingPrice = deal.hasHosting ? deal.hostingPrice : 0;
+      const hostingFullYear = monthlyHostingPrice * 12;
+      const hostingMRR = monthlyHostingPrice;
 
-      // Hosting: actual MRR (monthly cost)
-      const hostingMRR = deal.hasHosting
-        ? (deal.hostingInterval === 'YEARLY' ? deal.hostingPrice / 12 : deal.hostingPrice)
-        : 0;
-
-      // Hosting: current year revenue based on start date and quarters
+      // Hosting: current year revenue based on start date
       const hostingStart = deal.hostingStartDate || deal.saleDate;
       let hostingCurrentYear = 0;
       let hostingQuarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
       
       if (deal.hasHosting && hostingStart) {
-        const startDate = new Date(hostingStart);
-        const startYear = startDate.getFullYear();
-        
-        // Check if hosting has ended
         const hasEnded = deal.hostingEndDate && new Date(deal.hostingEndDate) < new Date(currentYear, 0, 1);
         
         if (!hasEnded) {
-          if (deal.hostingInterval === 'MONTHLY') {
-            // Monthly: count active months per quarter in current year
-            for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
-              const activeMonths = monthsInQuarterFromStart(hostingStart, q, currentYear);
-              hostingQuarters[q] = activeMonths * deal.hostingPrice;
-            }
-            hostingCurrentYear = Object.values(hostingQuarters).reduce((a, b) => a + b, 0);
-          } else {
-            // Yearly: the full yearly amount falls in the quarter of the start month
-            if (startYear <= currentYear) {
-              // Determine which quarter the yearly invoice falls in
-              const invoiceMonth = startDate.getMonth(); // 0-indexed
-              const invoiceQ = getQuarter(invoiceMonth);
-              
-              if (startYear < currentYear) {
-                // Renewal: falls in same quarter each year
-                hostingQuarters[invoiceQ] = deal.hostingPrice;
-                hostingCurrentYear = deal.hostingPrice;
-              } else {
-                // First year: starts this year
-                hostingQuarters[invoiceQ] = deal.hostingPrice;
-                hostingCurrentYear = deal.hostingPrice;
-              }
-            }
+          // Count active months per quarter in current year
+          for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
+            const activeMonths = monthsInQuarterFromStart(hostingStart, q, currentYear);
+            hostingQuarters[q] = activeMonths * monthlyHostingPrice;
           }
+          hostingCurrentYear = Object.values(hostingQuarters).reduce((a, b) => a + b, 0);
         }
       }
 
@@ -598,7 +571,8 @@ router.get('/hosting', async (req, res, next) => {
     }
 
     const totalClients = deals.length;
-    const totalMRR = deals.reduce((sum, d) => sum + (d.hostingInterval === 'MONTHLY' ? d.hostingPrice : d.hostingPrice / 12), 0);
+    // Hosting price is always monthly (e.g. 15 or 20 EUR/month)
+    const totalMRR = deals.reduce((sum, d) => sum + d.hostingPrice, 0);
 
     // Calculate current year revenue per client with quarters
     const quarterTotals = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
@@ -610,28 +584,18 @@ router.get('/hosting', async (req, res, next) => {
 
     const clients = deals.map(d => {
       const hostingStart = d.hostingStartDate || d.saleDate;
-      const startDate = new Date(hostingStart);
-      const startYear = startDate.getFullYear();
-      const startMonth = startDate.getMonth();
       const hasEnded = d.hostingEndDate && new Date(d.hostingEndDate) < new Date(currentYear, 0, 1);
       
       let clientCurrentYear = 0;
       let clientQuarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
       
       if (!hasEnded) {
-        if (d.hostingInterval === 'MONTHLY') {
-          for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
-            const activeMonths = monthsInQuarterFromStart(hostingStart, q, currentYear);
-            clientQuarters[q] = activeMonths * d.hostingPrice;
-          }
-          clientCurrentYear = Object.values(clientQuarters).reduce((a, b) => a + b, 0);
-        } else {
-          if (startYear <= currentYear) {
-            const invoiceQ = getQuarter(startMonth);
-            clientQuarters[invoiceQ] = d.hostingPrice;
-            clientCurrentYear = d.hostingPrice;
-          }
+        // Always calculate based on monthly price x active months per quarter
+        for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
+          const activeMonths = monthsInQuarterFromStart(hostingStart, q, currentYear);
+          clientQuarters[q] = activeMonths * d.hostingPrice;
         }
+        clientCurrentYear = Object.values(clientQuarters).reduce((a, b) => a + b, 0);
       }
       
       // Add to totals
@@ -649,6 +613,7 @@ router.get('/hosting', async (req, res, next) => {
         hostingEndDate: d.hostingEndDate,
         nextInvoiceDate: d.nextInvoiceDate,
         currentYearRevenue: clientCurrentYear,
+        yearlyPrice: d.hostingPrice * 12,
         quarters: clientQuarters,
         status: d.hostingEndDate && new Date(d.hostingEndDate) <= now ? 'expired' :
                 d.hostingEndDate && new Date(d.hostingEndDate) <= in30Days ? 'expiring' :

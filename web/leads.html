@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Leads - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -272,7 +273,6 @@
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Leads');
-      lucide.createIcons();
       setupEventListeners();
       loadLeads();
     }
@@ -424,7 +424,7 @@
       });
 
       renderPagination(document.getElementById('pagination'), data, (page) => { currentPage = page; loadLeads(); });
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function toggleSelectAll(e) {
@@ -548,7 +548,7 @@
 
         document.getElementById('delete-all-dupes-btn').style.display = 'inline-flex';
         openModal('duplicates-modal');
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -661,7 +661,7 @@
         for (let i = 0; i < totalBatches; i++) {
           const batch = allIds.slice(i * ENRICH_BATCH, (i + 1) * ENRICH_BATCH);
           btn.innerHTML = `<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Batch ${i + 1}/${totalBatches} (${batch.length})...`;
-          lucide.createIcons();
+          refreshIcons();
 
           const data = await API.post('/leads/enrich', { ids: batch });
           totalEnriched += data.enriched;
@@ -681,7 +681,7 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="sparkles" style="width:14px;height:14px;"></i> Verrijken';
-        lucide.createIcons();
+        refreshIcons();
       }
     }
 
@@ -824,7 +824,7 @@
         `;
 
         openSlideOver('lead-detail');
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -1052,7 +1052,7 @@
 
       closeSlideOver('lead-detail');
       openModal('booking-modal');
-      lucide.createIcons();
+      refreshIcons();
       loadLeadAppointments(leadId);
 
       try {
@@ -1187,7 +1187,7 @@
             </div>
           `).join('')}
         `;
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {}
     }
 
@@ -1332,7 +1332,7 @@
         updateScanConfirmBtn();
       }
 
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function toggleAllScanResults() {

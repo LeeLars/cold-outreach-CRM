@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Agenda - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
   <style>
     .agenda-header {
       display: flex;
@@ -351,9 +352,9 @@
       await checkAuth();
       initSidebar();
       initTopbar('Agenda');
-      lucide.createIcons();
-      await loadReminders();
-      await loadEvents();
+      // Load reminders and events in parallel
+      loadReminders();
+      loadEvents();
     }
 
     // ===== REMINDERS =====
@@ -395,7 +396,7 @@
             }).join('')}
           </div>
         `;
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         console.error('Reminders error:', err);
       }
@@ -621,7 +622,7 @@
             <div class="empty-state-text">Er zijn geen afspraken gepland voor deze dag.</div>
           </div>
         `;
-        lucide.createIcons();
+        refreshIcons();
         return;
       }
 
@@ -642,7 +643,7 @@
           </div>
         </div>
       `).join('');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     // ===== EVENT POPOVER =====
@@ -700,7 +701,7 @@
       popover.style.top = Math.max(10, top) + 'px';
       popover.style.left = Math.max(10, left) + 'px';
       popover.classList.add('active');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function closePopover() {

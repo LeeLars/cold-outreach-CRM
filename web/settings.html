@@ -8,7 +8,8 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Instellingen - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -111,7 +112,6 @@
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Instellingen');
-      lucide.createIcons();
 
       document.getElementById('account-name').value = currentUser.name;
       document.getElementById('account-email').value = currentUser.email;
@@ -170,7 +170,7 @@
               </button>
             </div>
           `;
-          lucide.createIcons();
+          refreshIcons();
         }
       } catch (err) {
         document.getElementById('calendar-status').innerHTML = '<span class="text-muted">Fout bij laden status</span>';
@@ -209,7 +209,7 @@
         currentUser.email = updated.email;
         showToast('Account bijgewerkt');
         initSidebar();
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }

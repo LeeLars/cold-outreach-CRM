@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Klanten - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -192,7 +193,6 @@
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Klanten');
-      lucide.createIcons();
       loadClients();
     }
 
@@ -270,7 +270,7 @@
         total: data.total
       }, (p) => { currentPage = p; loadClients(document.getElementById('search-input').value.trim()); });
 
-      lucide.createIcons();
+      refreshIcons();
     }
 
     async function viewClient(id) {
@@ -389,7 +389,7 @@
         `;
 
         openModal('detail-modal');
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -481,7 +481,7 @@
         `;
 
         openModal('edit-modal');
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -545,7 +545,7 @@
       resultDiv.style.display = 'none';
       resultDiv.innerHTML = '';
       openModal('new-client-modal');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     async function lookupNewClientVat() {
@@ -588,7 +588,7 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="search" style="width:16px;height:16px;"></i> Opzoeken';
-        lucide.createIcons();
+        refreshIcons();
       }
     }
 

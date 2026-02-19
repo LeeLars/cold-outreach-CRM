@@ -44,7 +44,16 @@ app.use(session({
   }
 }));
 
-app.use(express.static(path.join(__dirname, '..', 'web')));
+app.use(express.static(path.join(__dirname, '..', 'web'), {
+  maxAge: '1h',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (filePath.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
+}));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadsRoutes);

@@ -1,3 +1,12 @@
+let _iconTimer = null;
+function refreshIcons() {
+  if (_iconTimer) return;
+  _iconTimer = requestAnimationFrame(() => {
+    _iconTimer = null;
+    if (window.lucide) lucide.createIcons();
+  });
+}
+
 function showToast(message, type = 'success') {
   let container = document.querySelector('.toast-container');
   if (!container) {

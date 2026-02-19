@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Statistieken - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -328,16 +330,14 @@
     let hostingSortColumn = 'nextInvoiceDate';
     let hostingSortDirection = 'asc';
 
+    const loadedTabs = new Set();
+    
     async function init() {
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Statistieken');
-      lucide.createIcons();
-      loadFunnel();
-      loadRevenue();
-      loadAcquisition();
-      loadLocations();
-      loadHosting();
+      // Only load the active tab initially
+      loadTabData('funnel');
     }
 
     function switchTab(tab) {
@@ -346,6 +346,18 @@
       ['funnel', 'revenue', 'locations', 'hosting'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('hidden', tab !== t);
       });
+      loadTabData(tab);
+    }
+    
+    function loadTabData(tab) {
+      if (loadedTabs.has(tab)) return;
+      loadedTabs.add(tab);
+      switch(tab) {
+        case 'funnel': loadFunnel(); break;
+        case 'revenue': loadRevenue(); loadAcquisition(); break;
+        case 'locations': loadLocations(); break;
+        case 'hosting': loadHosting(); break;
+      }
     }
 
     async function loadFunnel() {
@@ -726,7 +738,7 @@
       renderLocationResponseChart(data);
       renderLocationConversionChart(data);
       renderLocationTable(data);
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function updateLocationChart() {
@@ -976,7 +988,7 @@
         document.getElementById('hosting-alerts').innerHTML = '';
 
         renderHostingTable(hostingData);
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         console.error('Hosting stats error:', err);
       }
@@ -1065,7 +1077,7 @@
       document.getElementById('hosting-edit-end').value = item.hostingEndDate ? item.hostingEndDate.slice(0, 10) : '';
       document.getElementById('hosting-edit-invoice').value = item.nextInvoiceDate ? item.nextInvoiceDate.slice(0, 10) : '';
       document.getElementById('hosting-edit-modal').classList.add('active');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     function closeHostingModal() {

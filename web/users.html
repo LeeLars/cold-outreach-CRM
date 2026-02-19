@@ -8,7 +8,8 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Gebruikers - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -92,7 +93,6 @@
       if (!await requireAdminRole()) return;
       initSidebar();
       initTopbar('Gebruikers');
-      lucide.createIcons();
       loadUsers();
     }
 
@@ -125,7 +125,7 @@
           </tr>
         `).join('');
 
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }

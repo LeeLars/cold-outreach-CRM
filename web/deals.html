@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="icon" type="image/png" href="favicon.png">
   <title>Deals - Cold Outreach CRM</title>
   <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -161,15 +162,12 @@
             <div id="hosting-details">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                 <div>
-                  <label class="form-label" style="font-size:11px;">Hosting prijs</label>
-                  <input type="number" class="form-input" id="deal-hosting-price" value="20" step="0.01" min="0" onchange="updateCalculation()">
-                </div>
-                <div>
-                  <label class="form-label" style="font-size:11px;">Interval</label>
-                  <select class="form-select" id="deal-hosting-interval" onchange="updateCalculation()">
-                    <option value="MONTHLY">Maandelijks</option>
-                    <option value="YEARLY">Jaarlijks</option>
+                  <label class="form-label" style="font-size:11px;">Prijs per maand</label>
+                  <select class="form-select" id="deal-hosting-price" onchange="updateCalculation()">
+                    <option value="15">€15/mnd (€180/jaar)</option>
+                    <option value="20" selected>€20/mnd (€240/jaar)</option>
                   </select>
+                  <input type="hidden" id="deal-hosting-interval" value="MONTHLY">
                 </div>
                 <div>
                   <label class="form-label" style="font-size:11px;">Startdatum hosting</label>
@@ -180,6 +178,7 @@
                   <input type="date" class="form-input" id="deal-hosting-end">
                 </div>
               </div>
+              <div id="hosting-year-preview" style="margin-top:8px;font-size:12px;color:var(--text-muted);"></div>
             </div>
           </div>
           <div class="form-group">
@@ -491,7 +490,6 @@
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Deals');
-      lucide.createIcons();
       loadDeals();
 
       const params = new URLSearchParams(window.location.search);
@@ -551,7 +549,7 @@
       }).join('');
 
       renderPagination(document.getElementById('pagination'), data, (page) => { currentPage = page; loadDeals(); });
-      lucide.createIcons();
+      refreshIcons();
     }
 
     let allLeads = [];
@@ -616,7 +614,7 @@
         });
 
         openModal('deal-modal');
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -693,7 +691,7 @@
       resultDiv.style.display = 'none';
       resultDiv.innerHTML = '';
       openModal('new-lead-modal');
-      lucide.createIcons();
+      refreshIcons();
     }
 
     async function lookupVat() {
@@ -736,7 +734,7 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="search" style="width:16px;height:16px;"></i> Opzoeken';
-        lucide.createIcons();
+        refreshIcons();
       }
     }
 
@@ -971,7 +969,6 @@
 
       const hasHosting = document.querySelector('input[name="has-hosting"]:checked')?.value === 'true';
       const hostingPrice = hasHosting ? (parseFloat(document.getElementById('deal-hosting-price').value) || 0) : 0;
-      const hostingInterval = document.getElementById('deal-hosting-interval').value;
 
       const upsellOneTime = selectedUpsells.filter(u => u.billingType === 'ONE_TIME').reduce((s, u) => s + u.price, 0);
       const upsellMonthly = selectedUpsells.filter(u => u.billingType === 'MONTHLY').reduce((s, u) => s + u.price, 0);
@@ -990,7 +987,7 @@
       
       const oneTimeTotalAfterDiscount = Math.max(0, oneTimeTotal - discountAmount);
       
-      // Quarter-based hosting calculation for current year
+      // Hosting: always monthly price, invoiced yearly, pro-rata first year
       const curYear = new Date().getFullYear();
       const hostingStartVal = document.getElementById('deal-hosting-start').value;
       const hStart = hostingStartVal ? new Date(hostingStartVal) : new Date();
@@ -1003,28 +1000,32 @@
       let hostingQDetail = '';
       
       if (hasHosting) {
-        if (hostingInterval === 'MONTHLY') {
-          const quarters = {};
-          for (const [q, months] of Object.entries(qRanges)) {
-            let active = 0;
-            for (const m of months) {
-              if (hStartYear < curYear || (hStartYear === curYear && m >= hStartMonth)) active++;
-            }
-            if (active > 0) quarters[q] = active * hostingPrice;
+        const quarters = {};
+        for (const [q, months] of Object.entries(qRanges)) {
+          let active = 0;
+          for (const m of months) {
+            if (hStartYear < curYear || (hStartYear === curYear && m >= hStartMonth)) active++;
           }
-          hostingCurrentYear = Object.values(quarters).reduce((a, b) => a + b, 0);
-          hostingQDetail = Object.entries(quarters).map(([q, v]) => 
-            `<div class="flex justify-between" style="margin-bottom:4px;font-size:12px;"><span class="text-muted">${q} (${qLabels[q]})</span><span>${formatCurrency(v)}</span></div>`
-          ).join('');
-        } else {
-          // Yearly: full amount in the quarter of the start month
-          if (hStartYear <= curYear) {
-            const getQ = (m) => m < 3 ? 'Q1' : m < 6 ? 'Q2' : m < 9 ? 'Q3' : 'Q4';
-            const invoiceQ = getQ(hStartMonth);
-            hostingCurrentYear = hostingPrice;
-            hostingQDetail = `<div class="flex justify-between" style="margin-bottom:4px;font-size:12px;"><span class="text-muted">${invoiceQ} (${qLabels[invoiceQ]})</span><span>${formatCurrency(hostingPrice)}</span></div>`;
-          }
+          if (active > 0) quarters[q] = active * hostingPrice;
         }
+        hostingCurrentYear = Object.values(quarters).reduce((a, b) => a + b, 0);
+        hostingQDetail = Object.entries(quarters).map(([q, v]) => 
+          `<div class="flex justify-between" style="margin-bottom:4px;font-size:12px;"><span class="text-muted">${q} (${qLabels[q]})</span><span>${formatCurrency(v)}</span></div>`
+        ).join('');
+        
+        // Show year preview under hosting details
+        const activeMonths = hStartYear < curYear ? 12 : (12 - hStartMonth);
+        const firstYearTotal = activeMonths * hostingPrice;
+        const fullYearTotal = hostingPrice * 12;
+        const previewEl = document.getElementById('hosting-year-preview');
+        if (previewEl) {
+          previewEl.innerHTML = hStartYear === curYear && activeMonths < 12
+            ? `Eerste jaar (${curYear}): ${activeMonths} mnd x ${formatCurrency(hostingPrice)} = <strong>${formatCurrency(firstYearTotal)}</strong> | Daarna: ${formatCurrency(fullYearTotal)}/jaar`
+            : `Jaarlijks: 12 mnd x ${formatCurrency(hostingPrice)} = <strong>${formatCurrency(fullYearTotal)}</strong>`;
+        }
+      } else {
+        const previewEl = document.getElementById('hosting-year-preview');
+        if (previewEl) previewEl.innerHTML = '';
       }
       
       // Upsell monthly: current year based on sale date
@@ -1051,7 +1052,7 @@
         ${discountAmount > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Korting</span><span style="color:var(--accent-green);">-${formatCurrency(discountAmount)}</span></div>` : ''}
         <div class="flex justify-between" style="margin-bottom:6px;"><span style="font-weight:600;">Eenmalig netto</span><span style="font-weight:600;">${formatCurrency(oneTimeTotalAfterDiscount)}</span></div>
         ${hasHosting ? `
-          <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span>${formatCurrency(hostingPrice)}/${hostingInterval === 'YEARLY' ? 'jaar' : 'mnd'}</span></div>
+          <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span>${formatCurrency(hostingPrice)}/mnd (${formatCurrency(hostingPrice * 12)}/jaar)</span></div>
           <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting omzet ${curYear}</span><span>${formatCurrency(hostingCurrentYear)}</span></div>
           ${hostingQDetail ? `<div style="background:var(--bg-secondary);padding:6px 10px;border-radius:6px;margin-bottom:6px;">
             <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px;">Per kwartaal</div>
@@ -1074,7 +1075,7 @@
 
       const hasHosting = document.querySelector('input[name="has-hosting"]:checked').value === 'true';
       const hostingPrice = hasHosting ? (parseFloat(document.getElementById('deal-hosting-price').value) || 20) : 0;
-      const hostingInterval = document.getElementById('deal-hosting-interval').value;
+      const hostingInterval = 'MONTHLY';
       const hostingStartDate = document.getElementById('deal-hosting-start').value || null;
       const hostingEndDate = document.getElementById('deal-hosting-end').value || null;
 
@@ -1224,35 +1225,21 @@
           const startMonth = hStart.getMonth();
           
           const qRanges = { Q1: [0,1,2], Q2: [3,4,5], Q3: [6,7,8], Q4: [9,10,11] };
-          const getQ = (m) => m < 3 ? 'Q1' : m < 6 ? 'Q2' : m < 9 ? 'Q3' : 'Q4';
+          const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
           
-          if (deal.hostingInterval === 'MONTHLY') {
-            const quarters = {};
-            for (const [q, months] of Object.entries(qRanges)) {
-              let activeMonths = 0;
-              for (const m of months) {
-                if (startYear < currentYear || (startYear === currentYear && m >= startMonth)) activeMonths++;
-              }
-              if (activeMonths > 0) quarters[q] = activeMonths * deal.hostingPrice;
+          // Always: monthly price x active months per quarter
+          const quarters = {};
+          for (const [q, months] of Object.entries(qRanges)) {
+            let activeMonths = 0;
+            for (const m of months) {
+              if (startYear < currentYear || (startYear === currentYear && m >= startMonth)) activeMonths++;
             }
-            hostingCurrentYearRevenue = Object.values(quarters).reduce((a, b) => a + b, 0);
-            hostingQuarterDetail = Object.entries(quarters).map(([q, v]) => 
-              `<div class="flex justify-between" style="font-size:12px;padding:2px 0;"><span class="text-muted">${q} (jan-mrt/apr-jun/jul-sep/okt-dec)</span><span>${formatCurrency(v)}</span></div>`
-            ).join('');
-            // Cleaner quarter labels
-            const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
-            hostingQuarterDetail = Object.entries(quarters).map(([q, v]) => 
-              `<div class="flex justify-between" style="font-size:12px;padding:2px 0;"><span class="text-muted">${q} (${qLabels[q]})</span><span>${formatCurrency(v)}</span></div>`
-            ).join('');
-          } else {
-            // Yearly: falls in the quarter of the start month
-            if (startYear <= currentYear) {
-              const invoiceQ = getQ(startMonth);
-              const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
-              hostingCurrentYearRevenue = deal.hostingPrice;
-              hostingQuarterDetail = `<div class="flex justify-between" style="font-size:12px;padding:2px 0;"><span class="text-muted">${invoiceQ} (${qLabels[invoiceQ]})</span><span>${formatCurrency(deal.hostingPrice)}</span></div>`;
-            }
+            if (activeMonths > 0) quarters[q] = activeMonths * deal.hostingPrice;
           }
+          hostingCurrentYearRevenue = Object.values(quarters).reduce((a, b) => a + b, 0);
+          hostingQuarterDetail = Object.entries(quarters).map(([q, v]) => 
+            `<div class="flex justify-between" style="font-size:12px;padding:2px 0;"><span class="text-muted">${q} (${qLabels[q]})</span><span>${formatCurrency(v)}</span></div>`
+          ).join('');
         }
         
         // Calculate upsell monthly current year
@@ -1338,7 +1325,7 @@
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-muted">Prijs</span>
-                <span style="font-weight:600;">${formatCurrency(deal.hostingPrice)}/${deal.hostingInterval === 'YEARLY' ? 'jaar' : 'mnd'}</span>
+                <span style="font-weight:600;">${formatCurrency(deal.hostingPrice)}/mnd (${formatCurrency(deal.hostingPrice * 12)}/jaar)</span>
               </div>
               ${deal.hostingStartDate ? `<div class="flex justify-between items-center">
                 <span class="text-muted">Startdatum</span>
@@ -1468,7 +1455,7 @@
         `;
 
         openModal('detail-modal');
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -1520,8 +1507,18 @@
 
         if (deal.hasHosting) {
           document.querySelector('input[name="has-hosting"][value="true"]').checked = true;
-          document.getElementById('deal-hosting-price').value = deal.hostingPrice || 20;
-          document.getElementById('deal-hosting-interval').value = deal.hostingInterval || 'MONTHLY';
+          const priceVal = deal.hostingPrice || 20;
+          const priceSelect = document.getElementById('deal-hosting-price');
+          // Set to closest option (15 or 20), or add custom option
+          if (priceVal == 15 || priceVal == 20) {
+            priceSelect.value = priceVal;
+          } else {
+            const opt = document.createElement('option');
+            opt.value = priceVal;
+            opt.textContent = `€${priceVal}/mnd (€${priceVal * 12}/jaar)`;
+            priceSelect.appendChild(opt);
+            priceSelect.value = priceVal;
+          }
           document.getElementById('deal-hosting-start').value = deal.hostingStartDate ? deal.hostingStartDate.split('T')[0] : '';
           document.getElementById('deal-hosting-end').value = deal.hostingEndDate ? deal.hostingEndDate.split('T')[0] : '';
         } else {
@@ -1575,7 +1572,7 @@
         });
 
         openModal('deal-modal');
-        lucide.createIcons();
+        refreshIcons();
       } catch (err) {
         showToast(err.message, 'error');
       }

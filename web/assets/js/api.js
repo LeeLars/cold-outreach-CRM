@@ -5,7 +5,7 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
 const API = {
   _cache: new Map(),
   _inflight: new Map(),
-  _cacheTTL: 30000,
+  _cacheTTL: 15000,
 
   async request(url, options = {}) {
     const config = {

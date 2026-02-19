@@ -162,12 +162,16 @@
             <div id="hosting-details">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                 <div>
-                  <label class="form-label" style="font-size:11px;">Prijs per maand</label>
+                  <label class="form-label" style="font-size:11px;">Hosting prijs per maand</label>
                   <select class="form-select" id="deal-hosting-price" onchange="updateCalculation()">
                     <option value="15">€15/mnd (€180/jaar)</option>
                     <option value="20" selected>€20/mnd (€240/jaar)</option>
                   </select>
                   <input type="hidden" id="deal-hosting-interval" value="MONTHLY">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:11px;">Gefactureerd per</label>
+                  <input type="text" class="form-input" value="Jaar" disabled style="background:var(--bg-secondary);color:var(--text-muted);cursor:not-allowed;">
                 </div>
                 <div>
                   <label class="form-label" style="font-size:11px;">Startdatum hosting</label>

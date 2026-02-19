@@ -146,9 +146,17 @@ router.get('/revenue', async (req, res, next) => {
         discount = deal.discountAmount;
       }
 
+      // Hosting calculation - respect interval
       const hostingMonthly = deal.hasHosting ? deal.hostingPrice : 0;
-      const hostingYearly = hostingMonthly * 12;
+      const hostingYearly = deal.hasHosting 
+        ? (deal.hostingInterval === 'YEARLY' ? hostingMonthly : hostingMonthly * 12)
+        : 0;
       const upsellMonthlyYearly = upsellMonthly * 12;
+      
+      // Calculate actual monthly recurring (for MRR insight)
+      const actualMonthlyRecurring = deal.hasHosting
+        ? (deal.hostingInterval === 'YEARLY' ? hostingMonthly / 12 : hostingMonthly)
+        : 0;
 
       return {
         id: deal.id,
@@ -167,6 +175,7 @@ router.get('/revenue', async (req, res, next) => {
         hostingMonthly,
         hostingYearly,
         hostingInterval: deal.hostingInterval,
+        actualMonthlyRecurring,
         totalValue: deal.totalValue,
         upsellNames: deal.upsells.map(u => u.upsell.name)
       };
@@ -179,6 +188,8 @@ router.get('/revenue', async (req, res, next) => {
     const totDiscount = perDeal.reduce((s, d) => s + d.discount, 0);
     const totHostingYearly = perDeal.reduce((s, d) => s + d.hostingYearly, 0);
     const totHostingMonthly = perDeal.reduce((s, d) => s + d.hostingMonthly, 0);
+    const totActualMRR = perDeal.reduce((s, d) => s + d.actualMonthlyRecurring, 0);
+    const totUpsellMRR = perDeal.reduce((s, d) => s + d.upsellMonthly, 0);
     const totalRevenue = perDeal.reduce((s, d) => s + d.totalValue, 0);
     const totalCost = perDeal.reduce((s, d) => s + d.acquisitionCost, 0);
     const roi = totalCost > 0 ? (((totalRevenue - totalCost) / totalCost) * 100).toFixed(1) : 0;
@@ -236,7 +247,9 @@ router.get('/revenue', async (req, res, next) => {
         upsellMonthlyYearly: totUpsellMonthlyYearly,
         discount: totDiscount,
         hostingYearly: totHostingYearly,
-        hostingMonthly: totHostingMonthly
+        hostingMonthly: totHostingMonthly,
+        actualMRR: totActualMRR,
+        upsellMRR: totUpsellMRR
       },
       // Monthly stacked
       monthlyBreakdown: Object.entries(monthlyBreakdown).map(([month, data]) => ({ month, ...data })),

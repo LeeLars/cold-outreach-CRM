@@ -49,7 +49,7 @@
           </div>
 
           <!-- Main KPIs -->
-          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="revenue-kpis"></div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);" id="revenue-kpis"></div>
 
           <!-- Omzet breakdown card -->
           <div class="card mb-24" style="border-top:2px solid #34d399;">
@@ -431,6 +431,7 @@
         const pakketOmzetNetto = b.eenmalig - b.discount;
         const hostingPct = data.totalRevenue > 0 ? ((b.hostingYearly / data.totalRevenue) * 100).toFixed(0) : 0;
         const pakketPct = data.totalRevenue > 0 ? ((pakketOmzetNetto / data.totalRevenue) * 100).toFixed(0) : 0;
+        const totalMRR = b.actualMRR + b.upsellMRR;
 
         // KPIs
         document.getElementById('revenue-kpis').innerHTML = `
@@ -447,7 +448,12 @@
           <div class="kpi-card" style="border-left-color:#A78BFA;">
             <div class="kpi-label">Hosting omzet/jaar</div>
             <div class="kpi-value" style="color:#A78BFA;">${formatCurrency(b.hostingYearly)}</div>
-            <span class="kpi-badge neutral">${formatCurrency(b.hostingMonthly)}/mnd | ${hostingPct}%</span>
+            <span class="kpi-badge neutral">${hostingPct}% van totaal</span>
+          </div>
+          <div class="kpi-card" style="border-left-color:#34d399;">
+            <div class="kpi-label">MRR (terugkerend)</div>
+            <div class="kpi-value" style="color:#34d399;">${formatCurrency(totalMRR)}</div>
+            <span class="kpi-badge neutral">${formatCurrency(totalMRR * 12)}/jaar</span>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Gem. dealwaarde</div>

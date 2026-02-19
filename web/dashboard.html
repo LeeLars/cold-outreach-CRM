@@ -139,7 +139,7 @@
         ]);
 
         renderHostingReminders(hosting);
-        renderKPIs(dashboard);
+        renderKPIs(dashboard, revenue);
         renderFunnelChart(funnel);
         renderRevenueChart(revenue);
         renderLocationStats(locations.all || locations);
@@ -150,11 +150,15 @@
       }
     }
 
-    function renderKPIs(data) {
+    function renderKPIs(data, revenue) {
       const c = data.current;
       const f = data.funnel;
       const conv = data.conversions;
       const grid = document.getElementById('kpi-grid');
+      
+      // Calculate MRR and average monthly revenue from revenue data
+      const mrr = revenue?.breakdown ? (revenue.breakdown.actualMRR + revenue.breakdown.upsellMRR) : 0;
+      const avgMonthlyRevenue = revenue?.totalRevenue ? revenue.totalRevenue / 12 : 0;
       
       // Helper to create small sparkline charts
       setTimeout(() => {
@@ -163,7 +167,7 @@
         createSparkline('chart-response', [5, 8, 12, 15, c.GEREAGEERD + c.NIET_GEINTERESSEERD], '#fb923c');
         createSparkline('chart-interest', [1, 2, 3, 5, c.AFSPRAAK], '#a78bfa');
         createSparkline('chart-clients', [10, 15, 20, c.KLANT], '#34d399');
-        createSparkline('chart-revenue', [1000, 5000, 8000, data.totalRevenue], '#34d399');
+        createSparkline('chart-revenue', [mrr * 0.6, mrr * 0.8, mrr * 0.9, mrr], '#34d399');
       }, 100);
 
       grid.innerHTML = `
@@ -237,7 +241,7 @@
         <div class="dashboard-kpi-grid" style="grid-template-columns:repeat(3,1fr);">
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Klanten</span>
+              <span class="dashboard-label">Totaal Klanten</span>
               <i data-lucide="building-2" style="color:var(--accent-green);width:18px;height:18px;"></i>
             </div>
             <div class="dashboard-value">${data.totalClients || c.KLANT}</div>
@@ -252,12 +256,13 @@
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Totale Omzet</span>
-              <i data-lucide="euro" style="color:var(--accent-green);width:18px;height:18px;"></i>
+              <span class="dashboard-label">MRR (terugkerend)</span>
+              <i data-lucide="repeat" style="color:var(--accent-green);width:18px;height:18px;"></i>
             </div>
-            <div class="dashboard-value">${formatCurrency(data.totalRevenue)}</div>
+            <div class="dashboard-value">${formatCurrency(mrr)}</div>
             <div class="dashboard-subtext">
-              <span>Lifetime value</span>
+              <span>${formatCurrency(mrr * 12)}</span>
+              <span>per jaar</span>
             </div>
             <div class="dashboard-chart-container">
               <canvas id="chart-revenue"></canvas>
@@ -266,14 +271,13 @@
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Gem. Dealwaarde</span>
+              <span class="dashboard-label">Gem. Omzet/maand</span>
               <i data-lucide="trending-up" style="color:var(--accent-green);width:18px;height:18px;"></i>
             </div>
-            <div class="dashboard-value">${formatCurrency(data.avgDealValue)}</div>
+            <div class="dashboard-value">${formatCurrency(avgMonthlyRevenue)}</div>
             <div class="dashboard-subtext">
-              <span>Per klant</span>
+              <span>Totaal: ${formatCurrency(revenue?.totalRevenue || 0)}</span>
             </div>
-            <!-- Geen chart hier, layout vullen met extra info of leeg laten -->
             <div style="height:60px;display:flex;align-items:end;font-size:12px;color:var(--text-muted);">
               Gemiddelde acquisitiekost: ${formatCurrency(data.avgAcquisitionCost)}
             </div>

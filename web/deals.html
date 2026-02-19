@@ -94,6 +94,32 @@
             <div id="deal-upsells"></div>
           </div>
           <div class="form-group">
+            <label class="form-label">Korting (optioneel)</label>
+            <div class="radio-group" style="margin-bottom:8px;">
+              <label class="radio-label">
+                <input type="radio" name="discount-type" value="none" checked onchange="updateDiscountUI()">
+                <span>Geen korting</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="discount-type" value="percentage" onchange="updateDiscountUI()">
+                <span>Percentage</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="discount-type" value="fixed" onchange="updateDiscountUI()">
+                <span>Vast bedrag</span>
+              </label>
+            </div>
+            <div id="discount-percentage-group" style="display:none;">
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="number" class="form-input" id="deal-discount-percentage" placeholder="0" step="0.1" min="0" max="100" onchange="updateCalculation()" style="flex:1;">
+                <span style="color:var(--text-muted);font-size:14px;">%</span>
+              </div>
+            </div>
+            <div id="discount-fixed-group" style="display:none;">
+              <input type="number" class="form-input" id="deal-discount-fixed" placeholder="0.00" step="0.01" min="0" onchange="updateCalculation()">
+            </div>
+          </div>
+          <div class="form-group">
             <label class="form-label">Acquisitiekost</label>
             <div class="radio-group" style="margin-bottom:8px;">
               <label class="radio-label">
@@ -784,6 +810,22 @@
       updateCalculation();
     }
 
+    function updateDiscountUI() {
+      const type = document.querySelector('input[name="discount-type"]:checked').value;
+      const percentageGroup = document.getElementById('discount-percentage-group');
+      const fixedGroup = document.getElementById('discount-fixed-group');
+      
+      percentageGroup.style.display = type === 'percentage' ? 'block' : 'none';
+      fixedGroup.style.display = type === 'fixed' ? 'block' : 'none';
+      
+      if (type === 'none') {
+        document.getElementById('deal-discount-percentage').value = '';
+        document.getElementById('deal-discount-fixed').value = '';
+      }
+      
+      updateCalculation();
+    }
+
     function updateWizardUI() {
       for (let i = 1; i <= totalWizardSteps; i++) {
         const step = document.getElementById(`wizard-step-${i}`);
@@ -844,6 +886,10 @@
         return upsell ? upsell.name : '';
       }).filter(Boolean);
       
+      const discountType = document.querySelector('input[name="discount-type"]:checked')?.value || 'none';
+      const discountPercentage = parseFloat(document.getElementById('deal-discount-percentage').value) || 0;
+      const discountFixed = parseFloat(document.getElementById('deal-discount-fixed').value) || 0;
+      
       const websiteGoal = document.getElementById('deal-website-goal').value;
       const targetAudience = document.getElementById('deal-target-audience').value;
       const hasExisting = document.querySelector('input[name="has-existing"]:checked').value === 'true';
@@ -867,6 +913,8 @@
               <div class="flex justify-between"><span class="text-muted">Lead:</span><span>${leadName}</span></div>
               <div class="flex justify-between"><span class="text-muted">Pakket:</span><span>${pkgName}</span></div>
               ${selectedUpsells.length > 0 ? `<div class="flex justify-between"><span class="text-muted">Upsells:</span><span>${selectedUpsells.join(', ')}</span></div>` : ''}
+              ${discountType === 'percentage' && discountPercentage > 0 ? `<div class="flex justify-between"><span class="text-muted">Korting:</span><span style="color:var(--accent-green);">${discountPercentage}%</span></div>` : ''}
+              ${discountType === 'fixed' && discountFixed > 0 ? `<div class="flex justify-between"><span class="text-muted">Korting:</span><span style="color:var(--accent-green);">${formatCurrency(discountFixed)}</span></div>` : ''}
             </div>
           </div>
           
@@ -924,12 +972,28 @@
 
       const upsellOneTime = selectedUpsells.filter(u => u.billingType === 'ONE_TIME').reduce((s, u) => s + u.price, 0);
       const upsellMonthly = selectedUpsells.filter(u => u.billingType === 'MONTHLY').reduce((s, u) => s + u.price, 0);
+      
+      // Calculate discount
+      const discountType = document.querySelector('input[name="discount-type"]:checked')?.value || 'none';
+      let discountAmount = 0;
+      const oneTimeTotal = pkg.oneTimePrice + upsellOneTime;
+      
+      if (discountType === 'percentage') {
+        const percentage = parseFloat(document.getElementById('deal-discount-percentage').value) || 0;
+        discountAmount = (oneTimeTotal * percentage) / 100;
+      } else if (discountType === 'fixed') {
+        discountAmount = parseFloat(document.getElementById('deal-discount-fixed').value) || 0;
+      }
+      
+      const oneTimeTotalAfterDiscount = Math.max(0, oneTimeTotal - discountAmount);
       const totalMonthly = hostingPrice + upsellMonthly;
-      const yearlyValue = pkg.oneTimePrice + upsellOneTime + (totalMonthly * 12);
+      const yearlyValue = oneTimeTotalAfterDiscount + (totalMonthly * 12);
 
       document.getElementById('deal-calculation').innerHTML = `
         <div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalig pakket</span><span>${formatCurrency(pkg.oneTimePrice)}</span></div>
         ${upsellOneTime > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Eenmalige upsells</span><span>${formatCurrency(upsellOneTime)}</span></div>` : ''}
+        ${discountAmount > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Korting</span><span style="color:var(--accent-green);">-${formatCurrency(discountAmount)}</span></div>` : ''}
+        ${discountAmount > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span style="font-weight:600;">Eenmalig totaal</span><span style="font-weight:600;">${formatCurrency(oneTimeTotalAfterDiscount)}</span></div>` : ''}
         ${hasHosting ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span>${formatCurrency(hostingPrice)}/${hostingInterval === 'YEARLY' ? 'jaar' : 'mnd'}</span></div>` : '<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Hosting</span><span style="color:var(--text-muted);">Geen</span></div>'}
         ${upsellMonthly > 0 ? `<div class="flex justify-between" style="margin-bottom:6px;"><span class="text-muted">Maandelijkse upsells</span><span>${formatCurrency(upsellMonthly)}/mnd</span></div>` : ''}
         <hr style="border-color:var(--border-color);margin:8px 0;">
@@ -971,9 +1035,14 @@
       const urgency = document.getElementById('deal-urgency').value || null;
       const specialRequests = document.getElementById('deal-special-requests').value || null;
 
+      const discountType = document.querySelector('input[name="discount-type"]:checked')?.value || 'none';
+      const discountPercentage = discountType === 'percentage' ? (parseFloat(document.getElementById('deal-discount-percentage').value) || 0) : 0;
+      const discountAmount = discountType === 'fixed' ? (parseFloat(document.getElementById('deal-discount-fixed').value) || 0) : 0;
+
       const dealData = {
         packageId, upsellIds, acquisitionCost, acquisitionType, saleDate,
         hasHosting, hostingPrice, hostingInterval, hostingStartDate, hostingEndDate,
+        discountType, discountPercentage, discountAmount,
         websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
         mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
         features, languages, contentStatus, urgency, specialRequests

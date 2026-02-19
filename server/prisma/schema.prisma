@@ -107,6 +107,11 @@ model Deal {
   
   // Acquisition
   acquisitionType  String    @default("manual")
+  
+  // Discount
+  discountType       String  @default("none")
+  discountPercentage Float   @default(0)
+  discountAmount     Float   @default(0)
 }
 
 model Client {

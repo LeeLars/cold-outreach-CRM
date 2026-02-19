@@ -63,7 +63,8 @@ router.post('/', async (req, res, next) => {
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
       mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
       features, languages, contentStatus, urgency, specialRequests,
-      hasHosting = true, hostingStartDate, hostingEndDate, hostingPrice = 20, hostingInterval = 'MONTHLY'
+      hasHosting = true, hostingStartDate, hostingEndDate, hostingPrice = 20, hostingInterval = 'MONTHLY',
+      discountType = 'none', discountPercentage = 0, discountAmount = 0
     } = req.body;
 
     if (!leadId || !packageId) {
@@ -76,17 +77,28 @@ router.post('/', async (req, res, next) => {
     }
 
     let upsellTotal = 0;
+    let upsellOneTime = 0;
     if (upsellIds.length > 0) {
       const upsells = await prisma.upsell.findMany({
         where: { id: { in: upsellIds } }
       });
-      upsellTotal = upsells.reduce((sum, u) => {
-        return sum + (u.billingType === 'ONE_TIME' ? u.price : u.price * 12);
-      }, 0);
+      upsellOneTime = upsells.filter(u => u.billingType === 'ONE_TIME').reduce((sum, u) => sum + u.price, 0);
+      const upsellMonthly = upsells.filter(u => u.billingType === 'MONTHLY').reduce((sum, u) => sum + u.price, 0);
+      upsellTotal = upsellOneTime + (upsellMonthly * 12);
     }
 
+    // Calculate discount
+    const oneTimeTotal = pkg.oneTimePrice + upsellOneTime;
+    let calculatedDiscount = 0;
+    if (discountType === 'percentage') {
+      calculatedDiscount = (oneTimeTotal * parseFloat(discountPercentage)) / 100;
+    } else if (discountType === 'fixed') {
+      calculatedDiscount = parseFloat(discountAmount);
+    }
+    const oneTimeAfterDiscount = Math.max(0, oneTimeTotal - calculatedDiscount);
+
     const hostingMonthly = hasHosting ? parseFloat(hostingPrice || pkg.monthlyPrice) : 0;
-    const totalValue = pkg.oneTimePrice + (hostingMonthly * 12) + upsellTotal;
+    const totalValue = oneTimeAfterDiscount + (hostingMonthly * 12) + (upsellTotal - upsellOneTime);
 
     const saleDateObj = saleDate ? new Date(saleDate) : new Date();
     let nextInvoice = null;
@@ -129,6 +141,9 @@ router.post('/', async (req, res, next) => {
         contentStatus: contentStatus || null,
         urgency: urgency || null,
         specialRequests: specialRequests || null,
+        discountType: discountType || 'none',
+        discountPercentage: parseFloat(discountPercentage) || 0,
+        discountAmount: parseFloat(discountAmount) || 0,
         upsells: {
           create: upsellIds.map(upsellId => ({ upsellId }))
         }
@@ -174,7 +189,8 @@ router.put('/:id', async (req, res, next) => {
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
       mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
       features, languages, contentStatus, urgency, specialRequests,
-      hasHosting, hostingStartDate, hostingEndDate, hostingPrice, hostingInterval
+      hasHosting, hostingStartDate, hostingEndDate, hostingPrice, hostingInterval,
+      discountType, discountPercentage, discountAmount
     } = req.body;
 
     const existing = await prisma.deal.findUnique({ where: { id: req.params.id } });
@@ -186,18 +202,33 @@ router.put('/:id', async (req, res, next) => {
     const pkg = await prisma.package.findUnique({ where: { id: pkgId } });
 
     let upsellTotal = 0;
+    let upsellOneTime = 0;
     if (upsellIds.length > 0) {
       const upsells = await prisma.upsell.findMany({
         where: { id: { in: upsellIds } }
       });
-      upsellTotal = upsells.reduce((sum, u) => {
-        return sum + (u.billingType === 'ONE_TIME' ? u.price : u.price * 12);
-      }, 0);
+      upsellOneTime = upsells.filter(u => u.billingType === 'ONE_TIME').reduce((sum, u) => sum + u.price, 0);
+      const upsellMonthly = upsells.filter(u => u.billingType === 'MONTHLY').reduce((sum, u) => sum + u.price, 0);
+      upsellTotal = upsellOneTime + (upsellMonthly * 12);
     }
+
+    // Calculate discount
+    const useDiscountType = discountType !== undefined ? discountType : existing.discountType;
+    const useDiscountPercentage = discountPercentage !== undefined ? parseFloat(discountPercentage) : existing.discountPercentage;
+    const useDiscountAmount = discountAmount !== undefined ? parseFloat(discountAmount) : existing.discountAmount;
+    
+    const oneTimeTotal = pkg.oneTimePrice + upsellOneTime;
+    let calculatedDiscount = 0;
+    if (useDiscountType === 'percentage') {
+      calculatedDiscount = (oneTimeTotal * useDiscountPercentage) / 100;
+    } else if (useDiscountType === 'fixed') {
+      calculatedDiscount = useDiscountAmount;
+    }
+    const oneTimeAfterDiscount = Math.max(0, oneTimeTotal - calculatedDiscount);
 
     const useHosting = hasHosting !== undefined ? hasHosting : existing.hasHosting;
     const useHostingPrice = useHosting ? parseFloat(hostingPrice !== undefined ? hostingPrice : existing.hostingPrice) : 0;
-    const totalValue = pkg.oneTimePrice + (useHostingPrice * 12) + upsellTotal;
+    const totalValue = oneTimeAfterDiscount + (useHostingPrice * 12) + (upsellTotal - upsellOneTime);
 
     let nextInvoice = existing.nextInvoiceDate;
     if (hasHosting !== undefined) {
@@ -246,6 +277,9 @@ router.put('/:id', async (req, res, next) => {
         contentStatus: contentStatus !== undefined ? contentStatus : existing.contentStatus,
         urgency: urgency !== undefined ? urgency : existing.urgency,
         specialRequests: specialRequests !== undefined ? specialRequests : existing.specialRequests,
+        discountType: useDiscountType,
+        discountPercentage: useDiscountPercentage,
+        discountAmount: useDiscountAmount,
         upsells: {
           create: upsellIds.map(upsellId => ({ upsellId }))
         }

@@ -121,51 +121,138 @@ router.get('/revenue', async (req, res, next) => {
   try {
     const deals = await prisma.deal.findMany({
       include: {
+        lead: { select: { companyName: true, city: true } },
         package: true,
         upsells: { include: { upsell: true } }
       },
       orderBy: { saleDate: 'asc' }
     });
 
-    const monthlyRevenue = {};
-    const packageRevenue = {};
+    // Per-deal breakdown
+    const perDeal = deals.map(deal => {
+      const pkgOneTime = deal.package.oneTimePrice;
+      const upsellOneTime = deal.upsells
+        .filter(u => u.upsell.billingType === 'ONE_TIME')
+        .reduce((s, u) => s + u.upsell.price, 0);
+      const upsellMonthly = deal.upsells
+        .filter(u => u.upsell.billingType === 'MONTHLY')
+        .reduce((s, u) => s + u.upsell.price, 0);
 
-    deals.forEach(deal => {
-      const month = deal.saleDate.toISOString().slice(0, 7);
-      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + deal.totalValue;
+      // Discount on one-time
+      let discount = 0;
+      if (deal.discountType === 'percentage') {
+        discount = ((pkgOneTime + upsellOneTime) * deal.discountPercentage) / 100;
+      } else if (deal.discountType === 'fixed') {
+        discount = deal.discountAmount;
+      }
 
-      const pkgName = deal.package.name;
-      packageRevenue[pkgName] = (packageRevenue[pkgName] || 0) + deal.totalValue;
+      const hostingMonthly = deal.hasHosting ? deal.hostingPrice : 0;
+      const hostingYearly = hostingMonthly * 12;
+      const upsellMonthlyYearly = upsellMonthly * 12;
+
+      return {
+        id: deal.id,
+        companyName: deal.lead.companyName,
+        city: deal.lead.city,
+        packageName: deal.package.name,
+        saleDate: deal.saleDate,
+        acquisitionType: deal.acquisitionType,
+        acquisitionCost: deal.acquisitionCost,
+        pkgOneTime,
+        upsellOneTime,
+        upsellMonthly,
+        upsellMonthlyYearly,
+        discount,
+        discountType: deal.discountType,
+        hostingMonthly,
+        hostingYearly,
+        hostingInterval: deal.hostingInterval,
+        totalValue: deal.totalValue,
+        upsellNames: deal.upsells.map(u => u.upsell.name)
+      };
     });
 
-    const totalRevenue = deals.reduce((sum, d) => sum + d.totalValue, 0);
-    const totalCost = deals.reduce((sum, d) => sum + d.acquisitionCost, 0);
+    // Totals breakdown
+    const totOneTime = perDeal.reduce((s, d) => s + d.pkgOneTime, 0);
+    const totUpsellOneTime = perDeal.reduce((s, d) => s + d.upsellOneTime, 0);
+    const totUpsellMonthlyYearly = perDeal.reduce((s, d) => s + d.upsellMonthlyYearly, 0);
+    const totDiscount = perDeal.reduce((s, d) => s + d.discount, 0);
+    const totHostingYearly = perDeal.reduce((s, d) => s + d.hostingYearly, 0);
+    const totHostingMonthly = perDeal.reduce((s, d) => s + d.hostingMonthly, 0);
+    const totalRevenue = perDeal.reduce((s, d) => s + d.totalValue, 0);
+    const totalCost = perDeal.reduce((s, d) => s + d.acquisitionCost, 0);
     const roi = totalCost > 0 ? (((totalRevenue - totalCost) / totalCost) * 100).toFixed(1) : 0;
+    const totalClients = perDeal.length;
+    const avgDeal = totalClients > 0 ? totalRevenue / totalClients : 0;
 
-    const flyerDeals = deals.filter(d => d.acquisitionType === 'flyer');
-    const warmDeals = deals.filter(d => d.acquisitionType !== 'flyer');
+    // Monthly breakdown per type
+    const monthlyBreakdown = {};
+    perDeal.forEach(d => {
+      const month = d.saleDate.toISOString().slice(0, 7);
+      if (!monthlyBreakdown[month]) monthlyBreakdown[month] = { eenmalig: 0, hosting: 0, upsells: 0, korting: 0, total: 0 };
+      monthlyBreakdown[month].eenmalig += d.pkgOneTime;
+      monthlyBreakdown[month].hosting += d.hostingYearly;
+      monthlyBreakdown[month].upsells += d.upsellOneTime + d.upsellMonthlyYearly;
+      monthlyBreakdown[month].korting += d.discount;
+      monthlyBreakdown[month].total += d.totalValue;
+    });
 
-    const flyerRevenue = flyerDeals.reduce((sum, d) => sum + d.totalValue, 0);
-    const flyerCost = flyerDeals.reduce((sum, d) => sum + d.acquisitionCost, 0);
-    const warmRevenue = warmDeals.reduce((sum, d) => sum + d.totalValue, 0);
-    const warmCost = warmDeals.reduce((sum, d) => sum + d.acquisitionCost, 0);
+    // Package breakdown
+    const packageBreakdown = {};
+    perDeal.forEach(d => {
+      if (!packageBreakdown[d.packageName]) packageBreakdown[d.packageName] = { count: 0, eenmalig: 0, hosting: 0, total: 0 };
+      packageBreakdown[d.packageName].count++;
+      packageBreakdown[d.packageName].eenmalig += d.pkgOneTime;
+      packageBreakdown[d.packageName].hosting += d.hostingYearly;
+      packageBreakdown[d.packageName].total += d.totalValue;
+    });
+
+    // Upsell breakdown
+    const upsellBreakdown = {};
+    deals.forEach(deal => {
+      deal.upsells.forEach(u => {
+        const name = u.upsell.name;
+        if (!upsellBreakdown[name]) upsellBreakdown[name] = { count: 0, revenue: 0, type: u.upsell.billingType, price: u.upsell.price };
+        upsellBreakdown[name].count++;
+        upsellBreakdown[name].revenue += u.upsell.billingType === 'ONE_TIME' ? u.upsell.price : u.upsell.price * 12;
+      });
+    });
+
+    // Channel breakdown
+    const flyerDeals = perDeal.filter(d => d.acquisitionType === 'flyer');
+    const warmDeals = perDeal.filter(d => d.acquisitionType !== 'flyer');
+    const flyerRevenue = flyerDeals.reduce((s, d) => s + d.totalValue, 0);
+    const flyerCost = flyerDeals.reduce((s, d) => s + d.acquisitionCost, 0);
+    const warmRevenue = warmDeals.reduce((s, d) => s + d.totalValue, 0);
+    const warmCost = warmDeals.reduce((s, d) => s + d.acquisitionCost, 0);
 
     res.json({
-      monthlyRevenue: Object.entries(monthlyRevenue).map(([month, revenue]) => ({ month, revenue })),
-      packageRevenue: Object.entries(packageRevenue).map(([name, revenue]) => ({ name, revenue })),
-      totalRevenue,
-      totalCost,
-      roi,
+      // Summary totals
+      totalRevenue, totalCost, roi, totalClients, avgDeal,
+      // Breakdown totals
+      breakdown: {
+        eenmalig: totOneTime,
+        upsellOneTime: totUpsellOneTime,
+        upsellMonthlyYearly: totUpsellMonthlyYearly,
+        discount: totDiscount,
+        hostingYearly: totHostingYearly,
+        hostingMonthly: totHostingMonthly
+      },
+      // Monthly stacked
+      monthlyBreakdown: Object.entries(monthlyBreakdown).map(([month, data]) => ({ month, ...data })),
+      // Package breakdown
+      packageBreakdown: Object.entries(packageBreakdown).map(([name, data]) => ({ name, ...data })),
+      // Upsell breakdown
+      upsellBreakdown: Object.entries(upsellBreakdown).map(([name, data]) => ({ name, ...data })),
+      // Per deal detail
+      perDeal,
+      // Channel
       flyer: {
-        revenue: flyerRevenue,
-        cost: flyerCost,
-        count: flyerDeals.length,
+        revenue: flyerRevenue, cost: flyerCost, count: flyerDeals.length,
         roi: flyerCost > 0 ? (((flyerRevenue - flyerCost) / flyerCost) * 100).toFixed(1) : '0'
       },
       warm: {
-        revenue: warmRevenue,
-        cost: warmCost,
-        count: warmDeals.length,
+        revenue: warmRevenue, cost: warmCost, count: warmDeals.length,
         roi: warmCost > 0 ? (((warmRevenue - warmCost) / warmCost) * 100).toFixed(1) : '0'
       }
     });

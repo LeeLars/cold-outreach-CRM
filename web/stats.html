@@ -51,28 +51,56 @@
           <!-- Main KPIs -->
           <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="revenue-kpis"></div>
 
+          <!-- Omzet breakdown card -->
+          <div class="card mb-24" style="border-top:2px solid #34d399;">
+            <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet opbouw</span></div>
+            <div class="card-body" id="revenue-breakdown-card"></div>
+          </div>
+
+          <!-- Charts row 1: monthly stacked + composition doughnut -->
+          <div class="grid-2 mb-24">
+            <div class="card" style="border-top:2px solid #34d399;">
+              <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet per maand (opbouw)</span></div>
+              <div class="card-body"><canvas id="monthly-revenue-chart" height="300"></canvas></div>
+            </div>
+            <div class="card" style="border-top:2px solid #34d399;">
+              <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet samenstelling</span></div>
+              <div class="card-body"><canvas id="revenue-composition-chart" height="300"></canvas></div>
+            </div>
+          </div>
+
+          <!-- Package performance -->
+          <div class="card mb-24" style="border-top:2px solid #3B82F6;">
+            <div class="card-header"><span class="card-title" style="color:#3B82F6;">Pakket performance</span></div>
+            <div class="card-body" style="padding:0;">
+              <table class="data-table" style="font-size:13px;">
+                <thead><tr><th>Pakket</th><th style="text-align:center;">Verkocht</th><th style="text-align:right;">Eenmalig</th><th style="text-align:right;">Hosting/jaar</th><th style="text-align:right;">Totaal</th><th style="text-align:right;">Gem. per deal</th></tr></thead>
+                <tbody id="package-perf-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Upsell performance -->
+          <div class="card mb-24" style="border-top:2px solid #A78BFA;" id="upsell-perf-card">
+            <div class="card-header"><span class="card-title" style="color:#A78BFA;">Upsell performance</span></div>
+            <div class="card-body" style="padding:0;">
+              <table class="data-table" style="font-size:13px;">
+                <thead><tr><th>Upsell</th><th>Type</th><th style="text-align:center;">Verkocht</th><th style="text-align:right;">Prijs</th><th style="text-align:right;">Totale omzet</th></tr></thead>
+                <tbody id="upsell-perf-body"></tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Channel comparison -->
           <div class="section-header" style="margin-top:24px;">
             <span class="section-header-title" style="font-size:14px;color:var(--text-secondary);">Per kanaal</span>
           </div>
           <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;" id="revenue-channel-kpis"></div>
 
-          <!-- Charts -->
-          <div class="grid-2 mb-24">
-            <div class="card" style="border-top:2px solid #34d399;">
-              <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet per maand</span></div>
-              <div class="card-body"><canvas id="monthly-revenue-chart" height="280"></canvas></div>
-            </div>
-            <div class="card" style="border-top:2px solid #34d399;">
-              <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet per pakket</span></div>
-              <div class="card-body"><canvas id="package-revenue-chart" height="280"></canvas></div>
-            </div>
-          </div>
-
-          <!-- Per client table -->
+          <!-- Per client detail table -->
           <div class="card">
             <div class="card-header">
-              <span class="card-title">Kost vs. dealwaarde per klant</span>
+              <span class="card-title">Omzet per klant (detail)</span>
               <div style="display:flex;gap:8px;">
                 <button class="btn btn-primary btn-sm" id="acq-filter-all" onclick="switchAcquisitionFilter('all')" style="font-size:12px;">Alle</button>
                 <button class="btn btn-secondary btn-sm" id="acq-filter-flyer" onclick="switchAcquisitionFilter('flyer')" style="font-size:12px;">Flyer</button>
@@ -80,10 +108,18 @@
               </div>
             </div>
             <div class="card-body" style="padding:0;">
-              <table class="data-table">
-                <thead><tr><th>Bedrijf</th><th>Type</th><th>Acquisitiekost</th><th>Dealwaarde</th><th>ROI</th><th>Datum</th></tr></thead>
-                <tbody id="acquisition-body"></tbody>
-              </table>
+              <div style="overflow-x:auto;">
+                <table class="data-table" style="font-size:12px;">
+                  <thead><tr>
+                    <th>Bedrijf</th><th>Pakket</th><th>Kanaal</th>
+                    <th style="text-align:right;">Eenmalig</th><th style="text-align:right;">Upsells</th>
+                    <th style="text-align:right;">Korting</th><th style="text-align:right;">Hosting/jr</th>
+                    <th style="text-align:right;font-weight:700;">Totaal</th><th style="text-align:right;">Kost</th>
+                    <th style="text-align:right;">Winst</th><th>Datum</th>
+                  </tr></thead>
+                  <tbody id="acquisition-body"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -285,6 +321,7 @@
     let locationSortDirection = 'desc';
 
     let acquisitionDataAll = null;
+    let revenueDataAll = null;
     let acquisitionFilter = 'all';
 
     let hostingData = [];
@@ -388,33 +425,156 @@
     async function loadRevenue() {
       try {
         const data = await API.get('/stats/revenue');
+        revenueDataAll = data;
 
-        const totalClients = data.flyer.count + data.warm.count;
-        const avgDeal = totalClients > 0 ? data.totalRevenue / totalClients : 0;
+        const b = data.breakdown;
+        const eenmaligNetto = b.eenmalig + b.upsellOneTime - b.discount;
+        const hostingPct = data.totalRevenue > 0 ? ((b.hostingYearly / data.totalRevenue) * 100).toFixed(0) : 0;
+        const eenmaligPct = data.totalRevenue > 0 ? ((eenmaligNetto / data.totalRevenue) * 100).toFixed(0) : 0;
 
+        // KPIs
         document.getElementById('revenue-kpis').innerHTML = `
           <div class="kpi-card client-theme">
-            <div class="kpi-label">Totale omzet</div>
+            <div class="kpi-label">Totale jaaromzet</div>
             <div class="kpi-value" style="color:#34d399;">${formatCurrency(data.totalRevenue)}</div>
-            <span class="kpi-badge positive">${totalClients} klant${totalClients !== 1 ? 'en' : ''}</span>
+            <span class="kpi-badge positive">${data.totalClients} deal${data.totalClients !== 1 ? 's' : ''}</span>
           </div>
-          <div class="kpi-card" style="border-left-color:#f87171;">
-            <div class="kpi-label">Totale kosten</div>
-            <div class="kpi-value" style="color:#f87171;">${formatCurrency(data.totalCost)}</div>
-            <span class="kpi-badge neutral">Acquisitiekosten</span>
+          <div class="kpi-card" style="border-left-color:#3B82F6;">
+            <div class="kpi-label">Eenmalige omzet</div>
+            <div class="kpi-value" style="color:#3B82F6;">${formatCurrency(eenmaligNetto)}</div>
+            <span class="kpi-badge neutral">${eenmaligPct}% van totaal</span>
           </div>
-          <div class="kpi-card client-theme">
-            <div class="kpi-label">ROI</div>
-            <div class="kpi-value" style="color:#34d399;">${data.roi}%</div>
-            <span class="kpi-badge ${parseFloat(data.roi) > 0 ? 'positive' : 'neutral'}">Rendement</span>
+          <div class="kpi-card" style="border-left-color:#A78BFA;">
+            <div class="kpi-label">Hosting omzet/jaar</div>
+            <div class="kpi-value" style="color:#A78BFA;">${formatCurrency(b.hostingYearly)}</div>
+            <span class="kpi-badge neutral">${formatCurrency(b.hostingMonthly)}/mnd | ${hostingPct}%</span>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Gem. dealwaarde</div>
-            <div class="kpi-value">${formatCurrency(avgDeal)}</div>
+            <div class="kpi-value">${formatCurrency(data.avgDeal)}</div>
             <span class="kpi-badge neutral">Per klant</span>
           </div>
         `;
 
+        // Breakdown bar
+        const breakdownItems = [
+          { label: 'Pakketten (eenmalig)', value: b.eenmalig, color: '#3B82F6' },
+          { label: 'Upsells (eenmalig)', value: b.upsellOneTime, color: '#8B5CF6' },
+          { label: 'Upsells (maandelijks x12)', value: b.upsellMonthlyYearly, color: '#A78BFA' },
+          { label: 'Hosting (x12)', value: b.hostingYearly, color: '#34d399' },
+          { label: 'Korting', value: -b.discount, color: '#f87171' }
+        ].filter(i => i.value !== 0);
+
+        document.getElementById('revenue-breakdown-card').innerHTML = `
+          <div style="display:flex;gap:4px;height:32px;border-radius:8px;overflow:hidden;margin-bottom:16px;">
+            ${breakdownItems.filter(i => i.value > 0).map(i => {
+              const pct = (i.value / (data.totalRevenue + b.discount)) * 100;
+              return `<div style="background:${i.color};width:${pct}%;min-width:2px;" title="${i.label}: ${formatCurrency(i.value)}"></div>`;
+            }).join('')}
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+            ${breakdownItems.map(i => `
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:10px;height:10px;border-radius:50%;background:${i.color};flex-shrink:0;"></div>
+                <div>
+                  <div style="font-size:12px;color:var(--text-muted);">${i.label}</div>
+                  <div style="font-size:14px;font-weight:600;color:${i.value < 0 ? '#f87171' : 'var(--text-primary)'};">${formatCurrency(Math.abs(i.value))}</div>
+                </div>
+              </div>
+            `).join('')}
+            <div style="display:flex;align-items:center;gap:10px;border-left:2px solid var(--border-color);padding-left:12px;">
+              <div>
+                <div style="font-size:12px;color:var(--text-muted);">Netto totaal</div>
+                <div style="font-size:16px;font-weight:700;color:#34d399;">${formatCurrency(data.totalRevenue)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Stacked monthly chart
+        const ctx1 = document.getElementById('monthly-revenue-chart').getContext('2d');
+        if (charts.monthly) charts.monthly.destroy();
+        const months = data.monthlyBreakdown.map(m => m.month);
+        charts.monthly = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [
+              { label: 'Pakketten', data: data.monthlyBreakdown.map(m => m.eenmalig), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4, stack: 'stack' },
+              { label: 'Upsells', data: data.monthlyBreakdown.map(m => m.upsells), backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, stack: 'stack' },
+              { label: 'Hosting', data: data.monthlyBreakdown.map(m => m.hosting), backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4, stack: 'stack' }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { color: '#a0a0a0', padding: 12, font: { size: 11 }, boxWidth: 10 } },
+              tooltip: { backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12,
+                callbacks: { label: ctx => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}` }
+              }
+            },
+            scales: {
+              x: { stacked: true, grid: { display: false }, ticks: { color: '#666', font: { size: 11 } } },
+              y: { stacked: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#666', callback: v => formatCurrency(v) } }
+            }
+          }
+        });
+
+        // Composition doughnut
+        const ctx2 = document.getElementById('revenue-composition-chart').getContext('2d');
+        if (charts.pkg) charts.pkg.destroy();
+        const compData = [
+          { label: 'Pakketten', value: b.eenmalig - b.discount, color: 'rgba(59,130,246,0.8)', border: '#3B82F6' },
+          { label: 'Upsells', value: b.upsellOneTime + b.upsellMonthlyYearly, color: 'rgba(167,139,250,0.8)', border: '#A78BFA' },
+          { label: 'Hosting', value: b.hostingYearly, color: 'rgba(52,211,153,0.8)', border: '#34d399' }
+        ].filter(c => c.value > 0);
+        charts.pkg = new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            labels: compData.map(c => c.label),
+            datasets: [{ data: compData.map(c => c.value), backgroundColor: compData.map(c => c.color), borderColor: compData.map(c => c.border), borderWidth: 1, hoverOffset: 8 }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#a0a0a0', padding: 16, font: { size: 12 }, boxWidth: 12 } },
+              tooltip: { backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12,
+                callbacks: { label: ctx => `${ctx.label}: ${formatCurrency(ctx.raw)} (${data.totalRevenue > 0 ? ((ctx.raw / data.totalRevenue) * 100).toFixed(0) : 0}%)` }
+              }
+            }
+          }
+        });
+
+        // Package performance table
+        document.getElementById('package-perf-body').innerHTML = data.packageBreakdown.map(p => `
+          <tr>
+            <td style="font-weight:600;">${p.name}</td>
+            <td style="text-align:center;">${p.count}x</td>
+            <td style="text-align:right;">${formatCurrency(p.eenmalig)}</td>
+            <td style="text-align:right;">${formatCurrency(p.hosting)}</td>
+            <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(p.total)}</td>
+            <td style="text-align:right;">${formatCurrency(p.count > 0 ? p.total / p.count : 0)}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" class="text-center text-muted" style="padding:20px;">Geen pakketten verkocht</td></tr>';
+
+        // Upsell performance table
+        const upsellCard = document.getElementById('upsell-perf-card');
+        if (data.upsellBreakdown.length === 0) {
+          upsellCard.style.display = 'none';
+        } else {
+          upsellCard.style.display = '';
+          document.getElementById('upsell-perf-body').innerHTML = data.upsellBreakdown.map(u => `
+            <tr>
+              <td style="font-weight:500;">${u.name}</td>
+              <td><span style="background:${u.type === 'MONTHLY' ? 'var(--accent-purple-dim)' : 'var(--accent-blue-dim)'};color:${u.type === 'MONTHLY' ? 'var(--accent-purple)' : 'var(--accent-blue)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${u.type === 'MONTHLY' ? 'Maandelijks' : 'Eenmalig'}</span></td>
+              <td style="text-align:center;">${u.count}x</td>
+              <td style="text-align:right;">${formatCurrency(u.price)}${u.type === 'MONTHLY' ? '/mnd' : ''}</td>
+              <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(u.revenue)}</td>
+            </tr>
+          `).join('');
+        }
+
+        // Channel KPIs
         document.getElementById('revenue-channel-kpis').innerHTML = `
           <div class="kpi-card" style="border-left-color:#fb923c;">
             <div class="kpi-label">Flyer acquisitie</div>
@@ -433,68 +593,15 @@
           </div>
         `;
 
-        const ctx1 = document.getElementById('monthly-revenue-chart').getContext('2d');
-        if (charts.monthly) charts.monthly.destroy();
-        charts.monthly = new Chart(ctx1, {
-          type: 'bar',
-          data: {
-            labels: data.monthlyRevenue.map(m => m.month),
-            datasets: [{
-              label: 'Omzet',
-              data: data.monthlyRevenue.map(m => m.revenue),
-              backgroundColor: 'rgba(52, 211, 153, 0.5)',
-              borderColor: '#34d399',
-              borderWidth: 1,
-              borderRadius: 8
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#34d399', cornerRadius: 8, padding: 12 } },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: '#666', font: { size: 11 } } },
-              y: { grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#666', callback: v => formatCurrency(v) } }
-            }
-          }
-        });
-
-        const ctx2 = document.getElementById('package-revenue-chart').getContext('2d');
-        if (charts.pkg) charts.pkg.destroy();
-        const pkgColors = ['rgba(59,130,246,0.8)', 'rgba(96,165,250,0.8)', 'rgba(167,139,250,0.8)', 'rgba(251,146,60,0.8)', 'rgba(34,211,238,0.8)'];
-        const pkgBorders = ['#3B82F6', '#60A5FA', '#A78BFA', '#FB923C', '#22D3EE'];
-        charts.pkg = new Chart(ctx2, {
-          type: 'doughnut',
-          data: {
-            labels: data.packageRevenue.map(p => p.name),
-            datasets: [{
-              data: data.packageRevenue.map(p => p.revenue),
-              backgroundColor: pkgColors,
-              borderColor: pkgBorders,
-              borderWidth: 1,
-              hoverOffset: 8
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: {
-              legend: { position: 'bottom', labels: { color: '#a0a0a0', padding: 16, font: { size: 12 }, boxWidth: 12 } },
-              tooltip: { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 }
-            }
-          }
-        });
+        // Render per-client table
+        renderAcquisitionView();
       } catch (err) {
         showToast(err.message, 'error');
       }
     }
 
     async function loadAcquisition() {
-      try {
-        acquisitionDataAll = await API.get('/stats/acquisition');
-        renderAcquisitionView();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
+      // No longer needed separately - data comes from loadRevenue
     }
 
     function switchAcquisitionFilter(filter) {
@@ -507,32 +614,41 @@
     }
 
     function renderAcquisitionView() {
-      const data = acquisitionDataAll;
-      if (!data) return;
+      const data = revenueDataAll;
+      if (!data || !data.perDeal) return;
 
-      const filtered = acquisitionFilter === 'all' ? data.perClient
-        : acquisitionFilter === 'flyer' ? data.perClient.filter(c => c.acquisitionType === 'flyer')
-        : data.perClient.filter(c => c.acquisitionType !== 'flyer');
+      const filtered = acquisitionFilter === 'all' ? data.perDeal
+        : acquisitionFilter === 'flyer' ? data.perDeal.filter(c => c.acquisitionType === 'flyer')
+        : data.perDeal.filter(c => c.acquisitionType !== 'flyer');
 
       const tbody = document.getElementById('acquisition-body');
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
         return;
       }
 
-      const typeLabels = { flyer: 'Flyer', none: 'Geen kost', manual: 'Handmatig' };
-      const typeColors = { flyer: 'var(--accent-orange)', none: 'var(--text-muted)', manual: 'var(--accent-blue)' };
+      const channelLabels = { flyer: 'Flyer', none: 'Warm', manual: 'Warm' };
+      const channelColors = { flyer: 'var(--accent-orange)', none: 'var(--accent-blue)', manual: 'var(--accent-blue)' };
 
-      tbody.innerHTML = filtered.map(c => `
-        <tr>
-          <td style="font-weight:500;">${c.companyName}</td>
-          <td><span style="background:${typeColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${typeColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${typeLabels[c.acquisitionType] || c.acquisitionType}</span></td>
-          <td>${formatCurrency(c.acquisitionCost)}</td>
-          <td style="color:var(--accent-brand);font-weight:600;">${formatCurrency(c.dealValue)}</td>
-          <td><span class="kpi-badge positive">${c.roi}%</span></td>
-          <td style="color:var(--text-muted);">${formatDate(c.saleDate)}</td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = filtered.map(c => {
+        const upsellTotal = c.upsellOneTime + c.upsellMonthlyYearly;
+        const profit = c.totalValue - c.acquisitionCost;
+        return `
+          <tr>
+            <td style="font-weight:500;">${c.companyName}</td>
+            <td style="font-size:11px;">${c.packageName}</td>
+            <td><span style="background:${channelColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${channelColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${channelLabels[c.acquisitionType] || c.acquisitionType}</span></td>
+            <td style="text-align:right;">${formatCurrency(c.pkgOneTime)}</td>
+            <td style="text-align:right;">${upsellTotal > 0 ? formatCurrency(upsellTotal) : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;">${c.discount > 0 ? `<span style="color:var(--accent-green);">-${formatCurrency(c.discount)}</span>` : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;">${c.hostingYearly > 0 ? formatCurrency(c.hostingYearly) : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;font-weight:700;color:var(--accent-brand);">${formatCurrency(c.totalValue)}</td>
+            <td style="text-align:right;">${c.acquisitionCost > 0 ? `<span style="color:#f87171;">${formatCurrency(c.acquisitionCost)}</span>` : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;font-weight:600;color:${profit >= 0 ? '#34d399' : '#f87171'};">${formatCurrency(profit)}</td>
+            <td style="color:var(--text-muted);font-size:11px;">${formatDate(c.saleDate)}</td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function loadLocations() {

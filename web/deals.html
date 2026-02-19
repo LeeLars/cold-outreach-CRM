@@ -1174,6 +1174,14 @@
               <span class="text-muted" style="display:block;margin-bottom:6px;">Upsells</span>
               <div>${upsellList}</div>
             </div>
+            ${deal.discountType && deal.discountType !== 'none' ? `
+            <div class="flex justify-between items-center">
+              <span class="text-muted">Korting</span>
+              <span style="font-weight:600;color:var(--accent-green);">
+                ${deal.discountType === 'percentage' ? `${deal.discountPercentage}%` : formatCurrency(deal.discountAmount)}
+              </span>
+            </div>
+            ` : ''}
             <hr style="border-color:var(--border-color);">
             <div class="flex justify-between items-center">
               <span class="text-muted">Acquisitiekost</span>

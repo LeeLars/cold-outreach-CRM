@@ -15,9 +15,9 @@ router.get('/dashboard', async (req, res, next) => {
     const [allCounts, pipelineCounts, deals, clientCount] = await Promise.all([
       // All leads for totals
       Promise.all(statuses.map(status => prisma.lead.count({ where: { status } }))),
-      // Pipeline-only leads for funnel conversions (exclude direct clients)
+      // Alleen cold leads en flyer actie voor funnel conversies
       Promise.all(statuses.map(status => prisma.lead.count({ 
-        where: { status, source: { not: 'CRM' } } 
+        where: { status, source: { in: ['cold', 'flyer'] } } 
       }))),
       prisma.deal.aggregate({ _sum: { totalValue: true }, _avg: { totalValue: true, acquisitionCost: true } }),
       prisma.client.count()
@@ -67,13 +67,13 @@ router.get('/dashboard', async (req, res, next) => {
 
 router.get('/funnel', async (req, res, next) => {
   try {
-    // Exclude leads with source 'CRM' (direct clients that didn't go through pipeline)
+    // Alleen cold leads en flyer actie leads tonen (geen warme leads/CRM)
     const statuses = ['NIEUW', 'VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'];
     const counts = await Promise.all(
       statuses.map(status => prisma.lead.count({ 
         where: { 
           status,
-          source: { not: 'CRM' } // Exclude direct clients
+          source: { in: ['cold', 'flyer'] } // Alleen cold leads en flyer actie
         } 
       }))
     );

@@ -198,12 +198,19 @@ router.get('/revenue', async (req, res, next) => {
     // Per-deal breakdown
     const perDeal = deals.map(deal => {
       const pkgOneTime = deal.package.oneTimePrice;
+      const pkgCostPrice = deal.package.costPrice || 0;
       const upsellOneTime = deal.upsells
         .filter(u => u.upsell.billingType === 'ONE_TIME')
         .reduce((s, u) => s + u.upsell.price, 0);
+      const upsellOneTimeCost = deal.upsells
+        .filter(u => u.upsell.billingType === 'ONE_TIME')
+        .reduce((s, u) => s + (u.upsell.costPrice || 0), 0);
       const upsellMonthly = deal.upsells
         .filter(u => u.upsell.billingType === 'MONTHLY')
         .reduce((s, u) => s + u.upsell.price, 0);
+      const upsellMonthlyCost = deal.upsells
+        .filter(u => u.upsell.billingType === 'MONTHLY')
+        .reduce((s, u) => s + (u.upsell.costPrice || 0), 0);
 
       // Discount on one-time
       let discount = 0;
@@ -214,32 +221,36 @@ router.get('/revenue', async (req, res, next) => {
       }
 
       // Hosting: price is ALWAYS monthly (e.g. 15 or 20 EUR/month)
-      // Invoiced yearly. First year = pro-rata (remaining months), next years = 12 months
       const monthlyHostingPrice = deal.hasHosting ? deal.hostingPrice : 0;
+      const monthlyHostingCost = deal.hasHosting ? (deal.hostingCostPrice || 0) : 0;
       const hostingFullYear = monthlyHostingPrice * 12;
       const hostingMRR = monthlyHostingPrice;
 
       // Hosting: current year revenue based on start date
       const hostingStart = deal.hostingStartDate || deal.saleDate;
       let hostingCurrentYear = 0;
+      let hostingCurrentYearCost = 0;
       let hostingQuarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
       
       if (deal.hasHosting && hostingStart) {
         const hasEnded = deal.hostingEndDate && new Date(deal.hostingEndDate) < new Date(currentYear, 0, 1);
         
         if (!hasEnded) {
-          // Count active months per quarter in current year
           for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
             const activeMonths = monthsInQuarterFromStart(hostingStart, q, currentYear);
             hostingQuarters[q] = activeMonths * monthlyHostingPrice;
           }
           hostingCurrentYear = Object.values(hostingQuarters).reduce((a, b) => a + b, 0);
+          // Hosting cost: same number of active months × cost price
+          const activeHostingMonths = getActiveMonths(hostingStart, deal.hostingEndDate, currentYear).length;
+          hostingCurrentYearCost = activeHostingMonths * monthlyHostingCost;
         }
       }
 
       // Upsell monthly: current year calculation
       const upsellStart = deal.saleDate;
       let upsellCurrentYear = 0;
+      let upsellCurrentYearCost = 0;
       let upsellQuarters = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
       
       if (upsellMonthly > 0) {
@@ -248,9 +259,39 @@ router.get('/revenue', async (req, res, next) => {
           upsellQuarters[q] = activeMonths * upsellMonthly;
         }
         upsellCurrentYear = Object.values(upsellQuarters).reduce((a, b) => a + b, 0);
+        const activeUpsellMonths = getActiveMonths(upsellStart, null, currentYear).length;
+        upsellCurrentYearCost = activeUpsellMonths * upsellMonthlyCost;
       }
 
       const upsellMonthlyYearly = upsellMonthly * 12;
+
+      // Revenue for this deal in selected year
+      const saleYear = new Date(deal.saleDate).getFullYear();
+      const oneTimeRevenueThisYear = saleYear === currentYear ? (pkgOneTime + upsellOneTime - discount) : 0;
+      const totalRevenueThisYear = oneTimeRevenueThisYear + hostingCurrentYear + upsellCurrentYear;
+
+      // Extra per-deal costs: domain (one-time, in sale year) and email (monthly, like hosting)
+      const domainCost = deal.domainCost || 0;
+      const emailCostMonthly = deal.emailCostMonthly || 0;
+      const domainCostThisYear = saleYear === currentYear ? domainCost : 0;
+      const activeEmailMonths = deal.hasHosting ? getActiveMonths(hostingStart, deal.hostingEndDate, currentYear).length : 0;
+      const emailCostThisYear = activeEmailMonths * emailCostMonthly;
+
+      // Costs for this deal in selected year
+      const oneTimeCostThisYear = saleYear === currentYear ? (pkgCostPrice + upsellOneTimeCost) : 0;
+      const totalCostThisYear = oneTimeCostThisYear + deal.acquisitionCost + hostingCurrentYearCost + upsellCurrentYearCost + domainCostThisYear + emailCostThisYear;
+
+      // Profit for this deal in selected year
+      const profitThisYear = totalRevenueThisYear - totalCostThisYear;
+
+      // All-time profit (total deal value minus all costs ever)
+      const hostingMonthsAllTime = deal.hasHosting ? (deal.hostingEndDate
+        ? Math.max(0, Math.round((new Date(deal.hostingEndDate) - new Date(hostingStart)) / (1000 * 60 * 60 * 24 * 30.44)))
+        : Math.round((new Date() - new Date(hostingStart)) / (1000 * 60 * 60 * 24 * 30.44))) : 0;
+      const hostingCostAllTime = hostingMonthsAllTime * monthlyHostingCost;
+      const emailCostAllTime = hostingMonthsAllTime * emailCostMonthly;
+      const totalCostAllTime = pkgCostPrice + upsellOneTimeCost + deal.acquisitionCost + hostingCostAllTime + domainCost + emailCostAllTime;
+      const profitAllTime = deal.totalValue - totalCostAllTime;
 
       return {
         id: deal.id,
@@ -261,22 +302,38 @@ router.get('/revenue', async (req, res, next) => {
         acquisitionType: deal.acquisitionType,
         acquisitionCost: deal.acquisitionCost,
         pkgOneTime,
+        pkgCostPrice,
         upsellOneTime,
+        upsellOneTimeCost,
         upsellMonthly,
+        upsellMonthlyCost,
         upsellMonthlyYearly,
         discount,
         discountType: deal.discountType,
         hostingPrice: deal.hostingPrice,
+        hostingCostPrice: monthlyHostingCost,
         hostingInterval: deal.hostingInterval,
         hostingFullYear,
         hostingMRR,
         hostingCurrentYear,
+        hostingCurrentYearCost,
         hostingQuarters,
         hostingStartDate: hostingStart,
+        hostingEndDate: deal.hostingEndDate,
         upsellCurrentYear,
+        upsellCurrentYearCost,
         upsellQuarters,
         totalValue: deal.totalValue,
-        upsellNames: deal.upsells.map(u => u.upsell.name)
+        totalRevenueThisYear,
+        totalCostThisYear,
+        profitThisYear,
+        profitAllTime,
+        domainCost,
+        emailCostMonthly,
+        domainCostThisYear,
+        emailCostThisYear,
+        upsellNames: deal.upsells.map(u => u.upsell.name),
+        hasHosting: deal.hasHosting
       };
     });
 
@@ -306,6 +363,13 @@ router.get('/revenue', async (req, res, next) => {
     const roi = totalCost > 0 ? (((totalRevenue - totalCost) / totalCost) * 100).toFixed(1) : 0;
     const totalClients = dealsInYear.length;
     const avgDeal = totalClients > 0 ? totalRevenue / totalClients : 0;
+
+    // Profit totals for current year (all active deals)
+    const totalProfitThisYear = perDeal.reduce((s, d) => s + d.profitThisYear, 0);
+    const totalCostsThisYear = perDeal.reduce((s, d) => s + d.totalCostThisYear, 0);
+    const profitMarginThisYear = totalRevenue > 0 ? ((totalProfitThisYear / totalRevenue) * 100).toFixed(1) : 0;
+    // All-time profit
+    const totalProfitAllTime = perDeal.reduce((s, d) => s + d.profitAllTime, 0);
 
     // Quarter totals for current year
     const quarterTotals = { Q1: { hosting: 0, upsells: 0, eenmalig: 0 }, Q2: { hosting: 0, upsells: 0, eenmalig: 0 }, Q3: { hosting: 0, upsells: 0, eenmalig: 0 }, Q4: { hosting: 0, upsells: 0, eenmalig: 0 } };
@@ -402,10 +466,18 @@ router.get('/revenue', async (req, res, next) => {
     const warmRevenue = warmDeals.reduce((s, d) => (s + (d.pkgOneTime + d.upsellOneTime - d.discount) + d.hostingCurrentYear + d.upsellCurrentYear), 0);
     const warmCost = warmDeals.reduce((s, d) => s + d.acquisitionCost, 0);
 
+    const flyerProfit = flyerDeals.reduce((s, d) => s + d.profitThisYear, 0);
+    const warmProfit = warmDeals.reduce((s, d) => s + d.profitThisYear, 0);
+
     res.json({
       currentYear,
       // Summary totals
       totalRevenue, totalCost, roi, totalClients, avgDeal,
+      // Profit totals
+      totalProfitThisYear,
+      totalCostsThisYear,
+      profitMarginThisYear,
+      totalProfitAllTime,
       // Breakdown totals
       breakdown: {
         eenmalig: totOneTime,
@@ -435,10 +507,12 @@ router.get('/revenue', async (req, res, next) => {
       // Channel
       flyer: {
         revenue: flyerRevenue, cost: flyerCost, count: flyerDeals.length,
+        profit: flyerProfit,
         roi: flyerCost > 0 ? (((flyerRevenue - flyerCost) / flyerCost) * 100).toFixed(1) : '0'
       },
       warm: {
         revenue: warmRevenue, cost: warmCost, count: warmDeals.length,
+        profit: warmProfit,
         roi: warmCost > 0 ? (((warmRevenue - warmCost) / warmCost) * 100).toFixed(1) : '0'
       }
     });

@@ -63,7 +63,8 @@ router.post('/', async (req, res, next) => {
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
       mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
       features, languages, contentStatus, urgency, specialRequests,
-      hasHosting = true, hostingStartDate, hostingEndDate, hostingPrice = 20, hostingInterval = 'MONTHLY',
+      hasHosting = true, hostingStartDate, hostingEndDate, hostingPrice = 20, hostingCostPrice = 0, hostingInterval = 'MONTHLY',
+      domainCost = 0, emailCostMonthly = 0,
       discountType = 'none', discountPercentage = 0, discountAmount = 0
     } = req.body;
 
@@ -124,8 +125,11 @@ router.post('/', async (req, res, next) => {
         hostingStartDate: hasHosting && hostingStartDate ? new Date(hostingStartDate) : (hasHosting ? saleDateObj : null),
         hostingEndDate: hasHosting && hostingEndDate ? new Date(hostingEndDate) : null,
         hostingPrice: hostingMonthly,
+        hostingCostPrice: parseFloat(hostingCostPrice) || 0,
         hostingInterval: hostingInterval || 'MONTHLY',
         nextInvoiceDate: nextInvoice,
+        domainCost: parseFloat(domainCost) || 0,
+        emailCostMonthly: parseFloat(emailCostMonthly) || 0,
         websiteGoal: websiteGoal || null,
         targetAudience: targetAudience || null,
         hasExistingWebsite: hasExistingWebsite || false,
@@ -189,7 +193,8 @@ router.put('/:id', async (req, res, next) => {
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
       mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
       features, languages, contentStatus, urgency, specialRequests,
-      hasHosting, hostingStartDate, hostingEndDate, hostingPrice, hostingInterval,
+      hasHosting, hostingStartDate, hostingEndDate, hostingPrice, hostingCostPrice, hostingInterval,
+      domainCost, emailCostMonthly,
       discountType, discountPercentage, discountAmount
     } = req.body;
 
@@ -260,7 +265,10 @@ router.put('/:id', async (req, res, next) => {
         hostingStartDate: hostingStartDate !== undefined ? (hostingStartDate ? new Date(hostingStartDate) : null) : existing.hostingStartDate,
         hostingEndDate: hostingEndDate !== undefined ? (hostingEndDate ? new Date(hostingEndDate) : null) : existing.hostingEndDate,
         hostingPrice: useHostingPrice,
+        hostingCostPrice: hostingCostPrice !== undefined ? parseFloat(hostingCostPrice) : existing.hostingCostPrice,
         hostingInterval: hostingInterval !== undefined ? hostingInterval : existing.hostingInterval,
+        domainCost: domainCost !== undefined ? parseFloat(domainCost) : existing.domainCost,
+        emailCostMonthly: emailCostMonthly !== undefined ? parseFloat(emailCostMonthly) : existing.emailCostMonthly,
         nextInvoiceDate: nextInvoice,
         websiteGoal: websiteGoal !== undefined ? websiteGoal : existing.websiteGoal,
         targetAudience: targetAudience !== undefined ? targetAudience : existing.targetAudience,
@@ -299,7 +307,7 @@ router.put('/:id', async (req, res, next) => {
 
 router.put('/:id/hosting', async (req, res, next) => {
   try {
-    const { hostingPrice, hostingInterval, hostingStartDate, hostingEndDate, nextInvoiceDate } = req.body;
+    const { hostingPrice, hostingCostPrice, hostingInterval, hostingStartDate, hostingEndDate, nextInvoiceDate, domainCost, emailCostMonthly } = req.body;
 
     const existing = await prisma.deal.findUnique({ where: { id: req.params.id } });
     if (!existing) {
@@ -308,10 +316,13 @@ router.put('/:id/hosting', async (req, res, next) => {
 
     const data = {};
     if (hostingPrice !== undefined) data.hostingPrice = parseFloat(hostingPrice);
+    if (hostingCostPrice !== undefined) data.hostingCostPrice = parseFloat(hostingCostPrice);
     if (hostingInterval !== undefined) data.hostingInterval = hostingInterval;
     if (hostingStartDate !== undefined) data.hostingStartDate = hostingStartDate ? new Date(hostingStartDate) : null;
     if (hostingEndDate !== undefined) data.hostingEndDate = hostingEndDate ? new Date(hostingEndDate) : null;
     if (nextInvoiceDate !== undefined) data.nextInvoiceDate = nextInvoiceDate ? new Date(nextInvoiceDate) : null;
+    if (domainCost !== undefined) data.domainCost = parseFloat(domainCost);
+    if (emailCostMonthly !== undefined) data.emailCostMonthly = parseFloat(emailCostMonthly);
 
     const deal = await prisma.deal.update({
       where: { id: req.params.id },

@@ -92,8 +92,18 @@
             <input type="hidden" id="hosting-edit-interval" value="MONTHLY">
           </div>
           <div class="form-group">
-            <label class="form-label">Gefactureerd per</label>
-            <input type="text" class="form-input" value="Jaar" disabled style="background:var(--bg-secondary);color:var(--text-muted);cursor:not-allowed;">
+            <label class="form-label" style="color:var(--accent-orange);">Hosting kostprijs /mnd <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(wat betaal jij)</span></label>
+            <input type="number" id="hosting-edit-cost" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group">
+            <label class="form-label" style="color:var(--accent-orange);">Domein kost <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(eenmalig aankoop/verhuis)</span></label>
+            <input type="number" id="hosting-edit-domain" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color:var(--accent-orange);">Email pakket /mnd <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(bv. Google Workspace)</span></label>
+            <input type="number" id="hosting-edit-email" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
           </div>
         </div>
         <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -123,6 +133,7 @@
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/components.js"></script>
   <script src="assets/js/sidebar.js"></script>
+  <script src="assets/js/tooltips.js"></script>
   <script>
     let hostingData = [];
     let sortColumn = 'nextInvoiceDate';
@@ -169,22 +180,22 @@
         
         document.getElementById('hosting-kpis').innerHTML = `
           <div class="kpi-card">
-            <div class="kpi-label">Hosting klanten</div>
+            ${wrapWithTooltip('<div class="kpi-label">Hosting klanten</div>', 'hosting-klanten')}
             <div class="kpi-value">${data.totalClients}</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">MRR (hosting)</div>
+            ${wrapWithTooltip('<div class="kpi-label">MRR (hosting)</div>', 'hosting-mrr')}
             <div class="kpi-value">${fmt(data.totalMRR || 0)}</div>
           </div>
           <div class="kpi-card" style="border-left-color:#34d399;">
-            <div class="kpi-label">Hosting omzet ${yr}</div>
+            ${wrapWithTooltip(`<div class="kpi-label">Hosting omzet ${yr}</div>`, 'hosting-omzet-jaar')}
             <div class="kpi-value" style="color:#34d399;">${fmt(data.totalCurrentYear || 0)}</div>
             <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">
               ${['Q1','Q2','Q3','Q4'].map(q => `${q}: ${fmt(qt[q] || 0)}`).join(' | ')}
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Gem. per klant/mnd</div>
+            ${wrapWithTooltip('<div class="kpi-label">Gem. per klant/mnd</div>', 'hosting-gem-klant')}
             <div class="kpi-value">${fmt(data.avgPerClient)}</div>
           </div>
         `;
@@ -333,6 +344,9 @@
       if (!item) return;
       document.getElementById('hosting-edit-id').value = item.id;
       document.getElementById('hosting-edit-company').value = item.companyName;
+      document.getElementById('hosting-edit-cost').value = item.hostingCostPrice || 0;
+      document.getElementById('hosting-edit-domain').value = item.domainCost || 0;
+      document.getElementById('hosting-edit-email').value = item.emailCostMonthly || 0;
       const priceSelect = document.getElementById('hosting-edit-price');
       const priceVal = item.hostingPrice;
       if (priceVal == 15 || priceVal == 20) {
@@ -360,6 +374,9 @@
       try {
         await API.put('/deals/' + id + '/hosting', {
           hostingPrice: parseFloat(document.getElementById('hosting-edit-price').value),
+          hostingCostPrice: parseFloat(document.getElementById('hosting-edit-cost').value) || 0,
+          domainCost: parseFloat(document.getElementById('hosting-edit-domain').value) || 0,
+          emailCostMonthly: parseFloat(document.getElementById('hosting-edit-email').value) || 0,
           hostingInterval: 'MONTHLY',
           hostingStartDate: document.getElementById('hosting-edit-start').value || null,
           hostingEndDate: document.getElementById('hosting-edit-end').value || null,

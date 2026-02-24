@@ -1666,6 +1666,105 @@ textarea.form-input {
   border-left-color: #34d399;
 }
 
+/* ===== TOOLTIP SYSTEM ===== */
+.stat-tooltip-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.stat-tooltip-icon:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: var(--accent-brand);
+  transform: scale(1.1);
+}
+
+.stat-tooltip-content {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 12px 14px;
+  min-width: 280px;
+  max-width: 400px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.stat-tooltip-icon:hover .stat-tooltip-content {
+  opacity: 1;
+  visibility: visible;
+  bottom: calc(100% + 12px);
+}
+
+.stat-tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1a1a1a;
+}
+
+.stat-tooltip-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-brand);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-tooltip-formula {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.stat-tooltip-explanation {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.stat-tooltip-scope {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* ===== UTILITIES ===== */
 .hidden { display: none !important; }
 .text-green { color: var(--accent-green); }

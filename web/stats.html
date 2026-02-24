@@ -122,8 +122,10 @@
                     <th>Bedrijf</th><th>Pakket</th><th>Kanaal</th>
                     <th style="text-align:right;">Eenmalig</th><th style="text-align:right;">Upsells</th>
                     <th style="text-align:right;">Korting</th><th style="text-align:right;">Hosting/jr</th>
-                    <th style="text-align:right;font-weight:700;">Totaal</th><th style="text-align:right;">Kost</th>
-                    <th style="text-align:right;">Winst</th><th>Datum</th>
+                    <th style="text-align:right;font-weight:700;">Omzet (jaar)</th>
+                    <th style="text-align:right;color:var(--accent-orange);">Kosten (jaar)</th>
+                    <th style="text-align:right;color:#34d399;font-weight:700;">Winst (jaar)</th>
+                    <th>Datum</th>
                   </tr></thead>
                   <tbody id="acquisition-body"></tbody>
                 </table>
@@ -189,25 +191,25 @@
                         Gemeente <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('total')">
-                        Totaal <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                        <span class="stat-tooltip-wrapper">Totaal<span class="stat-tooltip-icon">?<span class="stat-tooltip-content"><div class="stat-tooltip-title">Totaal Leads</div><div class="stat-tooltip-formula">Som van alle leads in deze gemeente</div><div class="stat-tooltip-explanation">Totaal aantal leads in deze gemeente, ongeacht status of bron.</div><div class="stat-tooltip-scope">Scope: Alle leads in deze gemeente</div></span></span></span> <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('verstuurd')">
-                        Verstuurd <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                        <span class="stat-tooltip-wrapper">Verstuurd<span class="stat-tooltip-icon">?<span class="stat-tooltip-content"><div class="stat-tooltip-title">Verstuurd</div><div class="stat-tooltip-formula">Aantal cold/flyer leads met status ≥ VERSTUURD</div><div class="stat-tooltip-explanation">Aantal cold outreach emails verstuurd naar deze gemeente. Warme CRM leads worden NIET meegeteld.</div><div class="stat-tooltip-scope">Scope: Alleen cold en flyer leads</div></span></span></span> <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('gereageerd')">
-                        Gereageerd <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                        <span class="stat-tooltip-wrapper">Gereageerd<span class="stat-tooltip-icon">?<span class="stat-tooltip-content"><div class="stat-tooltip-title">Reactie</div><div class="stat-tooltip-formula">Aantal cold/flyer leads met status ≥ GEREAGEERD</div><div class="stat-tooltip-explanation">Aantal leads uit deze gemeente dat heeft gereageerd op cold outreach.</div><div class="stat-tooltip-scope">Scope: Alleen cold en flyer leads</div></span></span></span> <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('responseRate')">
-                        Response % <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                        <span class="stat-tooltip-wrapper">Response %<span class="stat-tooltip-icon">?<span class="stat-tooltip-content"><div class="stat-tooltip-title">Response Rate</div><div class="stat-tooltip-formula">(Gereageerd / Verstuurd) × 100</div><div class="stat-tooltip-explanation">Percentage reacties in deze gemeente. Meet hoe goed je messaging aanslaat in dit gebied.</div><div class="stat-tooltip-scope">Scope: Alleen cold en flyer leads</div></span></span></span> <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('klanten')">
-                        Klanten <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                        <span class="stat-tooltip-wrapper">Klanten<span class="stat-tooltip-icon">?<span class="stat-tooltip-content"><div class="stat-tooltip-title">Klanten</div><div class="stat-tooltip-formula">Aantal leads met status KLANT</div><div class="stat-tooltip-explanation">Aantal klanten in deze gemeente, ongeacht acquisitiekanaal.</div><div class="stat-tooltip-scope">Scope: Alle klanten in deze gemeente</div></span></span></span> <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('conversionRate')">
-                        Conversion % <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                        <span class="stat-tooltip-wrapper">Conversion %<span class="stat-tooltip-icon">?<span class="stat-tooltip-content"><div class="stat-tooltip-title">Conversion Rate</div><div class="stat-tooltip-formula">(Klanten / Gereageerd) × 100</div><div class="stat-tooltip-explanation">Percentage van de reacties dat klant wordt. Meet sales effectiviteit in dit gebied.</div><div class="stat-tooltip-scope">Scope: Alleen cold en flyer leads</div></span></span></span> <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th style="text-align:right;cursor:pointer;" onclick="sortLocationTable('revenue')">
-                        Omzet <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
+                        <span class="stat-tooltip-wrapper">Omzet<span class="stat-tooltip-icon">?<span class="stat-tooltip-content"><div class="stat-tooltip-title">Omzet</div><div class="stat-tooltip-formula">Som van alle dealwaardes in deze gemeente</div><div class="stat-tooltip-explanation">Totale omzet gegenereerd uit deze gemeente.</div><div class="stat-tooltip-scope">Scope: Alle klanten in deze gemeente</div></span></span></span> <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                     </tr>
                   </thead>
@@ -289,8 +291,18 @@
             <input type="hidden" id="hosting-edit-interval" value="MONTHLY">
           </div>
           <div class="form-group">
-            <label class="form-label">Gefactureerd per</label>
-            <input type="text" class="form-input" value="Jaar" disabled style="background:var(--bg-secondary);color:var(--text-muted);cursor:not-allowed;">
+            <label class="form-label" style="color:var(--accent-orange);">Hosting kostprijs /mnd <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(wat betaal jij)</span></label>
+            <input type="number" id="hosting-edit-cost" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group">
+            <label class="form-label" style="color:var(--accent-orange);">Domein kost <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(eenmalig aankoop/verhuis)</span></label>
+            <input type="number" id="hosting-edit-domain" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color:var(--accent-orange);">Email pakket /mnd <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(bv. Google Workspace)</span></label>
+            <input type="number" id="hosting-edit-email" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
           </div>
         </div>
         <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -320,6 +332,7 @@
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/components.js"></script>
   <script src="assets/js/sidebar.js"></script>
+  <script src="assets/js/tooltips.js"></script>
   <script>
     let charts = {};
 
@@ -403,22 +416,22 @@
 
         document.getElementById('funnel-kpis').innerHTML = `
           <div class="kpi-card lead-theme">
-            <div class="kpi-label">Verstuurd ratio</div>
+            ${wrapWithTooltip('<div class="kpi-label">Verstuurd ratio</div>', 'send-rate')}
             <div class="kpi-value" style="color:#60a5fa;">${data.conversions.sendRate}%</div>
             <span class="kpi-badge neutral">${cur.VERSTUURD + cur.GEEN_REACTIE} nu verstuurd</span>
           </div>
           <div class="kpi-card lead-theme">
-            <div class="kpi-label">Reactie ratio</div>
+            ${wrapWithTooltip('<div class="kpi-label">Reactie ratio</div>', 'response-rate')}
             <div class="kpi-value" style="color:#fb923c;">${data.conversions.responseRate}%</div>
             <span class="kpi-badge positive">${cur.GEREAGEERD + cur.NIET_GEINTERESSEERD} gereageerd</span>
           </div>
           <div class="kpi-card lead-theme">
-            <div class="kpi-label">Interesse ratio</div>
+            ${wrapWithTooltip('<div class="kpi-label">Interesse ratio</div>', 'interest-rate')}
             <div class="kpi-value" style="color:#a78bfa;">${data.conversions.interestRate}%</div>
             <span class="kpi-badge positive">${cur.AFSPRAAK} interesse</span>
           </div>
           <div class="kpi-card client-theme">
-            <div class="kpi-label">Close ratio</div>
+            ${wrapWithTooltip('<div class="kpi-label">Close ratio</div>', 'close-rate')}
             <div class="kpi-value" style="color:#34d399;">${data.conversions.closeRate}%</div>
             <span class="kpi-badge positive">${cur.KLANT} klanten</span>
           </div>
@@ -487,30 +500,48 @@
         // KPIs
         document.getElementById('revenue-kpis').innerHTML = `
           <div class="kpi-card client-theme">
-            <div class="kpi-label">Omzet ${yr}</div>
+            ${wrapWithTooltip(`<div class="kpi-label">Omzet ${yr}</div>`, 'rev-omzet-jaar')}
             <div class="kpi-value" style="color:#34d399;">${formatCurrency(totalCurrentYear)}</div>
             <span class="kpi-badge positive">${data.totalClients} deal${data.totalClients !== 1 ? 's' : ''}</span>
           </div>
           <div class="kpi-card" style="border-left-color:#3B82F6;">
-            <div class="kpi-label">Pakket omzet</div>
+            ${wrapWithTooltip('<div class="kpi-label">Pakket omzet</div>', 'rev-pakket-omzet')}
             <div class="kpi-value" style="color:#3B82F6;">${formatCurrency(totalPackageNetto)}</div>
             <span class="kpi-badge neutral">${packagePct}% van totale omzet</span>
           </div>
           <div class="kpi-card" style="border-left-color:#A78BFA;">
-            <div class="kpi-label">Hosting ${yr}</div>
+            ${wrapWithTooltip(`<div class="kpi-label">Hosting ${yr}</div>`, 'rev-hosting-jaar')}
             <div class="kpi-value" style="color:#A78BFA;">${formatCurrency(hostingCY)}</div>
             <span class="kpi-badge neutral">${hostingPct}% van totaal</span>
           </div>
           <div class="kpi-card" style="border-left-color:#34d399;">
-            <div class="kpi-label">MRR (terugkerend)</div>
+            ${wrapWithTooltip('<div class="kpi-label">MRR (terugkerend)</div>', 'rev-mrr')}
             <div class="kpi-value" style="color:#34d399;">${formatCurrency(totalMRR)}</div>
             <span class="kpi-badge neutral">${formatCurrency(totalMRR * 12)}/jaar</span>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Gem. dealwaarde</div>
+            ${wrapWithTooltip('<div class="kpi-label">Gem. dealwaarde</div>', 'rev-gem-deal')}
             <div class="kpi-value">${formatCurrency(data.avgDeal)}</div>
             <span class="kpi-badge neutral">Per klant</span>
           </div>
+          ${data.totalCostsThisYear > 0 ? `
+          <div class="kpi-card" style="border-left-color:#34d399;">
+            ${wrapWithTooltip('<div class="kpi-label">Winst (jaar)</div>', 'winst-jaar')}
+            <div class="kpi-value" style="color:${data.totalProfitThisYear >= 0 ? '#34d399' : '#f87171'};">${formatCurrency(data.totalProfitThisYear)}</div>
+            <span class="kpi-badge ${data.totalProfitThisYear >= 0 ? 'positive' : 'negative'}">${data.profitMarginThisYear}% marge</span>
+          </div>
+          <div class="kpi-card" style="border-left-color:var(--accent-orange);">
+            ${wrapWithTooltip('<div class="kpi-label">Kosten (jaar)</div>', 'kosten-jaar')}
+            <div class="kpi-value" style="color:var(--accent-orange);">${formatCurrency(data.totalCostsThisYear)}</div>
+            <span class="kpi-badge neutral">Acquisitie + productie + hosting</span>
+          </div>
+          ` : `
+          <div class="kpi-card" style="border-left-color:var(--accent-orange);opacity:0.6;">
+            <div class="kpi-label" style="color:var(--accent-orange);">Winst (jaar)</div>
+            <div class="kpi-value" style="color:var(--text-muted);font-size:16px;">Stel kostprijzen in</div>
+            <span class="kpi-badge neutral">Pakketten &amp; Prijzen pagina</span>
+          </div>
+          `}
         `;
 
         // Breakdown bar
@@ -689,7 +720,18 @@
 
       tbody.innerHTML = filtered.map(c => {
         const upsellTotal = c.upsellOneTime + c.upsellMonthlyYearly;
-        const profit = c.totalValue - c.acquisitionCost;
+        const revenue = c.totalRevenueThisYear;
+        const costs = c.totalCostThisYear;
+        const profit = c.profitThisYear;
+        const hasCostData = c.pkgCostPrice > 0 || c.hostingCostPrice > 0 || c.upsellOneTimeCost > 0 || c.upsellMonthlyCost > 0 || c.domainCost > 0 || c.emailCostMonthly > 0;
+        const costTooltip = [
+          c.acquisitionCost > 0 ? `Acquisitie: ${formatCurrency(c.acquisitionCost)}` : null,
+          c.pkgCostPrice > 0 ? `Pakket kost: ${formatCurrency(c.pkgCostPrice)}` : null,
+          c.hostingCostPrice > 0 ? `Hosting: ${formatCurrency(c.hostingCostPrice)}/mnd` : null,
+          c.domainCost > 0 ? `Domein: ${formatCurrency(c.domainCost)} (eenmalig)` : null,
+          c.emailCostMonthly > 0 ? `Email: ${formatCurrency(c.emailCostMonthly)}/mnd` : null,
+          c.upsellOneTimeCost > 0 ? `Upsell kost: ${formatCurrency(c.upsellOneTimeCost)}` : null
+        ].filter(Boolean).join(' | ') || 'Geen kosten ingesteld';
         return `
           <tr>
             <td style="font-weight:500;">${c.companyName}</td>
@@ -698,10 +740,14 @@
             <td style="text-align:right;">${formatCurrency(c.pkgOneTime)}</td>
             <td style="text-align:right;">${upsellTotal > 0 ? formatCurrency(upsellTotal) : '<span class="text-muted">-</span>'}</td>
             <td style="text-align:right;">${c.discount > 0 ? `<span style="color:var(--accent-green);">-${formatCurrency(c.discount)}</span>` : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;">${c.hostingYearly > 0 ? formatCurrency(c.hostingYearly) : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;font-weight:700;color:var(--accent-brand);">${formatCurrency(c.totalValue)}</td>
-            <td style="text-align:right;">${c.acquisitionCost > 0 ? `<span style="color:#f87171;">${formatCurrency(c.acquisitionCost)}</span>` : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;font-weight:600;color:${profit >= 0 ? '#34d399' : '#f87171'};">${formatCurrency(profit)}</td>
+            <td style="text-align:right;">${c.hostingCurrentYear > 0 ? formatCurrency(c.hostingCurrentYear) : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;font-weight:700;color:var(--accent-brand);">${formatCurrency(revenue)}</td>
+            <td style="text-align:right;" title="${costTooltip}">
+              ${costs > 0 ? `<span style="color:var(--accent-orange);cursor:help;" title="${costTooltip}">${formatCurrency(costs)}</span>` : `<span class="text-muted" title="Stel kostprijzen in via Pakketten">-</span>`}
+            </td>
+            <td style="text-align:right;font-weight:700;color:${profit >= 0 ? '#34d399' : '#f87171'};">
+              ${hasCostData || costs > 0 ? formatCurrency(profit) : `<span class="text-muted" title="Stel kostprijzen in via Pakketten & Prijzen">?</span>`}
+            </td>
             <td style="color:var(--text-muted);font-size:11px;">${formatDate(c.saleDate)}</td>
           </tr>
         `;
@@ -743,27 +789,27 @@
 
       document.getElementById('location-kpis').innerHTML = `
         <div class="kpi-card">
-          <div class="kpi-label">Gemeentes</div>
+          ${wrapWithTooltip('<div class="kpi-label">Gemeentes</div>', 'loc-tab-gemeentes')}
           <div class="kpi-value">${totalLocations}</div>
           <span class="kpi-badge neutral">${filterLabel}</span>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Totaal leads</div>
+          ${wrapWithTooltip('<div class="kpi-label">Totaal leads</div>', 'loc-tab-totaal')}
           <div class="kpi-value">${totalLeads}</div>
           <span class="kpi-badge neutral">${filterLabel}</span>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Gem. response rate</div>
+          ${wrapWithTooltip('<div class="kpi-label">Gem. response rate</div>', 'loc-tab-gem-response')}
           <div class="kpi-value">${totalVerstuurd > 0 ? ((totalGereageerd / totalVerstuurd) * 100).toFixed(1) : 0}%</div>
           <span class="kpi-badge positive">${filterLabel}</span>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Totaal klanten</div>
+          ${wrapWithTooltip('<div class="kpi-label">Totaal klanten</div>', 'loc-tab-totaal-klanten')}
           <div class="kpi-value">${totalKlanten}</div>
           <span class="kpi-badge positive">${filterLabel}</span>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Totale omzet</div>
+          ${wrapWithTooltip('<div class="kpi-label">Totale omzet</div>', 'loc-tab-totaal-omzet')}
           <div class="kpi-value text-green">${formatCurrency(totalRevenue)}</div>
           <span class="kpi-badge positive">${filterLabel}</span>
         </div>
@@ -1002,19 +1048,19 @@
         
         document.getElementById('hosting-kpis').innerHTML = `
           <div class="kpi-card">
-            <div class="kpi-label">Hosting klanten</div>
+            ${wrapWithTooltip('<div class="kpi-label">Hosting klanten</div>', 'hosting-klanten')}
             <div class="kpi-value">${data.totalClients}</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">MRR (hosting)</div>
+            ${wrapWithTooltip('<div class="kpi-label">MRR (hosting)</div>', 'hosting-mrr')}
             <div class="kpi-value">${fmt(data.totalMRR || 0)}</div>
           </div>
           <div class="kpi-card" style="border-left-color:#34d399;">
-            <div class="kpi-label">Hosting omzet ${yr}</div>
+            ${wrapWithTooltip(`<div class="kpi-label">Hosting omzet ${yr}</div>`, 'hosting-omzet-jaar')}
             <div class="kpi-value" style="color:#34d399;">${fmt(data.totalCurrentYear || 0)}</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Gem. per klant/mnd</div>
+            ${wrapWithTooltip('<div class="kpi-label">Gem. per klant/mnd</div>', 'hosting-gem-klant')}
             <div class="kpi-value">${fmt(data.avgPerClient)}</div>
           </div>
         `;
@@ -1106,6 +1152,9 @@
       if (!item) return;
       document.getElementById('hosting-edit-id').value = item.id;
       document.getElementById('hosting-edit-company').value = item.companyName;
+      document.getElementById('hosting-edit-cost').value = item.hostingCostPrice || 0;
+      document.getElementById('hosting-edit-domain').value = item.domainCost || 0;
+      document.getElementById('hosting-edit-email').value = item.emailCostMonthly || 0;
       const priceSelect = document.getElementById('hosting-edit-price');
       const priceVal = item.hostingPrice;
       if (priceVal == 15 || priceVal == 20) {
@@ -1133,6 +1182,9 @@
       try {
         await API.put('/deals/' + id + '/hosting', {
           hostingPrice: parseFloat(document.getElementById('hosting-edit-price').value),
+          hostingCostPrice: parseFloat(document.getElementById('hosting-edit-cost').value) || 0,
+          domainCost: parseFloat(document.getElementById('hosting-edit-domain').value) || 0,
+          emailCostMonthly: parseFloat(document.getElementById('hosting-edit-email').value) || 0,
           hostingInterval: 'MONTHLY',
           hostingStartDate: document.getElementById('hosting-edit-start').value || null,
           hostingEndDate: document.getElementById('hosting-edit-end').value || null,

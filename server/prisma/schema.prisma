@@ -102,8 +102,13 @@ model Deal {
   hostingStartDate DateTime?
   hostingEndDate   DateTime?
   hostingPrice     Float     @default(20)
+  hostingCostPrice Float     @default(0)
   hostingInterval  String    @default("MONTHLY")
   nextInvoiceDate  DateTime?
+
+  // Extra kosten per deal
+  domainCost       Float     @default(0)
+  emailCostMonthly Float     @default(0)
   
   // Acquisition
   acquisitionType  String    @default("manual")
@@ -146,6 +151,7 @@ model Package {
   name         String
   oneTimePrice Float
   monthlyPrice Float   @default(20)
+  costPrice    Float   @default(0)
   isArchived   Boolean @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -156,6 +162,7 @@ model Upsell {
   id          String      @id @default(cuid())
   name        String
   price       Float
+  costPrice   Float       @default(0)
   billingType BillingType
   isArchived  Boolean     @default(false)
   createdAt   DateTime    @default(now())

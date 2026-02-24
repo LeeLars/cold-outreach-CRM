@@ -71,6 +71,7 @@
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/components.js"></script>
   <script src="assets/js/sidebar.js"></script>
+  <script src="assets/js/tooltips.js"></script>
   <script>
     async function init() {
       if (!await requireLogin()) return;
@@ -182,7 +183,7 @@
         <div class="dashboard-kpi-grid">
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Total Leads</span>
+              ${wrapWithTooltip('<span class="dashboard-label">Total Leads</span>', 'total-leads')}
               <i data-lucide="users" style="color:var(--accent-blue);width:18px;height:18px;"></i>
             </div>
             <div class="dashboard-value">${data.totalLeads}</div>
@@ -197,12 +198,12 @@
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Verstuurd</span>
+              ${wrapWithTooltip('<span class="dashboard-label">Verstuurd</span>', 'verstuurd')}
               <i data-lucide="send" style="color:var(--accent-blue);width:18px;height:18px;"></i>
             </div>
             <div class="dashboard-value">${c.VERSTUURD + c.GEEN_REACTIE}</div>
             <div class="dashboard-subtext">
-              <span>${conv.sendRate}% van totaal</span>
+              ${wrapWithTooltip(`<span>${conv.sendRate}% van totaal</span>`, 'send-rate')}
             </div>
             <div class="dashboard-chart-container">
               <canvas id="chart-sent"></canvas>
@@ -211,12 +212,12 @@
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Reacties</span>
+              ${wrapWithTooltip('<span class="dashboard-label">Reacties</span>', 'reacties')}
               <i data-lucide="message-square" style="color:var(--accent-orange);width:18px;height:18px;"></i>
             </div>
             <div class="dashboard-value">${c.GEREAGEERD + c.NIET_GEINTERESSEERD}</div>
             <div class="dashboard-subtext">
-              <span style="color:var(--accent-orange);">${conv.responseRate}%</span>
+              ${wrapWithTooltip(`<span style="color:var(--accent-orange);">${conv.responseRate}%</span>`, 'response-rate')}
               <span>reactieratio</span>
             </div>
             <div class="dashboard-chart-container">
@@ -226,12 +227,12 @@
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Interesse</span>
+              ${wrapWithTooltip('<span class="dashboard-label">Interesse</span>', 'interesse')}
               <i data-lucide="thumbs-up" style="color:var(--accent-purple);width:18px;height:18px;"></i>
             </div>
             <div class="dashboard-value">${c.AFSPRAAK}</div>
             <div class="dashboard-subtext">
-              <span style="color:var(--accent-purple);">${conv.interestRate}%</span>
+              ${wrapWithTooltip(`<span style="color:var(--accent-purple);">${conv.interestRate}%</span>`, 'interest-rate')}
               <span>conversie</span>
             </div>
             <div class="dashboard-chart-container">
@@ -246,7 +247,7 @@
         <div class="dashboard-kpi-grid" style="grid-template-columns:repeat(3,1fr);">
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Totaal Klanten</span>
+              ${wrapWithTooltip('<span class="dashboard-label">Totaal Klanten</span>', 'totaal-klanten')}
               <i data-lucide="building-2" style="color:var(--accent-green);width:18px;height:18px;"></i>
             </div>
             <div class="dashboard-value">${data.totalClients || c.KLANT}</div>
@@ -261,7 +262,7 @@
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">MRR (terugkerend)</span>
+              ${wrapWithTooltip('<span class="dashboard-label">MRR (terugkerend)</span>', 'mrr')}
               <i data-lucide="repeat" style="color:var(--accent-green);width:18px;height:18px;"></i>
             </div>
             <div class="dashboard-value">${formatCurrency(mrr)}</div>
@@ -275,7 +276,7 @@
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Omzet ${currentYear}</span>
+              ${wrapWithTooltip(`<span class="dashboard-label">Omzet ${currentYear}</span>`, 'omzet-jaar')}
               <i data-lucide="trending-up" style="color:var(--accent-green);width:18px;height:18px;"></i>
             </div>
             <div class="dashboard-value">${formatCurrency(totalCurrentYear)}</div>
@@ -283,7 +284,7 @@
               <span style="font-size:11px;">Eenmalig: ${formatCurrency(eenmaligNetto)} | Hosting: ${formatCurrency(hostingCurrentYear)}</span>
             </div>
             <div style="height:60px;display:flex;align-items:end;font-size:12px;color:var(--text-muted);">
-              Gem. acquisitiekost: ${formatCurrency(data.avgAcquisitionCost)}
+              ${wrapWithTooltip(`Gem. acquisitiekost: ${formatCurrency(data.avgAcquisitionCost)}`, 'gem-acquisitiekost')}
             </div>
           </div>
         </div>
@@ -609,11 +610,11 @@
           <thead>
             <tr>
               <th>Gemeente</th>
-              <th style="text-align:right;">Totaal</th>
-              <th style="text-align:right;">Verstuurd</th>
-              <th style="text-align:right;">Reactie</th>
-              <th style="text-align:right;">Klanten</th>
-              <th style="text-align:right;">Omzet</th>
+              <th style="text-align:right;">${wrapWithTooltip('Totaal', 'loc-totaal')}</th>
+              <th style="text-align:right;">${wrapWithTooltip('Verstuurd', 'loc-verstuurd')}</th>
+              <th style="text-align:right;">${wrapWithTooltip('Reactie', 'loc-reactie')}</th>
+              <th style="text-align:right;">${wrapWithTooltip('Klanten', 'loc-klanten')}</th>
+              <th style="text-align:right;">${wrapWithTooltip('Omzet', 'loc-omzet')}</th>
             </tr>
           </thead>
           <tbody>

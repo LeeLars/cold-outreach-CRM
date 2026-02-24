@@ -38,7 +38,7 @@
           <div class="card">
             <div class="card-body" style="padding:0;">
               <table class="data-table">
-                <thead><tr><th>Naam</th><th>Prijs</th><th>Type</th><th>Acties</th></tr></thead>
+                <thead><tr><th>Naam</th><th>Prijs</th><th style="color:var(--accent-orange);">Kostprijs</th><th>Type</th><th>Acties</th></tr></thead>
                 <tbody id="upsells-body"></tbody>
               </table>
             </div>
@@ -69,6 +69,10 @@
           <label class="form-label">Maandelijkse prijs</label>
           <input type="number" class="form-input" id="package-monthly" placeholder="20.00" step="0.01" min="0" value="20">
         </div>
+        <div class="form-group">
+          <label class="form-label" style="color:var(--accent-orange);">Kostprijs <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(wat kost het jou om dit pakket te leveren)</span></label>
+          <input type="number" class="form-input" id="package-cost" placeholder="0.00" step="0.01" min="0" value="0">
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('package-modal')">Annuleren</button>
@@ -93,6 +97,10 @@
         <div class="form-group">
           <label class="form-label">Prijs</label>
           <input type="number" class="form-input" id="upsell-price" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:var(--accent-orange);">Kostprijs <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(wat kost het jou per maand of eenmalig)</span></label>
+          <input type="number" class="form-input" id="upsell-cost" placeholder="0.00" step="0.01" min="0" value="0">
         </div>
         <div class="form-group">
           <label class="form-label">Type</label>
@@ -154,9 +162,10 @@
               <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">eenmalig</div>
               <div style="font-size:14px;color:var(--text-secondary);">+ ${formatCurrency(pkg.monthlyPrice)} / maand</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Hosting + e-mail + back-ups</div>
+              ${(pkg.costPrice || 0) > 0 ? `<div style="margin-top:8px;font-size:12px;color:var(--accent-orange);">Kostprijs: ${formatCurrency(pkg.costPrice)}</div>` : ''}
               ${isAdmin() ? `
                 <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                  <button class="btn btn-secondary btn-sm" onclick="editPackage('${pkg.id}','${pkg.name}',${pkg.oneTimePrice},${pkg.monthlyPrice})">
+                  <button class="btn btn-secondary btn-sm" onclick="editPackage('${pkg.id}','${pkg.name}',${pkg.oneTimePrice},${pkg.monthlyPrice},${pkg.costPrice || 0})">
                     <i data-lucide="pencil" style="width:14px;height:14px;"></i> Bewerken
                   </button>
                 </div>
@@ -185,8 +194,9 @@
           <tr>
             <td style="font-weight:500;">${u.name}</td>
             <td>${formatCurrency(u.price)}${u.billingType === 'MONTHLY' ? ' /mnd' : ''}</td>
+            <td style="color:var(--accent-orange);">${(u.costPrice || 0) > 0 ? formatCurrency(u.costPrice) + (u.billingType === 'MONTHLY' ? ' /mnd' : '') : '<span class="text-muted">-</span>'}</td>
             <td><span style="background:${u.billingType === 'MONTHLY' ? 'var(--accent-blue-dim)' : 'var(--accent-purple-dim)'};color:${u.billingType === 'MONTHLY' ? 'var(--accent-blue)' : 'var(--accent-purple)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${u.billingType === 'MONTHLY' ? 'Maandelijks' : 'Eenmalig'}</span></td>
-            <td>${isAdmin() ? `<button class="btn-icon" onclick="editUpsell('${u.id}','${u.name}',${u.price},'${u.billingType}')"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>` : ''}</td>
+            <td>${isAdmin() ? `<button class="btn-icon" onclick="editUpsell('${u.id}','${u.name}',${u.price},${u.costPrice || 0},'${u.billingType}')"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>` : ''}</td>
           </tr>
         `).join('');
 
@@ -202,15 +212,17 @@
       document.getElementById('package-name').value = '';
       document.getElementById('package-price').value = '';
       document.getElementById('package-monthly').value = '20';
+      document.getElementById('package-cost').value = '0';
       openModal('package-modal');
     }
 
-    function editPackage(id, name, price, monthly) {
+    function editPackage(id, name, price, monthly, cost) {
       document.getElementById('package-modal-title').textContent = 'Pakket bewerken';
       document.getElementById('package-id').value = id;
       document.getElementById('package-name').value = name;
       document.getElementById('package-price').value = price;
       document.getElementById('package-monthly').value = monthly;
+      document.getElementById('package-cost').value = cost || 0;
       openModal('package-modal');
     }
 
@@ -219,7 +231,8 @@
       const data = {
         name: document.getElementById('package-name').value,
         oneTimePrice: document.getElementById('package-price').value,
-        monthlyPrice: document.getElementById('package-monthly').value
+        monthlyPrice: document.getElementById('package-monthly').value,
+        costPrice: document.getElementById('package-cost').value || 0
       };
 
       if (!data.name || !data.oneTimePrice) return showToast('Vul alle velden in', 'warning');
@@ -244,15 +257,17 @@
       document.getElementById('upsell-id').value = '';
       document.getElementById('upsell-name').value = '';
       document.getElementById('upsell-price').value = '';
+      document.getElementById('upsell-cost').value = '0';
       document.getElementById('upsell-type').value = 'MONTHLY';
       openModal('upsell-modal');
     }
 
-    function editUpsell(id, name, price, type) {
+    function editUpsell(id, name, price, cost, type) {
       document.getElementById('upsell-modal-title').textContent = 'Upsell bewerken';
       document.getElementById('upsell-id').value = id;
       document.getElementById('upsell-name').value = name;
       document.getElementById('upsell-price').value = price;
+      document.getElementById('upsell-cost').value = cost || 0;
       document.getElementById('upsell-type').value = type;
       openModal('upsell-modal');
     }
@@ -262,6 +277,7 @@
       const data = {
         name: document.getElementById('upsell-name').value,
         price: document.getElementById('upsell-price').value,
+        costPrice: document.getElementById('upsell-cost').value || 0,
         billingType: document.getElementById('upsell-type').value
       };
 

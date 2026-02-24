@@ -476,6 +476,11 @@
             `).join('')}
           </div>
         `;
+        
+        // Re-initialize tooltips
+        if (typeof initTooltipPositioning === 'function') {
+          setTimeout(() => initTooltipPositioning(), 100);
+        }
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -683,6 +688,11 @@
 
         // Render per-client table
         renderAcquisitionView();
+        
+        // Re-initialize tooltips after dynamic content load
+        if (typeof initTooltipPositioning === 'function') {
+          setTimeout(() => initTooltipPositioning(), 100);
+        }
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -760,6 +770,11 @@
         locationDataAll = data;
         locationData = data[locationFilter] || data.all;
         renderLocationsView();
+        
+        // Re-initialize tooltips after dynamic content load
+        if (typeof initTooltipPositioning === 'function') {
+          setTimeout(() => initTooltipPositioning(), 100);
+        }
       } catch (err) {
         showToast(err.message, 'error');
       }

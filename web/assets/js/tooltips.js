@@ -316,3 +316,39 @@ function wrapWithTooltip(labelHTML, tooltipKey) {
   
   return `<span class="stat-tooltip-wrapper">${labelHTML}${tooltipHTML}</span>`;
 }
+
+// Initialize tooltip positioning on page load
+document.addEventListener('DOMContentLoaded', () => {
+  initTooltipPositioning();
+});
+
+// Re-initialize tooltips when content changes
+function initTooltipPositioning() {
+  document.querySelectorAll('.stat-tooltip-icon').forEach(icon => {
+    icon.addEventListener('mouseenter', (e) => {
+      const tooltip = icon.querySelector('.stat-tooltip-content');
+      if (!tooltip) return;
+      
+      const iconRect = icon.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      
+      // Position tooltip above icon, centered
+      const left = iconRect.left + (iconRect.width / 2);
+      const top = iconRect.top - 12;
+      
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+      
+      // Adjust if tooltip goes off-screen
+      setTimeout(() => {
+        const updatedRect = tooltip.getBoundingClientRect();
+        if (updatedRect.left < 10) {
+          tooltip.style.left = (left + (10 - updatedRect.left)) + 'px';
+        }
+        if (updatedRect.right > window.innerWidth - 10) {
+          tooltip.style.left = (left - (updatedRect.right - window.innerWidth + 10)) + 'px';
+        }
+      }, 10);
+    });
+  });
+}

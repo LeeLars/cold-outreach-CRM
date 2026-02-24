@@ -258,6 +258,11 @@
 
         renderTable(hostingData);
         refreshIcons();
+        
+        // Re-initialize tooltips
+        if (typeof initTooltipPositioning === 'function') {
+          setTimeout(() => initTooltipPositioning(), 100);
+        }
       } catch (err) {
         console.error('Hosting error:', err);
       }

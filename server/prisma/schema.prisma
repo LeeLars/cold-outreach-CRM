@@ -102,7 +102,6 @@ model Deal {
   hostingStartDate DateTime?
   hostingEndDate   DateTime?
   hostingPrice     Float     @default(20)
-  hostingCostPrice Float     @default(0)
   hostingInterval  String    @default("MONTHLY")
   nextInvoiceDate  DateTime?
 
@@ -197,4 +196,11 @@ model GoogleToken {
   calendarId   String   @default("primary")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Settings {
+  id                    String   @id @default(cuid())
+  totalHostingCostMonth Float    @default(19.99)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }

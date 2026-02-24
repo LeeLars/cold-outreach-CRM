@@ -285,8 +285,8 @@ const STAT_TOOLTIPS = {
   },
   'kosten-jaar': {
     title: 'Kosten dit jaar',
-    formula: 'Acquisitiekosten + Pakket kostprijs + Hosting kostprijs × actieve maanden + Upsell kostprijzen',
-    explanation: 'Totale kosten voor dit jaar. Stel kostprijzen in via Pakketten & Prijzen en hostingkostprijzen via de Hosting pagina.',
+    formula: 'Acquisitiekosten + Pakket kostprijs + (Totaal hostingpakket / aantal klanten) × actieve maanden + Domein + Email + Upsell kostprijzen',
+    explanation: 'Totale kosten voor dit jaar. Hosting kostprijs wordt automatisch verdeeld: het totale maandelijkse hostingpakket (instelbaar via Settings) wordt gedeeld door het aantal actieve hosting klanten. Zo betaalt elke klant een eerlijk deel.',
     scope: 'Alle actieve deals dit jaar'
   }
 };

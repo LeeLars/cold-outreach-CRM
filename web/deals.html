@@ -170,8 +170,8 @@
                   <input type="hidden" id="deal-hosting-interval" value="MONTHLY">
                 </div>
                 <div>
-                  <label class="form-label" style="font-size:11px;color:var(--accent-orange);">Hosting kostprijs /mnd <span style="font-weight:400;color:var(--text-muted);">(wat betaal jij)</span></label>
-                  <input type="number" class="form-input" id="deal-hosting-cost" placeholder="0.00" step="0.01" min="0" value="0">
+                  <label class="form-label" style="font-size:11px;">Gefactureerd per</label>
+                  <input type="text" class="form-input" value="Jaar" disabled style="background:var(--bg-secondary);color:var(--text-muted);cursor:not-allowed;">
                 </div>
                 <div>
                   <label class="form-label" style="font-size:11px;color:var(--accent-orange);">Domein kost <span style="font-weight:400;color:var(--text-muted);">(eenmalig)</span></label>
@@ -1087,7 +1087,6 @@
 
       const hasHosting = document.querySelector('input[name="has-hosting"]:checked').value === 'true';
       const hostingPrice = hasHosting ? (parseFloat(document.getElementById('deal-hosting-price').value) || 20) : 0;
-      const hostingCostPrice = hasHosting ? (parseFloat(document.getElementById('deal-hosting-cost').value) || 0) : 0;
       const domainCost = parseFloat(document.getElementById('deal-domain-cost').value) || 0;
       const emailCostMonthly = hasHosting ? (parseFloat(document.getElementById('deal-email-cost').value) || 0) : 0;
       const hostingInterval = 'MONTHLY';
@@ -1120,7 +1119,7 @@
 
       const dealData = {
         packageId, upsellIds, acquisitionCost, acquisitionType, saleDate,
-        hasHosting, hostingPrice, hostingCostPrice, domainCost, emailCostMonthly,
+        hasHosting, hostingPrice, domainCost, emailCostMonthly,
         hostingInterval, hostingStartDate, hostingEndDate,
         discountType, discountPercentage, discountAmount,
         websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
@@ -1537,12 +1536,10 @@
           }
           document.getElementById('deal-hosting-start').value = deal.hostingStartDate ? deal.hostingStartDate.split('T')[0] : '';
           document.getElementById('deal-hosting-end').value = deal.hostingEndDate ? deal.hostingEndDate.split('T')[0] : '';
-          document.getElementById('deal-hosting-cost').value = deal.hostingCostPrice || 0;
           document.getElementById('deal-domain-cost').value = deal.domainCost || 0;
           document.getElementById('deal-email-cost').value = deal.emailCostMonthly || 0;
         } else {
           document.querySelector('input[name="has-hosting"][value="false"]').checked = true;
-          document.getElementById('deal-hosting-cost').value = 0;
           document.getElementById('deal-domain-cost').value = deal.domainCost || 0;
           document.getElementById('deal-email-cost').value = 0;
         }

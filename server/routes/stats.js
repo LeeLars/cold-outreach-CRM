@@ -119,6 +119,15 @@ router.get('/funnel', async (req, res, next) => {
 
 router.get('/revenue', async (req, res, next) => {
   try {
+    const currentYear = parseInt(req.query.year) || new Date().getFullYear();
+    
+    // Get global hosting cost setting
+    let settings = await prisma.settings.findFirst();
+    if (!settings) {
+      settings = await prisma.settings.create({ data: {} });
+    }
+    const totalHostingCostMonth = settings.totalHostingCostMonth || 19.99;
+
     const deals = await prisma.deal.findMany({
       include: {
         lead: { select: { companyName: true, city: true } },
@@ -128,73 +137,10 @@ router.get('/revenue', async (req, res, next) => {
       orderBy: { saleDate: 'asc' }
     });
 
-    const now = new Date();
-    const selectedYear = req.query.year ? parseInt(req.query.year) : now.getFullYear();
-    const currentYear = selectedYear;
-
-    // Helper: calculate remaining months in a year from a given start month (1-indexed)
-    // e.g. startMonth=3 (march) => months 3..12 => 10 months remaining
-    function remainingMonthsInYear(startDate, year) {
-      const d = new Date(startDate);
-      const startYear = d.getFullYear();
-      if (startYear > year) return 0; // hasn't started yet in this year
-      if (startYear < year) return 12; // full year
-      // same year: remaining months from start month
-      const startMonth = d.getMonth(); // 0-indexed
-      return 12 - startMonth;
-    }
-
-    // Helper: get quarter for a month (0-indexed)
-    function getQuarter(month) {
-      if (month < 3) return 'Q1';
-      if (month < 6) return 'Q2';
-      if (month < 9) return 'Q3';
-      return 'Q4';
-    }
-
-    // Helper: months in a quarter from a start month
-    // e.g. Q1 = months 0,1,2 - if start is month 1 (feb), returns 2 months in Q1
-    function monthsInQuarterFromStart(startDate, quarter, year) {
-      const qRanges = { Q1: [0,1,2], Q2: [3,4,5], Q3: [6,7,8], Q4: [9,10,11] };
-      const months = qRanges[quarter];
-      const d = new Date(startDate);
-      const startYear = d.getFullYear();
-      const startMonth = d.getMonth();
-      
-      if (startYear > year) return 0;
-      
-      let count = 0;
-      for (const m of months) {
-        if (startYear < year || (startYear === year && m >= startMonth)) {
-          count++;
-        }
-      }
-      return count;
-    }
-
-    // Helper: get array of active months (as 'YYYY-MM' strings) for recurring revenue in a given year
-    function getActiveMonths(startDate, endDate, year) {
-      const months = [];
-      const d = new Date(startDate);
-      const startYear = d.getFullYear();
-      const startMonth = d.getMonth(); // 0-indexed
-      
-      const eYear = endDate ? new Date(endDate).getFullYear() : null;
-      const eMonth = endDate ? new Date(endDate).getMonth() : null;
-      
-      for (let m = 0; m < 12; m++) {
-        // Check if month is after start date
-        const afterStart = startYear < year || (startYear === year && m >= startMonth);
-        // Check if month is before end date (if set)
-        const beforeEnd = !endDate || eYear > year || (eYear === year && m <= eMonth);
-        
-        if (afterStart && beforeEnd) {
-          months.push(`${year}-${String(m + 1).padStart(2, '0')}`);
-        }
-      }
-      return months;
-    }
-
+    // Calculate hosting cost per client (total cost divided by number of hosting clients)
+    const activeHostingClients = deals.filter(d => d.hasHosting).length;
+    const hostingCostPerClient = activeHostingClients > 0 ? totalHostingCostMonth / activeHostingClients : 0;
+    
     // Per-deal breakdown
     const perDeal = deals.map(deal => {
       const pkgOneTime = deal.package.oneTimePrice;
@@ -222,7 +168,7 @@ router.get('/revenue', async (req, res, next) => {
 
       // Hosting: price is ALWAYS monthly (e.g. 15 or 20 EUR/month)
       const monthlyHostingPrice = deal.hasHosting ? deal.hostingPrice : 0;
-      const monthlyHostingCost = deal.hasHosting ? (deal.hostingCostPrice || 0) : 0;
+      const monthlyHostingCost = deal.hasHosting ? hostingCostPerClient : 0;
       const hostingFullYear = monthlyHostingPrice * 12;
       const hostingMRR = monthlyHostingPrice;
 

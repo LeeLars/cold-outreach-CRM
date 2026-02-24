@@ -63,7 +63,7 @@ router.post('/', async (req, res, next) => {
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
       mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
       features, languages, contentStatus, urgency, specialRequests,
-      hasHosting = true, hostingStartDate, hostingEndDate, hostingPrice = 20, hostingCostPrice = 0, hostingInterval = 'MONTHLY',
+      hasHosting = true, hostingStartDate, hostingEndDate, hostingPrice = 20, hostingInterval = 'MONTHLY',
       domainCost = 0, emailCostMonthly = 0,
       discountType = 'none', discountPercentage = 0, discountAmount = 0
     } = req.body;
@@ -125,7 +125,6 @@ router.post('/', async (req, res, next) => {
         hostingStartDate: hasHosting && hostingStartDate ? new Date(hostingStartDate) : (hasHosting ? saleDateObj : null),
         hostingEndDate: hasHosting && hostingEndDate ? new Date(hostingEndDate) : null,
         hostingPrice: hostingMonthly,
-        hostingCostPrice: parseFloat(hostingCostPrice) || 0,
         hostingInterval: hostingInterval || 'MONTHLY',
         nextInvoiceDate: nextInvoice,
         domainCost: parseFloat(domainCost) || 0,
@@ -193,7 +192,7 @@ router.put('/:id', async (req, res, next) => {
       websiteGoal, targetAudience, hasExistingWebsite, existingWebsiteUrl,
       mood, heroType, toneOfVoice, referenceUrls, usps, primaryCta,
       features, languages, contentStatus, urgency, specialRequests,
-      hasHosting, hostingStartDate, hostingEndDate, hostingPrice, hostingCostPrice, hostingInterval,
+      hasHosting, hostingStartDate, hostingEndDate, hostingPrice, hostingInterval,
       domainCost, emailCostMonthly,
       discountType, discountPercentage, discountAmount
     } = req.body;
@@ -265,7 +264,6 @@ router.put('/:id', async (req, res, next) => {
         hostingStartDate: hostingStartDate !== undefined ? (hostingStartDate ? new Date(hostingStartDate) : null) : existing.hostingStartDate,
         hostingEndDate: hostingEndDate !== undefined ? (hostingEndDate ? new Date(hostingEndDate) : null) : existing.hostingEndDate,
         hostingPrice: useHostingPrice,
-        hostingCostPrice: hostingCostPrice !== undefined ? parseFloat(hostingCostPrice) : existing.hostingCostPrice,
         hostingInterval: hostingInterval !== undefined ? hostingInterval : existing.hostingInterval,
         domainCost: domainCost !== undefined ? parseFloat(domainCost) : existing.domainCost,
         emailCostMonthly: emailCostMonthly !== undefined ? parseFloat(emailCostMonthly) : existing.emailCostMonthly,
@@ -307,7 +305,7 @@ router.put('/:id', async (req, res, next) => {
 
 router.put('/:id/hosting', async (req, res, next) => {
   try {
-    const { hostingPrice, hostingCostPrice, hostingInterval, hostingStartDate, hostingEndDate, nextInvoiceDate, domainCost, emailCostMonthly } = req.body;
+    const { hostingPrice, hostingInterval, hostingStartDate, hostingEndDate, nextInvoiceDate, domainCost, emailCostMonthly } = req.body;
 
     const existing = await prisma.deal.findUnique({ where: { id: req.params.id } });
     if (!existing) {
@@ -316,7 +314,6 @@ router.put('/:id/hosting', async (req, res, next) => {
 
     const data = {};
     if (hostingPrice !== undefined) data.hostingPrice = parseFloat(hostingPrice);
-    if (hostingCostPrice !== undefined) data.hostingCostPrice = parseFloat(hostingCostPrice);
     if (hostingInterval !== undefined) data.hostingInterval = hostingInterval;
     if (hostingStartDate !== undefined) data.hostingStartDate = hostingStartDate ? new Date(hostingStartDate) : null;
     if (hostingEndDate !== undefined) data.hostingEndDate = hostingEndDate ? new Date(hostingEndDate) : null;

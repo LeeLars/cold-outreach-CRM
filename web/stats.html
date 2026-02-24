@@ -281,19 +281,13 @@
           <label class="form-label">Bedrijf</label>
           <input type="text" id="hosting-edit-company" class="form-input" disabled>
         </div>
-        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div class="form-group">
-            <label class="form-label">Hosting prijs per maand</label>
-            <select id="hosting-edit-price" class="form-select">
-              <option value="15">€15/mnd (€180/jaar)</option>
-              <option value="20">€20/mnd (€240/jaar)</option>
-            </select>
-            <input type="hidden" id="hosting-edit-interval" value="MONTHLY">
-          </div>
-          <div class="form-group">
-            <label class="form-label" style="color:var(--accent-orange);">Hosting kostprijs /mnd <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(wat betaal jij)</span></label>
-            <input type="number" id="hosting-edit-cost" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
-          </div>
+        <div class="form-group">
+          <label class="form-label">Hosting prijs per maand</label>
+          <select id="hosting-edit-price" class="form-select">
+            <option value="15">€15/mnd (€180/jaar)</option>
+            <option value="20">€20/mnd (€240/jaar)</option>
+          </select>
+          <input type="hidden" id="hosting-edit-interval" value="MONTHLY">
         </div>
         <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div class="form-group">
@@ -1167,7 +1161,6 @@
       if (!item) return;
       document.getElementById('hosting-edit-id').value = item.id;
       document.getElementById('hosting-edit-company').value = item.companyName;
-      document.getElementById('hosting-edit-cost').value = item.hostingCostPrice || 0;
       document.getElementById('hosting-edit-domain').value = item.domainCost || 0;
       document.getElementById('hosting-edit-email').value = item.emailCostMonthly || 0;
       const priceSelect = document.getElementById('hosting-edit-price');
@@ -1197,7 +1190,6 @@
       try {
         await API.put('/deals/' + id + '/hosting', {
           hostingPrice: parseFloat(document.getElementById('hosting-edit-price').value),
-          hostingCostPrice: parseFloat(document.getElementById('hosting-edit-cost').value) || 0,
           domainCost: parseFloat(document.getElementById('hosting-edit-domain').value) || 0,
           emailCostMonthly: parseFloat(document.getElementById('hosting-edit-email').value) || 0,
           hostingInterval: 'MONTHLY',

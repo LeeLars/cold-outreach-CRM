@@ -172,6 +172,29 @@ router.get('/revenue', async (req, res, next) => {
       return count;
     }
 
+    // Helper: get array of active months (as 'YYYY-MM' strings) for recurring revenue in a given year
+    function getActiveMonths(startDate, endDate, year) {
+      const months = [];
+      const d = new Date(startDate);
+      const startYear = d.getFullYear();
+      const startMonth = d.getMonth(); // 0-indexed
+      
+      const eYear = endDate ? new Date(endDate).getFullYear() : null;
+      const eMonth = endDate ? new Date(endDate).getMonth() : null;
+      
+      for (let m = 0; m < 12; m++) {
+        // Check if month is after start date
+        const afterStart = startYear < year || (startYear === year && m >= startMonth);
+        // Check if month is before end date (if set)
+        const beforeEnd = !endDate || eYear > year || (eYear === year && m <= eMonth);
+        
+        if (afterStart && beforeEnd) {
+          months.push(`${year}-${String(m + 1).padStart(2, '0')}`);
+        }
+      }
+      return months;
+    }
+
     // Per-deal breakdown
     const perDeal = deals.map(deal => {
       const pkgOneTime = deal.package.oneTimePrice;
@@ -271,6 +294,11 @@ router.get('/revenue', async (req, res, next) => {
     const totUpsellCurrentYear = perDeal.reduce((s, d) => s + d.upsellCurrentYear, 0);
     const totUpsellMonthlyYearly = perDeal.reduce((s, d) => s + d.upsellMonthlyYearly, 0);
 
+    // Total package revenue from ALL years (not just current year)
+    const totalPackagesAllTime = perDeal.reduce((s, d) => s + d.pkgOneTime, 0);
+    const totalDiscountsAllTime = perDeal.reduce((s, d) => s + d.discount, 0);
+    const totalPackageNetto = totalPackagesAllTime - totalDiscountsAllTime;
+
     // Year revenue = one-time (only deals sold this year) + hosting this year + upsells this year
     const eenmaligNetto = totOneTime + totUpsellOneTime - totDiscount;
     const totalRevenue = eenmaligNetto + totHostingCurrentYear + totUpsellCurrentYear;
@@ -295,16 +323,48 @@ router.get('/revenue', async (req, res, next) => {
       }
     });
 
-    // Monthly breakdown per type (only deals sold in selected year)
+    // Monthly breakdown per type (hosting and monthly upsells distributed across active months)
     const monthlyBreakdown = {};
-    dealsInYear.forEach(d => {
-      const month = d.saleDate.toISOString().slice(0, 7);
-      if (!monthlyBreakdown[month]) monthlyBreakdown[month] = { eenmalig: 0, hosting: 0, upsells: 0, korting: 0, total: 0 };
-      monthlyBreakdown[month].eenmalig += d.pkgOneTime;
-      monthlyBreakdown[month].hosting += d.hostingCurrentYear;
-      monthlyBreakdown[month].upsells += d.upsellOneTime + d.upsellCurrentYear;
-      monthlyBreakdown[month].korting += d.discount;
-      monthlyBreakdown[month].total += (d.pkgOneTime + d.upsellOneTime - d.discount) + d.hostingCurrentYear + d.upsellCurrentYear;
+    
+    // Initialize all 12 months for the current year
+    for (let m = 1; m <= 12; m++) {
+      const monthKey = `${currentYear}-${String(m).padStart(2, '0')}`;
+      monthlyBreakdown[monthKey] = { eenmalig: 0, hosting: 0, upsells: 0, korting: 0, total: 0 };
+    }
+    
+    // Process all active deals (not just deals sold this year) for recurring revenue
+    perDeal.forEach(d => {
+      // One-time revenue only in sale month
+      const saleYear = new Date(d.saleDate).getFullYear();
+      if (saleYear === currentYear) {
+        const saleMonth = d.saleDate.toISOString().slice(0, 7);
+        monthlyBreakdown[saleMonth].eenmalig += d.pkgOneTime;
+        monthlyBreakdown[saleMonth].upsells += d.upsellOneTime; // one-time upsells
+        monthlyBreakdown[saleMonth].korting += d.discount;
+      }
+      
+      // Hosting: distribute monthly price across all active months
+      if (d.hasHosting && d.hostingMRR > 0) {
+        const hostingStart = d.hostingStartDate || d.saleDate;
+        const activeHostingMonths = getActiveMonths(hostingStart, d.hostingEndDate, currentYear);
+        activeHostingMonths.forEach(month => {
+          monthlyBreakdown[month].hosting += d.hostingMRR;
+        });
+      }
+      
+      // Monthly upsells: distribute across all active months from sale date
+      if (d.upsellMonthly > 0) {
+        const activeUpsellMonths = getActiveMonths(d.saleDate, null, currentYear); // upsells don't have end date
+        activeUpsellMonths.forEach(month => {
+          monthlyBreakdown[month].upsells += d.upsellMonthly;
+        });
+      }
+    });
+    
+    // Calculate totals per month
+    Object.keys(monthlyBreakdown).forEach(month => {
+      const m = monthlyBreakdown[month];
+      m.total = m.eenmalig + m.hosting + m.upsells - m.korting;
     });
 
     // Package breakdown (deals sold in selected year)
@@ -349,6 +409,7 @@ router.get('/revenue', async (req, res, next) => {
       // Breakdown totals
       breakdown: {
         eenmalig: totOneTime,
+        totalPackageNetto: totalPackageNetto,
         upsellOneTime: totUpsellOneTime,
         upsellMonthlyYearly: totUpsellMonthlyYearly,
         discount: totDiscount,
@@ -483,7 +544,7 @@ router.get('/locations', async (req, res, next) => {
       return false;
     }
 
-    function buildLocationStats(filteredLeads) {
+    function buildLocationStats(filteredLeads, isPipelineOnly = false) {
       const locationStats = {};
       const cityNameMap = {};
 
@@ -505,10 +566,15 @@ router.get('/locations', async (req, res, next) => {
 
         locationStats[city].total++;
 
-        if (['VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
+        // Only count as 'verstuurd' if it's a cold/flyer lead (not warm CRM leads)
+        // For pipeline-only mode (all cold/flyer), count all non-NEW statuses
+        // For mixed mode (all leads), only count if source is cold/flyer
+        const isColdLead = isPipelineOnly || (lead.source && (lead.source === 'cold' || lead.source === 'flyer'));
+        
+        if (isColdLead && ['VERSTUURD', 'GEEN_REACTIE', 'GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
           locationStats[city].verstuurd++;
         }
-        if (['GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
+        if (isColdLead && ['GEREAGEERD', 'AFSPRAAK', 'KLANT', 'NIET_GEINTERESSEERD'].includes(lead.status)) {
           locationStats[city].gereageerd++;
         }
         if (lead.status === 'KLANT') {
@@ -531,9 +597,9 @@ router.get('/locations', async (req, res, next) => {
     const warmLeads = leads.filter(l => !isFlyer(l));
 
     res.json({
-      all: buildLocationStats(leads),
-      flyer: buildLocationStats(flyerLeads),
-      warm: buildLocationStats(warmLeads)
+      all: buildLocationStats(leads, false),
+      flyer: buildLocationStats(flyerLeads, true),
+      warm: buildLocationStats(warmLeads, true)
     });
   } catch (err) {
     next(err);

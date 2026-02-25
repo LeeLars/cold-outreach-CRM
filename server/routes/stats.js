@@ -117,6 +117,13 @@ router.get('/funnel', async (req, res, next) => {
   }
 });
 
+function getQuarter(month) {
+  if (month < 3) return 'Q1';
+  if (month < 6) return 'Q2';
+  if (month < 9) return 'Q3';
+  return 'Q4';
+}
+
 function getActiveMonths(startDate, endDate, year) {
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : new Date();
@@ -674,13 +681,7 @@ router.get('/hosting', async (req, res, next) => {
     const in30Days = new Date();
     in30Days.setDate(in30Days.getDate() + 30);
 
-    // Quarter helpers
-    function getQuarter(month) {
-      if (month < 3) return 'Q1';
-      if (month < 6) return 'Q2';
-      if (month < 9) return 'Q3';
-      return 'Q4';
-    }
+    // Quarter helpers (getQuarter is defined at top level)
     
     function monthsInQuarterFromStart(startDate, endDate, quarter, year) {
       const qRanges = { Q1: [0,1,2], Q2: [3,4,5], Q3: [6,7,8], Q4: [9,10,11] };

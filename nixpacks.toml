@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_22"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci", "npx prisma generate --schema=server/prisma/schema.prisma"]
 
 [start]
-cmd = "node server/server.js"
+cmd = "npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss && node server/server.js"

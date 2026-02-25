@@ -117,6 +117,35 @@ router.get('/funnel', async (req, res, next) => {
   }
 });
 
+function getActiveMonths(startDate, endDate, year) {
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : new Date();
+  const months = [];
+  for (let m = 0; m < 12; m++) {
+    const monthStart = new Date(year, m, 1);
+    const monthEnd = new Date(year, m + 1, 0);
+    if (start <= monthEnd && end >= monthStart) {
+      months.push(`${year}-${String(m + 1).padStart(2, '0')}`);
+    }
+  }
+  return months;
+}
+
+function monthsInQuarterFromStart(startDate, quarter, year) {
+  const quarterRanges = { Q1: [0, 2], Q2: [3, 5], Q3: [6, 8], Q4: [9, 11] };
+  const [qStart, qEnd] = quarterRanges[quarter];
+  const start = new Date(startDate);
+  let count = 0;
+  for (let m = qStart; m <= qEnd; m++) {
+    const monthStart = new Date(year, m, 1);
+    const monthEnd = new Date(year, m + 1, 0);
+    if (start <= monthEnd) {
+      count++;
+    }
+  }
+  return count;
+}
+
 router.get('/revenue', async (req, res, next) => {
   try {
     const currentYear = parseInt(req.query.year) || new Date().getFullYear();

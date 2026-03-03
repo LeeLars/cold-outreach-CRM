@@ -21,8 +21,9 @@
       <main class="page-content">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
           <div class="tabs" style="margin-bottom:0;">
-            <button class="tab active" data-tab="funnel" onclick="switchTab('funnel')">Funnel analyse</button>
-            <button class="tab" data-tab="revenue" onclick="switchTab('revenue')">Omzet & Acquisitie</button>
+            <button class="tab active" data-tab="funnel" onclick="switchTab('funnel')">Funnel</button>
+            <button class="tab" data-tab="revenue" onclick="switchTab('revenue')">Omzet</button>
+            <button class="tab" data-tab="acquisitie" onclick="switchTab('acquisitie')">Acquisitie</button>
             <button class="tab" data-tab="locations" onclick="switchTab('locations')">Locaties</button>
             <button class="tab" data-tab="hosting" onclick="switchTab('hosting')">Hosting</button>
           </div>
@@ -65,7 +66,7 @@
         <div id="tab-revenue" class="hidden">
           <div class="section-header">
             <div class="section-header-icon client-theme"><i data-lucide="trending-up" style="width:18px;height:18px;"></i></div>
-            <span class="section-header-title client-theme">Omzet & Acquisitie</span>
+            <span class="section-header-title client-theme">Omzet analyse</span>
           </div>
 
           <!-- Main KPIs -->
@@ -117,38 +118,16 @@
             </div>
           </div>
 
-          <!-- Quarter comparison + Channel polar -->
-          <div class="grid-2 mb-24">
-            <div class="card" style="border-top:2px solid #FB923C;">
-              <div class="card-header"><span class="card-title" style="color:#FB923C;">Kwartaal vergelijking</span></div>
-              <div class="card-body"><canvas id="quarter-compare-chart" height="280"></canvas></div>
-            </div>
-            <div class="card" style="border-top:2px solid #A78BFA;">
-              <div class="card-header"><span class="card-title" style="color:#A78BFA;">Acquisitie kanalen</span></div>
-              <div class="card-body">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;">
-                  <div style="max-width:200px;margin:0 auto;"><canvas id="channel-polar-chart" height="200"></canvas></div>
-                  <div id="channel-polar-stats"></div>
-                </div>
-              </div>
-            </div>
+          <!-- Quarter comparison -->
+          <div class="card mb-24" style="border-top:2px solid #FB923C;">
+            <div class="card-header"><span class="card-title" style="color:#FB923C;">Kwartaal vergelijking</span></div>
+            <div class="card-body"><canvas id="quarter-compare-chart" height="280"></canvas></div>
           </div>
-
-          <!-- Channel KPIs -->
-          <div class="section-header" style="margin-top:24px;">
-            <span class="section-header-title" style="font-size:14px;color:var(--text-secondary);">Per kanaal</span>
-          </div>
-          <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;" id="revenue-channel-kpis"></div>
 
           <!-- Per client detail table -->
           <div class="card">
             <div class="card-header">
               <span class="card-title">Omzet per klant (detail)</span>
-              <div style="display:flex;gap:8px;">
-                <button class="btn btn-primary btn-sm" id="acq-filter-all" onclick="switchAcquisitionFilter('all')" style="font-size:12px;">Alle</button>
-                <button class="btn btn-secondary btn-sm" id="acq-filter-flyer" onclick="switchAcquisitionFilter('flyer')" style="font-size:12px;">Flyer</button>
-                <button class="btn btn-secondary btn-sm" id="acq-filter-warm" onclick="switchAcquisitionFilter('warm')" style="font-size:12px;">Warm</button>
-              </div>
             </div>
             <div class="card-body" style="padding:0;">
               <div style="overflow-x:auto;">
@@ -160,6 +139,56 @@
                     <th style="text-align:right;font-weight:700;">Omzet (jaar)</th>
                     <th style="text-align:right;color:var(--accent-orange);">Kosten (jaar)</th>
                     <th style="text-align:right;color:#34d399;font-weight:700;">Winst (jaar)</th>
+                    <th>Datum</th>
+                  </tr></thead>
+                  <tbody id="revenue-client-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acquisitie Tab -->
+        <div id="tab-acquisitie" class="hidden">
+          <div class="section-header">
+            <div class="section-header-icon" style="background:rgba(251,146,60,0.15);"><i data-lucide="megaphone" style="width:18px;height:18px;color:#FB923C;"></i></div>
+            <span class="section-header-title" style="color:#FB923C;">Acquisitie kanalen</span>
+          </div>
+
+          <!-- Channel KPIs -->
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="acq-kpis"></div>
+
+          <!-- Charts row: Kanaal vergelijking + ROI -->
+          <div class="grid-2 mb-24">
+            <div class="card" style="border-top:2px solid #60A5FA;">
+              <div class="card-header"><span class="card-title" style="color:#60A5FA;">Omzet per kanaal</span></div>
+              <div class="card-body"><canvas id="acq-channel-chart" height="280"></canvas></div>
+            </div>
+            <div class="card" style="border-top:2px solid #A78BFA;">
+              <div class="card-header"><span class="card-title" style="color:#A78BFA;">Kosten vs Winst</span></div>
+              <div class="card-body"><canvas id="acq-profit-chart" height="280"></canvas></div>
+            </div>
+          </div>
+
+          <!-- Per client detail table with filter -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Klanten per acquisitiekanaal</span>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary btn-sm" id="acq-filter-all" onclick="switchAcquisitionFilter('all')" style="font-size:12px;">Alle</button>
+                <button class="btn btn-secondary btn-sm" id="acq-filter-flyer" onclick="switchAcquisitionFilter('flyer')" style="font-size:12px;">Flyer</button>
+                <button class="btn btn-secondary btn-sm" id="acq-filter-warm" onclick="switchAcquisitionFilter('warm')" style="font-size:12px;">Warm</button>
+              </div>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="overflow-x:auto;">
+                <table class="data-table" style="font-size:12px;">
+                  <thead><tr>
+                    <th>Bedrijf</th><th>Pakket</th><th>Kanaal</th>
+                    <th style="text-align:right;">Omzet (jaar)</th>
+                    <th style="text-align:right;">Kosten (jaar)</th>
+                    <th style="text-align:right;">Winst (jaar)</th>
+                    <th style="text-align:right;">Acquisitiekost</th>
                     <th>Datum</th>
                   </tr></thead>
                   <tbody id="acquisition-body"></tbody>
@@ -303,7 +332,6 @@
                         Volgende factuur <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i>
                       </th>
                       <th>Status</th>
-                      <th style="text-align:center;">Acties</th>
                     </tr>
                   </thead>
                   <tbody id="hosting-table-body"></tbody>
@@ -313,59 +341,6 @@
           </div>
         </div>
       </main>
-    </div>
-  </div>
-
-  <!-- Hosting Edit Modal -->
-  <div class="modal-overlay" id="hosting-edit-modal" onclick="if(event.target===this)closeHostingModal()">
-    <div class="modal" style="max-width:500px;">
-      <div class="modal-header">
-        <h3 class="modal-title">Hosting bewerken</h3>
-        <button class="btn-icon" onclick="closeHostingModal()"><i data-lucide="x"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="hosting-edit-id">
-        <div class="form-group">
-          <label class="form-label">Bedrijf</label>
-          <input type="text" id="hosting-edit-company" class="form-input" disabled>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Hosting prijs per maand</label>
-          <select id="hosting-edit-price" class="form-select">
-            <option value="15">€15/mnd (€180/jaar)</option>
-            <option value="20">€20/mnd (€240/jaar)</option>
-          </select>
-          <input type="hidden" id="hosting-edit-interval" value="MONTHLY">
-        </div>
-        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div class="form-group">
-            <label class="form-label" style="color:var(--accent-orange);">Domein kost <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(eenmalig aankoop/verhuis)</span></label>
-            <input type="number" id="hosting-edit-domain" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label" style="color:var(--accent-orange);">Email pakket /mnd <span style="font-weight:400;font-size:11px;color:var(--text-muted);">(bv. Google Workspace)</span></label>
-            <input type="number" id="hosting-edit-email" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
-          </div>
-        </div>
-        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div class="form-group">
-            <label class="form-label">Startdatum</label>
-            <input type="date" id="hosting-edit-start" class="form-input">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Einddatum</label>
-            <input type="date" id="hosting-edit-end" class="form-input">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Volgende factuurdatum</label>
-          <input type="date" id="hosting-edit-invoice" class="form-input">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeHostingModal()">Annuleren</button>
-        <button class="btn btn-primary" onclick="saveHosting()">Opslaan</button>
-      </div>
     </div>
   </div>
 
@@ -422,7 +397,9 @@
       const newYear = parseInt(document.getElementById('year-selector').value);
       if (newYear === selectedYear) return;
       selectedYear = newYear;
-      // Reset all loaded tabs so they reload with new year
+      // Reset cached data and loaded tabs so they reload with new year
+      revenueDataAll = null;
+      acquisitionDataAll = null;
       loadedTabs.clear();
       // Find active tab and reload it
       const activeTab = document.querySelector('.tab.active');
@@ -433,7 +410,7 @@
     function switchTab(tab) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-      ['funnel', 'revenue', 'locations', 'hosting'].forEach(t => {
+      ['funnel', 'revenue', 'acquisitie', 'locations', 'hosting'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('hidden', tab !== t);
       });
       loadTabData(tab);
@@ -444,7 +421,8 @@
       loadedTabs.add(tab);
       switch(tab) {
         case 'funnel': loadFunnel(); break;
-        case 'revenue': loadRevenue(); loadAcquisition(); break;
+        case 'revenue': loadRevenue(); break;
+        case 'acquisitie': loadAcquisitie(); break;
         case 'locations': loadLocations(); break;
         case 'hosting': loadHosting(); break;
       }
@@ -779,65 +757,8 @@
           }
         });
 
-        // Channel polar area chart
-        const ctxP = document.getElementById('channel-polar-chart').getContext('2d');
-        if (charts.channelPolar) charts.channelPolar.destroy();
-        charts.channelPolar = new Chart(ctxP, {
-          type: 'polarArea',
-          data: {
-            labels: ['Flyer omzet', 'Warm omzet', 'Flyer kosten', 'Warm kosten'],
-            datasets: [{
-              data: [data.flyer.revenue || 0, data.warm.revenue || 0, data.flyer.cost || 0, data.warm.cost || 0],
-              backgroundColor: ['rgba(96,165,250,0.7)', 'rgba(52,211,153,0.7)', 'rgba(251,146,60,0.5)', 'rgba(248,113,113,0.5)'],
-              borderColor: ['#60A5FA', '#34d399', '#FB923C', '#F87171'],
-              borderWidth: 2
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { ...TT, callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed.r)}` } } },
-            scales: { r: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false }, pointLabels: { display: false } } }
-          }
-        });
-
-        // Channel polar stats
-        const flyerROI = data.flyer.roi || 0;
-        const warmROI = data.warm.roi || 0;
-        document.getElementById('channel-polar-stats').innerHTML = `
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Flyer</div>
-            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Deals</span><span style="font-size:13px;font-weight:600;">${data.flyer.count || 0}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Omzet</span><span style="font-size:13px;font-weight:600;color:#60A5FA;">${formatCurrency(data.flyer.revenue || 0)}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Winst</span><span style="font-size:13px;font-weight:600;color:${(data.flyer.profit||0) >= 0 ? '#34d399' : '#F87171'};">${formatCurrency(data.flyer.profit || 0)}</span></div>
-            <hr style="border-color:var(--border-color);margin:2px 0;">
-            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Warm / Direct</div>
-            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Deals</span><span style="font-size:13px;font-weight:600;">${data.warm.count || 0}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Omzet</span><span style="font-size:13px;font-weight:600;color:#34d399;">${formatCurrency(data.warm.revenue || 0)}</span></div>
-            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Winst</span><span style="font-size:13px;font-weight:600;color:${(data.warm.profit||0) >= 0 ? '#34d399' : '#F87171'};">${formatCurrency(data.warm.profit || 0)}</span></div>
-          </div>
-        `;
-
-        // Channel KPIs
-        document.getElementById('revenue-channel-kpis').innerHTML = `
-          <div class="kpi-card" style="border-left-color:#fb923c;">
-            <div class="kpi-label">Flyer acquisitie</div>
-            <div class="kpi-value text-green">${formatCurrency(data.flyer.revenue)}</div>
-            <span class="kpi-badge neutral">${data.flyer.count} klant${data.flyer.count !== 1 ? 'en' : ''} | Kost: ${formatCurrency(data.flyer.cost)} | ROI: ${data.flyer.roi}%</span>
-          </div>
-          <div class="kpi-card" style="border-left-color:#60a5fa;">
-            <div class="kpi-label">Warme leads</div>
-            <div class="kpi-value text-green">${formatCurrency(data.warm.revenue)}</div>
-            <span class="kpi-badge neutral">${data.warm.count} klant${data.warm.count !== 1 ? 'en' : ''} | Kost: ${formatCurrency(data.warm.cost)} | ROI: ${data.warm.roi}%</span>
-          </div>
-          <div class="kpi-card" style="border-left-color:#a78bfa;">
-            <div class="kpi-label">Beste kanaal</div>
-            <div class="kpi-value" style="font-size:18px;">${parseFloat(data.flyer.roi) >= parseFloat(data.warm.roi) && data.flyer.count > 0 ? 'Flyer' : data.warm.count > 0 ? 'Warm' : '-'}</div>
-            <span class="kpi-badge positive">Hoogste ROI</span>
-          </div>
-        `;
-
-        // Render per-client table
-        renderAcquisitionView();
+        // Render per-client table (all clients, no filter)
+        renderRevenueClientTable(data);
         
         // Re-initialize tooltips after dynamic content load
         if (typeof initTooltipPositioning === 'function') {
@@ -848,8 +769,138 @@
       }
     }
 
-    async function loadAcquisition() {
-      // No longer needed separately - data comes from loadRevenue
+    // ========== Revenue tab: per-client table (all clients) ==========
+    function renderRevenueClientTable(data) {
+      if (!data || !data.perDeal) return;
+      const channelLabels = { flyer: 'Flyer', none: 'Warm', manual: 'Warm' };
+      const channelColors = { flyer: 'var(--accent-orange)', none: 'var(--accent-blue)', manual: 'var(--accent-blue)' };
+
+      const tbody = document.getElementById('revenue-client-body');
+      tbody.innerHTML = data.perDeal.map(c => {
+        const upsellTotal = c.upsellOneTime + c.upsellMonthlyYearly;
+        const revenue = c.totalRevenueThisYear;
+        const costs = c.totalCostThisYear;
+        const profit = c.profitThisYear;
+        const hasCostData = c.pkgCostPrice > 0 || c.hostingCostPrice > 0 || c.upsellOneTimeCost > 0 || c.upsellMonthlyCost > 0 || c.domainCost > 0 || c.emailCostMonthly > 0;
+        return `
+          <tr>
+            <td style="font-weight:500;">${c.companyName}</td>
+            <td style="font-size:11px;">${c.packageName}</td>
+            <td><span style="background:${channelColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${channelColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${channelLabels[c.acquisitionType] || c.acquisitionType}</span></td>
+            <td style="text-align:right;">${formatCurrency(c.pkgOneTime)}</td>
+            <td style="text-align:right;">${upsellTotal > 0 ? formatCurrency(upsellTotal) : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;">${c.discount > 0 ? `<span style="color:var(--accent-green);">-${formatCurrency(c.discount)}</span>` : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;">${c.hostingCurrentYear > 0 ? formatCurrency(c.hostingCurrentYear) : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;font-weight:700;color:var(--accent-brand);">${formatCurrency(revenue)}</td>
+            <td style="text-align:right;">
+              ${costs > 0 ? `<span style="color:var(--accent-orange);">${formatCurrency(costs)}</span>` : '<span class="text-muted">-</span>'}
+            </td>
+            <td style="text-align:right;font-weight:700;color:${profit >= 0 ? '#34d399' : '#f87171'};">
+              ${hasCostData || costs > 0 ? formatCurrency(profit) : '<span class="text-muted">?</span>'}
+            </td>
+            <td style="color:var(--text-muted);font-size:11px;">${formatDate(c.saleDate)}</td>
+          </tr>
+        `;
+      }).join('') || '<tr><td colspan="11" class="text-center text-muted" style="padding:40px;">Geen deals gevonden</td></tr>';
+    }
+
+    // ========== Acquisitie Tab ==========
+    async function loadAcquisitie() {
+      try {
+        // Re-use revenue data if available, otherwise fetch
+        if (!revenueDataAll) {
+          revenueDataAll = await API.get('/stats/revenue?year=' + selectedYear);
+        }
+        const data = revenueDataAll;
+        acquisitionDataAll = data;
+
+        const flyer = data.flyer || {};
+        const warm = data.warm || {};
+        const bestChannel = parseFloat(flyer.roi) >= parseFloat(warm.roi) && (flyer.count || 0) > 0 ? 'Flyer' : (warm.count || 0) > 0 ? 'Warm' : '-';
+
+        // KPIs
+        document.getElementById('acq-kpis').innerHTML = `
+          <div class="kpi-card" style="border-left-color:#FB923C;">
+            ${wrapWithTooltip('<div class="kpi-label">Flyer omzet</div>', 'acq-flyer-omzet')}
+            <div class="kpi-value" style="color:#FB923C;">${formatCurrency(flyer.revenue || 0)}</div>
+            <span class="kpi-badge neutral">${flyer.count || 0} klant${(flyer.count || 0) !== 1 ? 'en' : ''} | ROI: ${flyer.roi || 0}%</span>
+          </div>
+          <div class="kpi-card" style="border-left-color:#60A5FA;">
+            ${wrapWithTooltip('<div class="kpi-label">Warm omzet</div>', 'acq-warm-omzet')}
+            <div class="kpi-value" style="color:#60A5FA;">${formatCurrency(warm.revenue || 0)}</div>
+            <span class="kpi-badge neutral">${warm.count || 0} klant${(warm.count || 0) !== 1 ? 'en' : ''} | ROI: ${warm.roi || 0}%</span>
+          </div>
+          <div class="kpi-card" style="border-left-color:#34d399;">
+            ${wrapWithTooltip('<div class="kpi-label">Beste kanaal</div>', 'acq-beste-kanaal')}
+            <div class="kpi-value" style="color:#34d399;font-size:18px;">${bestChannel}</div>
+            <span class="kpi-badge positive">Hoogste ROI</span>
+          </div>
+          <div class="kpi-card" style="border-left-color:#A78BFA;">
+            ${wrapWithTooltip('<div class="kpi-label">Totale acquisitiekosten</div>', 'acq-totale-kosten')}
+            <div class="kpi-value" style="color:#A78BFA;">${formatCurrency((flyer.cost || 0) + (warm.cost || 0))}</div>
+            <span class="kpi-badge neutral">Flyer: ${formatCurrency(flyer.cost || 0)} | Warm: ${formatCurrency(warm.cost || 0)}</span>
+          </div>
+        `;
+
+        // Channel comparison bar chart
+        const ctxC = document.getElementById('acq-channel-chart').getContext('2d');
+        if (charts.acqChannel) charts.acqChannel.destroy();
+        charts.acqChannel = new Chart(ctxC, {
+          type: 'bar',
+          data: {
+            labels: ['Flyer', 'Warm / Direct'],
+            datasets: [
+              { label: 'Omzet', data: [flyer.revenue || 0, warm.revenue || 0], backgroundColor: ['rgba(251,146,60,0.75)', 'rgba(96,165,250,0.75)'], borderColor: ['#FB923C', '#60A5FA'], borderWidth: 1, borderRadius: 8 },
+              { label: 'Kosten', data: [flyer.cost || 0, warm.cost || 0], backgroundColor: ['rgba(248,113,113,0.5)', 'rgba(248,113,113,0.5)'], borderColor: ['#F87171', '#F87171'], borderWidth: 1, borderRadius: 8 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
+              tooltip: { ...TT, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12, weight: 600 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => formatCurrency(v) } }
+            }
+          }
+        });
+
+        // Profit comparison chart
+        const ctxP = document.getElementById('acq-profit-chart').getContext('2d');
+        if (charts.acqProfit) charts.acqProfit.destroy();
+        charts.acqProfit = new Chart(ctxP, {
+          type: 'bar',
+          data: {
+            labels: ['Flyer', 'Warm / Direct'],
+            datasets: [
+              { label: 'Winst', data: [flyer.profit || 0, warm.profit || 0], backgroundColor: ['rgba(52,211,153,0.75)', 'rgba(52,211,153,0.75)'], borderColor: ['#34d399', '#34d399'], borderWidth: 1, borderRadius: 8 },
+              { label: 'Kosten', data: [flyer.cost || 0, warm.cost || 0], backgroundColor: ['rgba(248,113,113,0.5)', 'rgba(248,113,113,0.5)'], borderColor: ['#F87171', '#F87171'], borderWidth: 1, borderRadius: 8 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
+              tooltip: { ...TT, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12, weight: 600 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => formatCurrency(v) } }
+            }
+          }
+        });
+
+        // Render acquisitie client table
+        renderAcquisitionView();
+
+        if (typeof initTooltipPositioning === 'function') {
+          setTimeout(() => initTooltipPositioning(), 100);
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
     }
 
     function switchAcquisitionFilter(filter) {
@@ -862,7 +913,7 @@
     }
 
     function renderAcquisitionView() {
-      const data = revenueDataAll;
+      const data = revenueDataAll || acquisitionDataAll;
       if (!data || !data.perDeal) return;
 
       const filtered = acquisitionFilter === 'all' ? data.perDeal
@@ -871,7 +922,7 @@
 
       const tbody = document.getElementById('acquisition-body');
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
         return;
       }
 
@@ -879,35 +930,18 @@
       const channelColors = { flyer: 'var(--accent-orange)', none: 'var(--accent-blue)', manual: 'var(--accent-blue)' };
 
       tbody.innerHTML = filtered.map(c => {
-        const upsellTotal = c.upsellOneTime + c.upsellMonthlyYearly;
         const revenue = c.totalRevenueThisYear;
         const costs = c.totalCostThisYear;
         const profit = c.profitThisYear;
-        const hasCostData = c.pkgCostPrice > 0 || c.hostingCostPrice > 0 || c.upsellOneTimeCost > 0 || c.upsellMonthlyCost > 0 || c.domainCost > 0 || c.emailCostMonthly > 0;
-        const costTooltip = [
-          c.acquisitionCost > 0 ? `Acquisitie: ${formatCurrency(c.acquisitionCost)}` : null,
-          c.pkgCostPrice > 0 ? `Pakket kost: ${formatCurrency(c.pkgCostPrice)}` : null,
-          c.hostingCostPrice > 0 ? `Hosting: ${formatCurrency(c.hostingCostPrice)}/mnd` : null,
-          c.domainCost > 0 ? `Domein: ${formatCurrency(c.domainCost)} (eenmalig)` : null,
-          c.emailCostMonthly > 0 ? `Email: ${formatCurrency(c.emailCostMonthly)}/mnd` : null,
-          c.upsellOneTimeCost > 0 ? `Upsell kost: ${formatCurrency(c.upsellOneTimeCost)}` : null
-        ].filter(Boolean).join(' | ') || 'Geen kosten ingesteld';
         return `
           <tr>
             <td style="font-weight:500;">${c.companyName}</td>
             <td style="font-size:11px;">${c.packageName}</td>
             <td><span style="background:${channelColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${channelColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${channelLabels[c.acquisitionType] || c.acquisitionType}</span></td>
-            <td style="text-align:right;">${formatCurrency(c.pkgOneTime)}</td>
-            <td style="text-align:right;">${upsellTotal > 0 ? formatCurrency(upsellTotal) : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;">${c.discount > 0 ? `<span style="color:var(--accent-green);">-${formatCurrency(c.discount)}</span>` : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;">${c.hostingCurrentYear > 0 ? formatCurrency(c.hostingCurrentYear) : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;font-weight:700;color:var(--accent-brand);">${formatCurrency(revenue)}</td>
-            <td style="text-align:right;" title="${costTooltip}">
-              ${costs > 0 ? `<span style="color:var(--accent-orange);cursor:help;" title="${costTooltip}">${formatCurrency(costs)}</span>` : `<span class="text-muted" title="Stel kostprijzen in via Pakketten">-</span>`}
-            </td>
-            <td style="text-align:right;font-weight:700;color:${profit >= 0 ? '#34d399' : '#f87171'};">
-              ${hasCostData || costs > 0 ? formatCurrency(profit) : `<span class="text-muted" title="Stel kostprijzen in via Pakketten & Prijzen">?</span>`}
-            </td>
+            <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(revenue)}</td>
+            <td style="text-align:right;">${costs > 0 ? `<span style="color:var(--accent-orange);">${formatCurrency(costs)}</span>` : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;font-weight:600;color:${profit >= 0 ? '#34d399' : '#f87171'};">${formatCurrency(profit)}</td>
+            <td style="text-align:right;">${c.acquisitionCost > 0 ? formatCurrency(c.acquisitionCost) : '<span class="text-muted">-</span>'}</td>
             <td style="color:var(--text-muted);font-size:11px;">${formatDate(c.saleDate)}</td>
           </tr>
         `;
@@ -1331,7 +1365,7 @@
       };
 
       document.getElementById('hosting-table-body').innerHTML = sorted.map(c => `
-        <tr style="cursor:pointer;" onclick="openHostingEdit('${c.id}')">
+        <tr>
           <td style="font-weight:500;">${c.companyName}</td>
           <td>${c.city || '-'}</td>
           <td>${c.packageName}</td>
@@ -1341,15 +1375,8 @@
           <td>${fmtDate(c.hostingEndDate)}</td>
           <td style="${c.status === 'overdue' ? 'font-weight:600;color:var(--accent-red);' : ''}">${fmtDate(c.nextInvoiceDate)}</td>
           <td>${statusBadge(c.status)}</td>
-          <td style="text-align:center;" onclick="event.stopPropagation()">
-            <div style="display:flex;gap:4px;justify-content:center;">
-              <button class="btn-icon" onclick="openHostingEdit('${c.id}')" title="Bewerken"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
-              <button class="btn-icon" onclick="deleteHosting('${c.id}','${c.companyName.replace(/'/g, "\\'")}')"
-                title="Verwijderen" style="color:var(--accent-red);"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
-            </div>
-          </td>
         </tr>
-      `).join('') || '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">Geen hosting klanten gevonden</td></tr>';
+      `).join('') || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">Geen hosting klanten gevonden</td></tr>';
     }
 
     function sortHostingTable(column) {
@@ -1370,66 +1397,6 @@
         (c.packageName || '').toLowerCase().includes(search)
       );
       renderHostingTable(filtered);
-    }
-
-    function openHostingEdit(dealId) {
-      const item = hostingData.find(c => c.id === dealId);
-      if (!item) return;
-      document.getElementById('hosting-edit-id').value = item.id;
-      document.getElementById('hosting-edit-company').value = item.companyName;
-      document.getElementById('hosting-edit-domain').value = item.domainCost || 0;
-      document.getElementById('hosting-edit-email').value = item.emailCostMonthly || 0;
-      const priceSelect = document.getElementById('hosting-edit-price');
-      const priceVal = item.hostingPrice;
-      if (priceVal == 15 || priceVal == 20) {
-        priceSelect.value = priceVal;
-      } else {
-        const opt = document.createElement('option');
-        opt.value = priceVal;
-        opt.textContent = `€${priceVal}/mnd (€${priceVal * 12}/jaar)`;
-        priceSelect.appendChild(opt);
-        priceSelect.value = priceVal;
-      }
-      document.getElementById('hosting-edit-start').value = item.hostingStartDate ? item.hostingStartDate.slice(0, 10) : '';
-      document.getElementById('hosting-edit-end').value = item.hostingEndDate ? item.hostingEndDate.slice(0, 10) : '';
-      document.getElementById('hosting-edit-invoice').value = item.nextInvoiceDate ? item.nextInvoiceDate.slice(0, 10) : '';
-      document.getElementById('hosting-edit-modal').classList.add('active');
-      refreshIcons();
-    }
-
-    function closeHostingModal() {
-      document.getElementById('hosting-edit-modal').classList.remove('active');
-    }
-
-    async function saveHosting() {
-      const id = document.getElementById('hosting-edit-id').value;
-      try {
-        await API.put('/deals/' + id + '/hosting', {
-          hostingPrice: parseFloat(document.getElementById('hosting-edit-price').value),
-          domainCost: parseFloat(document.getElementById('hosting-edit-domain').value) || 0,
-          emailCostMonthly: parseFloat(document.getElementById('hosting-edit-email').value) || 0,
-          hostingInterval: 'MONTHLY',
-          hostingStartDate: document.getElementById('hosting-edit-start').value || null,
-          hostingEndDate: document.getElementById('hosting-edit-end').value || null,
-          nextInvoiceDate: document.getElementById('hosting-edit-invoice').value || null
-        });
-        closeHostingModal();
-        showToast('Hosting bijgewerkt', 'success');
-        loadHosting();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    }
-
-    async function deleteHosting(dealId, companyName) {
-      if (!confirm('Hosting verwijderen voor ' + companyName + '? De deal blijft bestaan maar hosting wordt uitgeschakeld.')) return;
-      try {
-        await API.delete('/deals/' + dealId + '/hosting');
-        showToast('Hosting verwijderd voor ' + companyName, 'success');
-        loadHosting();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
     }
 
     init();

@@ -39,9 +39,21 @@
             <span class="section-header-title lead-theme">Cold & Flyer Pipeline Analyse</span>
           </div>
           <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="funnel-kpis"></div>
-          <div class="card mb-24" style="border-top:2px solid #60a5fa;">
-            <div class="card-header"><span class="card-title" style="color:#60a5fa;">Pipeline per status</span></div>
-            <div class="card-body"><canvas id="funnel-bar-chart" height="300"></canvas></div>
+          <div class="grid-2 mb-24">
+            <div class="card" style="border-top:2px solid #60a5fa;">
+              <div class="card-header"><span class="card-title" style="color:#60a5fa;">Pipeline per status</span></div>
+              <div class="card-body"><canvas id="funnel-bar-chart" height="280"></canvas></div>
+            </div>
+            <div class="card" style="border-top:2px solid #A78BFA;">
+              <div class="card-header"><span class="card-title" style="color:#A78BFA;">Status verdeling</span></div>
+              <div class="card-body" style="position:relative;">
+                <div style="max-width:260px;margin:0 auto;"><canvas id="funnel-donut-chart" height="260"></canvas></div>
+                <div style="position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+                  <div style="font-size:10px;color:var(--text-muted);">Totaal</div>
+                  <div id="funnel-donut-total" style="font-size:22px;font-weight:700;color:var(--text-primary);"></div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="card" style="border-top:2px solid #60a5fa;">
             <div class="card-header"><span class="card-title" style="color:#60a5fa;">Conversieratio per stap</span></div>
@@ -99,7 +111,24 @@
             </div>
           </div>
 
-          <!-- Channel comparison -->
+          <!-- Quarter comparison + Channel polar -->
+          <div class="grid-2 mb-24">
+            <div class="card" style="border-top:2px solid #FB923C;">
+              <div class="card-header"><span class="card-title" style="color:#FB923C;">Kwartaal vergelijking</span></div>
+              <div class="card-body"><canvas id="quarter-compare-chart" height="280"></canvas></div>
+            </div>
+            <div class="card" style="border-top:2px solid #A78BFA;">
+              <div class="card-header"><span class="card-title" style="color:#A78BFA;">Acquisitie kanalen</span></div>
+              <div class="card-body">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;">
+                  <div style="max-width:200px;margin:0 auto;"><canvas id="channel-polar-chart" height="200"></canvas></div>
+                  <div id="channel-polar-stats"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Channel KPIs -->
           <div class="section-header" style="margin-top:24px;">
             <span class="section-header-title" style="font-size:14px;color:var(--text-secondary);">Per kanaal</span>
           </div>
@@ -163,16 +192,16 @@
           </div>
 
           <div class="grid-2 mb-24">
-            <div class="card">
-              <div class="card-header"><span class="card-title">Response rate per gemeente</span></div>
-              <div class="card-body">
-                <canvas id="location-response-chart" height="300"></canvas>
+            <div class="card" style="border-top:2px solid #A78BFA;">
+              <div class="card-header"><span class="card-title" style="color:#A78BFA;">Lead verdeling top gemeentes</span></div>
+              <div class="card-body" style="position:relative;">
+                <div style="max-width:280px;margin:0 auto;"><canvas id="location-donut-chart" height="280"></canvas></div>
               </div>
             </div>
-            <div class="card">
-              <div class="card-header"><span class="card-title">Conversion rate per gemeente</span></div>
+            <div class="card" style="border-top:2px solid #FB923C;">
+              <div class="card-header"><span class="card-title" style="color:#FB923C;">Response & Conversie per gemeente</span></div>
               <div class="card-body">
-                <canvas id="location-conversion-chart" height="300"></canvas>
+                <canvas id="location-rates-chart" height="280"></canvas>
               </div>
             </div>
           </div>
@@ -225,6 +254,19 @@
           <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="hosting-kpis"></div>
 
           <div id="hosting-alerts" style="margin-bottom:20px;"></div>
+
+          <div class="grid-2 mb-24">
+            <div class="card" style="border-top:2px solid #34d399;">
+              <div class="card-header"><span class="card-title" style="color:#34d399;">Hosting prijs verdeling</span></div>
+              <div class="card-body" style="position:relative;">
+                <div style="max-width:240px;margin:0 auto;"><canvas id="hosting-price-donut" height="240"></canvas></div>
+              </div>
+            </div>
+            <div class="card" style="border-top:2px solid #60A5FA;">
+              <div class="card-header"><span class="card-title" style="color:#60A5FA;">Omzet per klant (hosting/jaar)</span></div>
+              <div class="card-body"><canvas id="hosting-revenue-bar" height="240"></canvas></div>
+            </div>
+          </div>
 
           <div class="card">
             <div class="card-header">
@@ -329,6 +371,7 @@
   <script src="assets/js/tooltips.js"></script>
   <script>
     let charts = {};
+    const TT = { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 };
 
     let locationDataAll = {};
     let locationData = [];
@@ -433,20 +476,43 @@
 
         const ctx = document.getElementById('funnel-bar-chart').getContext('2d');
         if (charts.funnel) charts.funnel.destroy();
+        const funnelLabels = data.funnel.map(f => STATUS_LABELS[f.status] || f.status);
+        const funnelValues = data.funnel.map(f => f.count);
         const colors = ['rgba(107,114,128,0.8)', 'rgba(96,165,250,0.8)', 'rgba(251,146,60,0.8)', 'rgba(34,211,238,0.8)', 'rgba(167,139,250,0.8)', 'rgba(59,130,246,0.8)', 'rgba(248,113,113,0.8)'];
         const borderColors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
+        const totalLeads = funnelValues.reduce((a, b) => a + b, 0);
         charts.funnel = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: data.funnel.map(f => STATUS_LABELS[f.status] || f.status),
-            datasets: [{ data: data.funnel.map(f => f.count), backgroundColor: colors, borderColor: borderColors, borderWidth: 1, borderRadius: 8, borderSkipped: false, barThickness: 32 }]
+            labels: funnelLabels,
+            datasets: [{ data: funnelValues, backgroundColor: colors, borderColor: borderColors, borderWidth: 1, borderRadius: 8, borderSkipped: false, barThickness: 28 }]
           },
           options: {
+            indexAxis: 'y',
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 } },
+            plugins: { legend: { display: false }, tooltip: { ...TT, callbacks: { label: (ctx) => { const v = ctx.parsed.x; return `${v} leads (${totalLeads > 0 ? ((v/totalLeads)*100).toFixed(1) : 0}%)`; } } } },
             scales: {
-              x: { grid: { display: false }, ticks: { color: '#666', font: { size: 11 } } },
-              y: { grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#666' } }
+              x: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+              y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 12, weight: 500 } } }
+            }
+          }
+        });
+
+        // Donut chart for status distribution
+        const ctx2 = document.getElementById('funnel-donut-chart').getContext('2d');
+        if (charts.funnelDonut) charts.funnelDonut.destroy();
+        document.getElementById('funnel-donut-total').textContent = totalLeads;
+        charts.funnelDonut = new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            labels: funnelLabels,
+            datasets: [{ data: funnelValues, backgroundColor: colors, borderColor: borderColors, borderWidth: 2, hoverOffset: 8 }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: {
+              legend: { display: true, position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+              tooltip: { ...TT, callbacks: { label: (ctx) => { const v = ctx.parsed; const pct = totalLeads > 0 ? ((v/totalLeads)*100).toFixed(1) : 0; return `${ctx.label}: ${v} (${pct}%)`; } } }
             }
           }
         });
@@ -661,6 +727,72 @@
           `).join('');
         }
 
+        // Quarter comparison chart
+        const ctxQ = document.getElementById('quarter-compare-chart').getContext('2d');
+        if (charts.quarterCompare) charts.quarterCompare.destroy();
+        const q = data.quarters || {};
+        const qLabels = ['Q1', 'Q2', 'Q3', 'Q4'];
+        charts.quarterCompare = new Chart(ctxQ, {
+          type: 'bar',
+          data: {
+            labels: qLabels,
+            datasets: [
+              { label: 'Eenmalig', data: qLabels.map(qk => (q[qk]?.eenmalig || 0)), backgroundColor: 'rgba(59,130,246,0.75)', borderColor: '#3B82F6', borderWidth: 1, borderRadius: 6 },
+              { label: 'Hosting', data: qLabels.map(qk => (q[qk]?.hosting || 0)), backgroundColor: 'rgba(52,211,153,0.75)', borderColor: '#34d399', borderWidth: 1, borderRadius: 6 },
+              { label: 'Upsells', data: qLabels.map(qk => (q[qk]?.upsells || 0)), backgroundColor: 'rgba(167,139,250,0.75)', borderColor: '#A78BFA', borderWidth: 1, borderRadius: 6 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
+              tooltip: { ...TT, mode: 'index', callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}`, footer: (items) => `Totaal: ${formatCurrency(items.reduce((s, i) => s + i.parsed.y, 0))}` } }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12, weight: 600 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => formatCurrency(v) } }
+            }
+          }
+        });
+
+        // Channel polar area chart
+        const ctxP = document.getElementById('channel-polar-chart').getContext('2d');
+        if (charts.channelPolar) charts.channelPolar.destroy();
+        charts.channelPolar = new Chart(ctxP, {
+          type: 'polarArea',
+          data: {
+            labels: ['Flyer omzet', 'Warm omzet', 'Flyer kosten', 'Warm kosten'],
+            datasets: [{
+              data: [data.flyer.revenue || 0, data.warm.revenue || 0, data.flyer.cost || 0, data.warm.cost || 0],
+              backgroundColor: ['rgba(96,165,250,0.7)', 'rgba(52,211,153,0.7)', 'rgba(251,146,60,0.5)', 'rgba(248,113,113,0.5)'],
+              borderColor: ['#60A5FA', '#34d399', '#FB923C', '#F87171'],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { ...TT, callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.parsed.r)}` } } },
+            scales: { r: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false }, pointLabels: { display: false } } }
+          }
+        });
+
+        // Channel polar stats
+        const flyerROI = data.flyer.roi || 0;
+        const warmROI = data.warm.roi || 0;
+        document.getElementById('channel-polar-stats').innerHTML = `
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Flyer</div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Deals</span><span style="font-size:13px;font-weight:600;">${data.flyer.count || 0}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Omzet</span><span style="font-size:13px;font-weight:600;color:#60A5FA;">${formatCurrency(data.flyer.revenue || 0)}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Winst</span><span style="font-size:13px;font-weight:600;color:${(data.flyer.profit||0) >= 0 ? '#34d399' : '#F87171'};">${formatCurrency(data.flyer.profit || 0)}</span></div>
+            <hr style="border-color:var(--border-color);margin:2px 0;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Warm / Direct</div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Deals</span><span style="font-size:13px;font-weight:600;">${data.warm.count || 0}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Omzet</span><span style="font-size:13px;font-weight:600;color:#34d399;">${formatCurrency(data.warm.revenue || 0)}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--text-muted);">Winst</span><span style="font-size:13px;font-weight:600;color:${(data.warm.profit||0) >= 0 ? '#34d399' : '#F87171'};">${formatCurrency(data.warm.profit || 0)}</span></div>
+          </div>
+        `;
+
         // Channel KPIs
         document.getElementById('revenue-channel-kpis').innerHTML = `
           <div class="kpi-card" style="border-left-color:#fb923c;">
@@ -825,8 +957,8 @@
       `;
 
       updateLocationChart();
-      renderLocationResponseChart(data);
-      renderLocationConversionChart(data);
+      renderLocationDonut(data);
+      renderLocationRatesChart(data);
       renderLocationTable(data);
       refreshIcons();
     }
@@ -894,87 +1026,87 @@
       });
     }
 
-    function renderLocationResponseChart(data) {
-      const top10 = [...data]
-        .filter(l => l.verstuurd > 0)
-        .sort((a, b) => parseFloat(b.responseRate) - parseFloat(a.responseRate))
-        .slice(0, 10);
+    function renderLocationDonut(data) {
+      const top8 = [...data].sort((a, b) => b.total - a.total).slice(0, 8);
+      const rest = data.slice(8);
+      const restTotal = rest.reduce((s, l) => s + l.total, 0);
 
-      const ctx = document.getElementById('location-response-chart').getContext('2d');
-      if (charts.locationResponse) charts.locationResponse.destroy();
+      const labels = top8.map(l => l.city);
+      const values = top8.map(l => l.total);
+      if (restTotal > 0) { labels.push('Overige'); values.push(restTotal); }
 
-      charts.locationResponse = new Chart(ctx, {
-        type: 'bar',
+      const donutColors = [
+        'rgba(96,165,250,0.8)', 'rgba(52,211,153,0.8)', 'rgba(167,139,250,0.8)',
+        'rgba(251,146,60,0.8)', 'rgba(34,211,238,0.8)', 'rgba(59,130,246,0.8)',
+        'rgba(248,113,113,0.8)', 'rgba(163,230,53,0.8)', 'rgba(107,114,128,0.6)'
+      ];
+
+      const ctx = document.getElementById('location-donut-chart').getContext('2d');
+      if (charts.locationDonut) charts.locationDonut.destroy();
+      const totalLeads = values.reduce((a, b) => a + b, 0);
+
+      charts.locationDonut = new Chart(ctx, {
+        type: 'doughnut',
         data: {
-          labels: top10.map(l => l.city),
-          datasets: [{
-            label: 'Response rate %',
-            data: top10.map(l => parseFloat(l.responseRate)),
-            backgroundColor: 'rgba(251, 146, 60, 0.6)',
-            borderColor: '#FB923C',
-            borderWidth: 1,
-            borderRadius: 8,
-            barThickness: 22
-          }]
+          labels,
+          datasets: [{ data: values, backgroundColor: donutColors.slice(0, values.length), borderWidth: 2, borderColor: donutColors.slice(0, values.length).map(c => c.replace('0.8', '1').replace('0.6', '1')), hoverOffset: 8 }]
         },
         options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#fb923c', cornerRadius: 8, padding: 12 } },
-          scales: {
-            x: {
-              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
-              ticks: { color: '#666', callback: v => v + '%' },
-              max: 100
-            },
-            y: {
-              grid: { display: false },
-              ticks: { color: '#a0a0a0', font: { size: 11, weight: 500 } }
-            }
+          responsive: true, maintainAspectRatio: false, cutout: '60%',
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+            tooltip: { ...TT, callbacks: { label: (c) => { const v = c.parsed; const pct = totalLeads > 0 ? ((v/totalLeads)*100).toFixed(1) : 0; return `${c.label}: ${v} leads (${pct}%)`; } } }
           }
         }
       });
     }
 
-    function renderLocationConversionChart(data) {
+    function renderLocationRatesChart(data) {
       const top10 = [...data]
-        .filter(l => l.gereageerd > 0)
-        .sort((a, b) => parseFloat(b.conversionRate) - parseFloat(a.conversionRate))
+        .filter(l => l.verstuurd > 2)
+        .sort((a, b) => parseFloat(b.responseRate) - parseFloat(a.responseRate))
         .slice(0, 10);
 
-      const ctx = document.getElementById('location-conversion-chart').getContext('2d');
-      if (charts.locationConversion) charts.locationConversion.destroy();
+      const ctx = document.getElementById('location-rates-chart').getContext('2d');
+      if (charts.locationRates) charts.locationRates.destroy();
 
-      charts.locationConversion = new Chart(ctx, {
+      charts.locationRates = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: top10.map(l => l.city),
-          datasets: [{
-            label: 'Conversion rate %',
-            data: top10.map(l => parseFloat(l.conversionRate)),
-            backgroundColor: 'rgba(52, 211, 153, 0.6)',
-            borderColor: '#34d399',
-            borderWidth: 1,
-            borderRadius: 8,
-            barThickness: 22
-          }]
+          datasets: [
+            {
+              label: 'Response %',
+              data: top10.map(l => parseFloat(l.responseRate)),
+              backgroundColor: 'rgba(251,146,60,0.7)',
+              borderColor: '#FB923C',
+              borderWidth: 1,
+              borderRadius: 6
+            },
+            {
+              label: 'Conversie %',
+              data: top10.map(l => parseFloat(l.conversionRate)),
+              backgroundColor: 'rgba(52,211,153,0.7)',
+              borderColor: '#34d399',
+              borderWidth: 1,
+              borderRadius: 6
+            }
+          ]
         },
         options: {
           indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#34d399', cornerRadius: 8, padding: 12 } },
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
+            tooltip: { ...TT, callbacks: { afterBody: (items) => {
+              const idx = items[0].dataIndex;
+              const loc = top10[idx];
+              return [`Verstuurd: ${loc.verstuurd}`, `Gereageerd: ${loc.gereageerd}`, `Klanten: ${loc.klanten}`];
+            } } }
+          },
           scales: {
-            x: {
-              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
-              ticks: { color: '#666', callback: v => v + '%' },
-              max: 100
-            },
-            y: {
-              grid: { display: false },
-              ticks: { color: '#a0a0a0', font: { size: 11, weight: 500 } }
-            }
+            x: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', callback: v => v + '%' }, max: 100 },
+            y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 11, weight: 500 } } }
           }
         }
       });
@@ -1076,6 +1208,66 @@
 
         // Hosting reminders only shown on hosting.html page
         document.getElementById('hosting-alerts').innerHTML = '';
+
+        // Hosting price distribution donut
+        const priceGroups = {};
+        hostingData.forEach(c => {
+          const key = `${c.hostingPrice}/mnd`;
+          if (!priceGroups[key]) priceGroups[key] = { count: 0, revenue: 0 };
+          priceGroups[key].count++;
+          priceGroups[key].revenue += c.hostingPrice * 12;
+        });
+        const priceLabels = Object.keys(priceGroups);
+        const priceCounts = priceLabels.map(k => priceGroups[k].count);
+        const priceDonutColors = ['rgba(52,211,153,0.85)', 'rgba(96,165,250,0.85)', 'rgba(167,139,250,0.85)', 'rgba(251,146,60,0.85)', 'rgba(248,113,113,0.85)'];
+
+        const ctxPD = document.getElementById('hosting-price-donut').getContext('2d');
+        if (charts.hostingPriceDonut) charts.hostingPriceDonut.destroy();
+        charts.hostingPriceDonut = new Chart(ctxPD, {
+          type: 'doughnut',
+          data: {
+            labels: priceLabels,
+            datasets: [{ data: priceCounts, backgroundColor: priceDonutColors.slice(0, priceLabels.length), borderWidth: 2, borderColor: priceDonutColors.slice(0, priceLabels.length).map(c => c.replace('0.85', '1')), hoverOffset: 8 }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '60%',
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
+              tooltip: { ...TT, callbacks: { label: (c) => { const k = c.label; const g = priceGroups[k]; return [`${g.count} klanten`, `Omzet: ${fmt(g.revenue)}/jaar`]; } } }
+            }
+          }
+        });
+
+        // Hosting revenue per client bar chart (top 10)
+        const topClients = [...hostingData].sort((a, b) => (b.hostingPrice * 12) - (a.hostingPrice * 12)).slice(0, 10);
+        const ctxHR = document.getElementById('hosting-revenue-bar').getContext('2d');
+        if (charts.hostingRevenueBar) charts.hostingRevenueBar.destroy();
+        charts.hostingRevenueBar = new Chart(ctxHR, {
+          type: 'bar',
+          data: {
+            labels: topClients.map(c => c.companyName),
+            datasets: [{
+              label: 'Hosting/jaar',
+              data: topClients.map(c => c.hostingPrice * 12),
+              backgroundColor: 'rgba(96,165,250,0.7)',
+              borderColor: '#60A5FA',
+              borderWidth: 1,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { ...TT, callbacks: { label: (c) => `${fmt(c.parsed.x)}/jaar (${fmt(c.parsed.x / 12)}/mnd)` } }
+            },
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => fmt(v) } },
+              y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 11, weight: 500 } } }
+            }
+          }
+        });
 
         renderHostingTable(hostingData);
         refreshIcons();

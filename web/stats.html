@@ -71,6 +71,12 @@
           <!-- Main KPIs -->
           <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);" id="revenue-kpis"></div>
 
+          <!-- MRR KPIs -->
+          <div class="section-header" style="margin-top:8px;">
+            <span class="section-header-title" style="font-size:14px;color:var(--text-secondary);">Maandelijks Terugkerende Omzet (MRR)</span>
+          </div>
+          <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="mrr-kpis"></div>
+
           <!-- Omzet breakdown card - HIDDEN -->
           <div class="card mb-24" style="border-top:2px solid #34d399;display:none;">
             <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet opbouw</span></div>
@@ -562,6 +568,9 @@
         const packagePct = data.totalRevenue > 0 ? ((totalPackageNetto / data.totalRevenue) * 100).toFixed(0) : 0;
         const totalMRR = b.actualMRR + b.upsellMRR;
 
+        const hostingMRR = b.actualMRR || 0;
+        const upsellMRR = b.upsellMRR || 0;
+
         // KPIs
         document.getElementById('revenue-kpis').innerHTML = `
           <div class="kpi-card client-theme">
@@ -578,11 +587,6 @@
             ${wrapWithTooltip(`<div class="kpi-label">Hosting ${yr}</div>`, 'rev-hosting-jaar')}
             <div class="kpi-value" style="color:#A78BFA;">${formatCurrency(hostingCY)}</div>
             <span class="kpi-badge neutral">${hostingPct}% van totaal</span>
-          </div>
-          <div class="kpi-card" style="border-left-color:#34d399;">
-            ${wrapWithTooltip('<div class="kpi-label">MRR (terugkerend)</div>', 'rev-mrr')}
-            <div class="kpi-value" style="color:#34d399;">${formatCurrency(totalMRR)}</div>
-            <span class="kpi-badge neutral">${formatCurrency(totalMRR * 12)}/jaar</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Gem. dealwaarde</div>', 'rev-gem-deal')}
@@ -607,6 +611,25 @@
             <span class="kpi-badge neutral">Pakketten &amp; Prijzen pagina</span>
           </div>
           `}
+        `;
+
+        // MRR section
+        document.getElementById('mrr-kpis').innerHTML = `
+          <div class="kpi-card" style="border-left-color:#34d399;">
+            ${wrapWithTooltip('<div class="kpi-label">MRR Totaal</div>', 'rev-mrr')}
+            <div class="kpi-value" style="color:#34d399;">${formatCurrency(totalMRR)}</div>
+            <span class="kpi-badge neutral">${formatCurrency(totalMRR * 12)}/jaar</span>
+          </div>
+          <div class="kpi-card" style="border-left-color:#A78BFA;">
+            ${wrapWithTooltip('<div class="kpi-label">MRR Hosting</div>', 'rev-mrr-hosting')}
+            <div class="kpi-value" style="color:#A78BFA;">${formatCurrency(hostingMRR)}</div>
+            <span class="kpi-badge neutral">${formatCurrency(hostingMRR * 12)}/jaar</span>
+          </div>
+          <div class="kpi-card" style="border-left-color:#FB923C;">
+            ${wrapWithTooltip('<div class="kpi-label">MRR Upsells</div>', 'rev-mrr-upsells')}
+            <div class="kpi-value" style="color:#FB923C;">${formatCurrency(upsellMRR)}</div>
+            <span class="kpi-badge neutral">${formatCurrency(upsellMRR * 12)}/jaar</span>
+          </div>
         `;
 
         // Breakdown bar

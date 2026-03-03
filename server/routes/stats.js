@@ -382,17 +382,17 @@ router.get('/revenue', async (req, res, next) => {
     // Initialize all 12 months for the current year
     for (let m = 1; m <= 12; m++) {
       const monthKey = `${currentYear}-${String(m).padStart(2, '0')}`;
-      monthlyBreakdown[monthKey] = { eenmalig: 0, hosting: 0, upsells: 0, korting: 0, total: 0 };
+      monthlyBreakdown[monthKey] = { eenmalig: 0, hosting: 0, upsellEenmalig: 0, upsellMaandelijks: 0, korting: 0, total: 0 };
     }
     
     // Process all active deals (not just deals sold this year) for recurring revenue
     perDeal.forEach(d => {
-      // One-time revenue only in sale month
+      // One-time revenue only in sale month (packages + one-time upsells)
       const saleYear = new Date(d.saleDate).getFullYear();
       if (saleYear === currentYear) {
         const saleMonth = d.saleDate.toISOString().slice(0, 7);
         monthlyBreakdown[saleMonth].eenmalig += d.pkgOneTime;
-        monthlyBreakdown[saleMonth].upsells += d.upsellOneTime; // one-time upsells
+        monthlyBreakdown[saleMonth].upsellEenmalig += d.upsellOneTime;
         monthlyBreakdown[saleMonth].korting += d.discount;
       }
       
@@ -407,9 +407,9 @@ router.get('/revenue', async (req, res, next) => {
       
       // Monthly upsells: distribute across all active months from sale date
       if (d.upsellMonthly > 0) {
-        const activeUpsellMonths = getActiveMonths(d.saleDate, null, currentYear); // upsells don't have end date
+        const activeUpsellMonths = getActiveMonths(d.saleDate, null, currentYear);
         activeUpsellMonths.forEach(month => {
-          monthlyBreakdown[month].upsells += d.upsellMonthly;
+          monthlyBreakdown[month].upsellMaandelijks += d.upsellMonthly;
         });
       }
     });
@@ -417,7 +417,7 @@ router.get('/revenue', async (req, res, next) => {
     // Calculate totals per month
     Object.keys(monthlyBreakdown).forEach(month => {
       const m = monthlyBreakdown[month];
-      m.total = m.eenmalig + m.hosting + m.upsells - m.korting;
+      m.total = m.eenmalig + m.hosting + m.upsellEenmalig + m.upsellMaandelijks - m.korting;
     });
 
     // Package breakdown (deals sold in selected year)

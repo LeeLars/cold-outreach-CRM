@@ -677,8 +677,9 @@
             labels: months,
             datasets: [
               { label: 'Pakketten', data: data.monthlyBreakdown.map(m => m.eenmalig), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4, stack: 'stack' },
-              { label: 'Upsells', data: data.monthlyBreakdown.map(m => m.upsells), backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, stack: 'stack' },
-              { label: 'Hosting', data: data.monthlyBreakdown.map(m => m.hosting), backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4, stack: 'stack' }
+              { label: 'Upsells (eenmalig)', data: data.monthlyBreakdown.map(m => m.upsellEenmalig || 0), backgroundColor: 'rgba(139,92,246,0.7)', borderRadius: 4, stack: 'stack' },
+              { label: 'Hosting', data: data.monthlyBreakdown.map(m => m.hosting), backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4, stack: 'stack' },
+              { label: 'Upsells (mnd)', data: data.monthlyBreakdown.map(m => m.upsellMaandelijks || 0), backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, stack: 'stack' }
             ]
           },
           options: {

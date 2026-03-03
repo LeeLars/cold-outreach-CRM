@@ -285,8 +285,17 @@
               stack: 'revenue'
             },
             {
-              label: 'Upsells',
-              data: monthlyData.map(m => m.upsells),
+              label: 'Upsells (eenmalig)',
+              data: monthlyData.map(m => m.upsellEenmalig || 0),
+              backgroundColor: 'rgba(139, 92, 246, 0.8)',
+              borderColor: '#8B5CF6',
+              borderWidth: 1,
+              borderRadius: { topLeft: 0, topRight: 0 },
+              stack: 'revenue'
+            },
+            {
+              label: 'Upsells (mnd)',
+              data: monthlyData.map(m => m.upsellMaandelijks || 0),
               backgroundColor: 'rgba(167, 139, 250, 0.8)',
               borderColor: '#A78BFA',
               borderWidth: 1,

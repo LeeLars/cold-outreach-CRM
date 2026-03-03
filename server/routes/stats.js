@@ -138,6 +138,13 @@ function getActiveMonths(startDate, endDate, year) {
   return months;
 }
 
+function remainingMonthsInYear(saleDate, year) {
+  const d = new Date(saleDate);
+  if (d.getFullYear() > year) return 0;
+  if (d.getFullYear() < year) return 12;
+  return 12 - d.getMonth();
+}
+
 function monthsInQuarterFromStart(startDate, quarter, year) {
   const quarterRanges = { Q1: [0, 2], Q2: [3, 5], Q3: [6, 8], Q4: [9, 11] };
   const [qStart, qEnd] = quarterRanges[quarter];

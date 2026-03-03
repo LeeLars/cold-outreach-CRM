@@ -1677,91 +1677,107 @@ textarea.form-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-brand);
   font-size: 10px;
   font-weight: 700;
-  cursor: help;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: all 0.15s ease;
   position: relative;
+  flex-shrink: 0;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  user-select: none;
 }
 
 .stat-tooltip-icon:hover {
-  background: rgba(59, 130, 246, 0.2);
-  color: var(--accent-brand);
-  transform: scale(1.1);
+  background: rgba(59, 130, 246, 0.3);
+  color: #fff;
+  border-color: rgba(59, 130, 246, 0.5);
+  transform: scale(1.15);
 }
 
-.stat-tooltip-content {
+/* Floating tooltip - positioned via JS, always on top */
+.stat-tooltip-floating {
   position: fixed;
-  bottom: auto;
-  left: auto;
-  transform: translateX(-50%) translateY(-100%);
-  background: #1a1a1a;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 8px;
-  padding: 12px;
-  min-width: 280px;
-  max-width: 320px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s ease;
-  pointer-events: none;
-  z-index: 10000;
+  background: #1a1a2e;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-width: 290px;
+  max-width: 340px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(59, 130, 246, 0.15);
+  z-index: 99999;
+  pointer-events: auto;
+  animation: tooltipFadeIn 0.15s ease;
 }
 
-.stat-tooltip-icon:hover .stat-tooltip-content {
-  opacity: 1;
-  visibility: visible;
+@keyframes tooltipFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.stat-tooltip-content::after {
+.stat-tooltip-floating::after {
   content: '';
   position: absolute;
-  top: 100%;
+  bottom: -7px;
   left: 50%;
   transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: #1a1a1a;
+  border: 7px solid transparent;
+  border-top-color: #1a1a2e;
+  border-bottom: 0;
 }
 
-.stat-tooltip-title {
-  font-size: 12px;
+.stat-tooltip-floating .stat-tooltip-title {
+  font-size: 13px;
   font-weight: 700;
   color: var(--accent-brand);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.stat-tooltip-formula {
+.stat-tooltip-floating .stat-tooltip-formula {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-primary);
-  background: rgba(59, 130, 246, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-bottom: 8px;
+  background: rgba(59, 130, 246, 0.12);
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
   font-family: 'JetBrains Mono', monospace;
+  line-height: 1.4;
 }
 
-.stat-tooltip-explanation {
+.stat-tooltip-floating .stat-tooltip-explanation {
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
-.stat-tooltip-scope {
+.stat-tooltip-floating .stat-tooltip-scope {
   font-size: 11px;
   color: var(--text-muted);
   font-style: italic;
-  padding-top: 6px;
+  padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* When tooltip is below the icon, arrow at top */
+.stat-tooltip-floating.stat-tooltip-below::after {
+  top: -7px;
+  bottom: auto;
+  border: 7px solid transparent;
+  border-bottom-color: #1a1a2e;
+  border-top: 0;
+}
+
+/* Legacy - hide old inline tooltips */
+.stat-tooltip-content {
+  display: none !important;
 }
 
 /* ===== UTILITIES ===== */

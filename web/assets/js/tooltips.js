@@ -291,64 +291,128 @@ const STAT_TOOLTIPS = {
   }
 };
 
-// Helper functie om tooltip HTML te genereren
+// Helper functie om tooltip HTML te genereren (icon only, no nested content)
 function createTooltipHTML(tooltipKey) {
-  const data = STAT_TOOLTIPS[tooltipKey];
-  if (!data) return '';
-  
-  return `
-    <span class="stat-tooltip-icon">
-      ?
-      <span class="stat-tooltip-content">
-        <div class="stat-tooltip-title">${data.title}</div>
-        <div class="stat-tooltip-formula">${data.formula}</div>
-        <div class="stat-tooltip-explanation">${data.explanation}</div>
-        <div class="stat-tooltip-scope">Scope: ${data.scope}</div>
-      </span>
-    </span>
-  `;
+  if (!STAT_TOOLTIPS[tooltipKey]) return '';
+  return `<span class="stat-tooltip-icon" data-tooltip-key="${tooltipKey}">?</span>`;
 }
 
 // Helper functie om label met tooltip te wrappen
 function wrapWithTooltip(labelHTML, tooltipKey) {
   const tooltipHTML = createTooltipHTML(tooltipKey);
   if (!tooltipHTML) return labelHTML;
-  
   return `<span class="stat-tooltip-wrapper">${labelHTML}${tooltipHTML}</span>`;
 }
 
-// Initialize tooltip positioning on page load
-document.addEventListener('DOMContentLoaded', () => {
-  initTooltipPositioning();
+// Active floating tooltip element
+let activeTooltipEl = null;
+let activeTooltipIcon = null;
+
+function showFloatingTooltip(icon) {
+  const key = icon.getAttribute('data-tooltip-key');
+  const data = STAT_TOOLTIPS[key];
+  if (!data) return;
+
+  // Remove existing
+  hideFloatingTooltip();
+
+  activeTooltipIcon = icon;
+
+  // Create floating element in body
+  const el = document.createElement('div');
+  el.className = 'stat-tooltip-floating';
+  el.innerHTML = `
+    <div class="stat-tooltip-title">${data.title}</div>
+    <div class="stat-tooltip-formula">${data.formula}</div>
+    <div class="stat-tooltip-explanation">${data.explanation}</div>
+    <div class="stat-tooltip-scope">Scope: ${data.scope}</div>
+  `;
+  document.body.appendChild(el);
+  activeTooltipEl = el;
+
+  // Position above the icon
+  const iconRect = icon.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  
+  let left = iconRect.left + (iconRect.width / 2) - (elRect.width / 2);
+  let top = iconRect.top - elRect.height - 10;
+
+  // Keep within viewport horizontally
+  if (left < 10) left = 10;
+  if (left + elRect.width > window.innerWidth - 10) {
+    left = window.innerWidth - elRect.width - 10;
+  }
+
+  // If no room above, show below
+  if (top < 10) {
+    top = iconRect.bottom + 10;
+    el.classList.add('stat-tooltip-below');
+    // Move arrow to top
+    el.style.setProperty('--arrow-pos', 'top');
+  }
+
+  el.style.left = left + 'px';
+  el.style.top = top + 'px';
+
+  // Adjust arrow horizontal position to point at icon
+  const arrowLeft = iconRect.left + (iconRect.width / 2) - left;
+  const afterStyle = document.createElement('style');
+  afterStyle.id = 'tooltip-arrow-override';
+  afterStyle.textContent = `.stat-tooltip-floating::after { left: ${arrowLeft}px !important; }`;
+  // Remove old override
+  const oldStyle = document.getElementById('tooltip-arrow-override');
+  if (oldStyle) oldStyle.remove();
+  document.head.appendChild(afterStyle);
+}
+
+function hideFloatingTooltip() {
+  if (activeTooltipEl) {
+    activeTooltipEl.remove();
+    activeTooltipEl = null;
+  }
+  activeTooltipIcon = null;
+  const arrowStyle = document.getElementById('tooltip-arrow-override');
+  if (arrowStyle) arrowStyle.remove();
+}
+
+// Event delegation - works for all dynamically added tooltips
+document.addEventListener('mouseenter', (e) => {
+  const icon = e.target.closest('.stat-tooltip-icon');
+  if (icon) showFloatingTooltip(icon);
+}, true);
+
+document.addEventListener('mouseleave', (e) => {
+  const icon = e.target.closest('.stat-tooltip-icon');
+  if (icon && icon === activeTooltipIcon) {
+    // Small delay to prevent flicker
+    setTimeout(() => {
+      if (activeTooltipIcon === icon) hideFloatingTooltip();
+    }, 100);
+  }
+}, true);
+
+// Also support click for mobile
+document.addEventListener('click', (e) => {
+  const icon = e.target.closest('.stat-tooltip-icon');
+  if (icon) {
+    e.stopPropagation();
+    if (activeTooltipIcon === icon) {
+      hideFloatingTooltip();
+    } else {
+      showFloatingTooltip(icon);
+    }
+    return;
+  }
+  // Click anywhere else = close
+  if (activeTooltipEl && !e.target.closest('.stat-tooltip-floating')) {
+    hideFloatingTooltip();
+  }
 });
 
-// Re-initialize tooltips when content changes
+// Close on scroll
+document.addEventListener('scroll', () => hideFloatingTooltip(), true);
+
+// Legacy function - no longer needed but called by existing code
 function initTooltipPositioning() {
-  document.querySelectorAll('.stat-tooltip-icon').forEach(icon => {
-    icon.addEventListener('mouseenter', (e) => {
-      const tooltip = icon.querySelector('.stat-tooltip-content');
-      if (!tooltip) return;
-      
-      const iconRect = icon.getBoundingClientRect();
-      const tooltipRect = tooltip.getBoundingClientRect();
-      
-      // Position tooltip above icon, centered
-      const left = iconRect.left + (iconRect.width / 2);
-      const top = iconRect.top - 12;
-      
-      tooltip.style.left = left + 'px';
-      tooltip.style.top = top + 'px';
-      
-      // Adjust if tooltip goes off-screen
-      setTimeout(() => {
-        const updatedRect = tooltip.getBoundingClientRect();
-        if (updatedRect.left < 10) {
-          tooltip.style.left = (left + (10 - updatedRect.left)) + 'px';
-        }
-        if (updatedRect.right > window.innerWidth - 10) {
-          tooltip.style.left = (left - (updatedRect.right - window.innerWidth + 10)) + 'px';
-        }
-      }, 10);
-    });
-  });
+  // No-op: event delegation handles everything now
 }

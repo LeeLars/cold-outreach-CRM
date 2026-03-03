@@ -21,7 +21,32 @@
       <main class="page-content" id="page-content">
         <div id="dashboard-reminders"></div>
         <div id="kpi-grid"></div>
-        <div class="grid-2 mb-24" id="charts-row">
+
+        <!-- Row 1: Omzet stacked bar + Donut verdeling -->
+        <div class="grid-2 mb-24" id="charts-row-1">
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Maandelijkse omzet breakdown</span>
+              <span id="revenue-chart-year" style="font-size:11px;color:var(--text-muted);"></span>
+            </div>
+            <div class="card-body" style="padding:0;"><canvas id="revenue-stacked-chart" height="280"></canvas></div>
+          </div>
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Omzet verdeling</span>
+            </div>
+            <div class="card-body" style="padding:0;position:relative;">
+              <div style="max-width:260px;margin:0 auto;"><canvas id="revenue-donut-chart" height="260"></canvas></div>
+              <div id="donut-center-label" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+                <div style="font-size:11px;color:var(--text-muted);">Totaal</div>
+                <div id="donut-total" style="font-size:20px;font-weight:700;color:var(--text-primary);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Funnel + Kwartaal vergelijking -->
+        <div class="grid-2 mb-24" id="charts-row-2">
           <div class="dashboard-card">
             <div class="dashboard-card-header">
               <span class="dashboard-label">Lead Pipeline Funnel</span>
@@ -30,36 +55,46 @@
           </div>
           <div class="dashboard-card">
             <div class="dashboard-card-header">
-              <span class="dashboard-label">Klant Omzet over tijd</span>
+              <span class="dashboard-label">Kwartaal vergelijking</span>
             </div>
-            <div class="card-body" style="padding:0;"><canvas id="revenue-chart" height="260"></canvas></div>
+            <div class="card-body" style="padding:0;"><canvas id="quarter-chart" height="260"></canvas></div>
           </div>
         </div>
-        <div class="dashboard-card mb-24">
-          <div class="dashboard-card-header">
-            <span class="dashboard-label">Statistieken per locatie</span>
-          </div>
-          <div class="card-body" style="padding:0;">
-            <div class="grid-2" style="gap:24px;">
-              <div>
-                <canvas id="location-chart" height="300"></canvas>
+
+        <!-- Row 3: Acquisitie kanalen + Locatie stats -->
+        <div class="grid-2 mb-24" id="charts-row-3">
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Acquisitie kanalen</span>
+            </div>
+            <div class="card-body" style="padding:0;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;">
+                <div style="max-width:200px;margin:0 auto;"><canvas id="acquisition-polar-chart" height="200"></canvas></div>
+                <div id="acquisition-stats"></div>
               </div>
-              <div id="location-table-container" style="max-height:400px;overflow-y:auto;"></div>
             </div>
           </div>
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Top locaties</span>
+            </div>
+            <div class="card-body" style="padding:0;"><canvas id="location-chart" height="260"></canvas></div>
+          </div>
         </div>
+
+        <!-- Row 4: Financieel overzicht + Recente leads -->
         <div class="grid-2 mb-24">
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <span class="dashboard-label">Financieel overzicht</span>
+            </div>
+            <div class="card-body" style="padding:0;" id="financial-summary"></div>
+          </div>
           <div class="dashboard-card">
             <div class="dashboard-card-header">
               <span class="dashboard-label">Recente leads</span>
             </div>
             <div class="card-body" style="padding:0;" id="recent-leads"></div>
-          </div>
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              <span class="dashboard-label">Klant Financieel overzicht</span>
-            </div>
-            <div class="card-body" style="padding:0;" id="financial-summary"></div>
           </div>
         </div>
       </main>
@@ -73,11 +108,20 @@
   <script src="assets/js/sidebar.js"></script>
   <script src="assets/js/tooltips.js"></script>
   <script>
+    const CHART_TOOLTIP = {
+      backgroundColor: '#111111',
+      borderColor: 'rgba(255,255,255,0.1)',
+      borderWidth: 1,
+      titleColor: '#f0f0f0',
+      bodyColor: '#a0a0a0',
+      cornerRadius: 8,
+      padding: 12
+    };
+
     async function init() {
       if (!await requireLogin()) return;
       initSidebar();
       initTopbar('Dashboard');
-      // Fire-and-forget auto-expire, load reminders + dashboard in parallel
       API.post('/leads/auto-expire', { days: 7 }).catch(() => {});
       loadDashboardReminders();
       loadDashboard();
@@ -140,228 +184,210 @@
           API.get('/stats/hosting')
         ]);
 
-        renderHostingReminders(hosting);
         renderKPIs(dashboard, revenue);
+        renderRevenueStackedChart(revenue);
+        renderRevenueDonut(revenue);
         renderFunnelChart(funnel);
-        renderRevenueChart(revenue);
-        renderLocationStats(locations.all || locations);
-        renderRecentLeads(recentLeads);
+        renderQuarterChart(revenue);
+        renderAcquisitionPolar(revenue);
+        renderLocationChart(locations.all || locations);
         renderFinancialSummary(dashboard, revenue);
+        renderRecentLeads(recentLeads);
       } catch (err) {
         showToast(err.message, 'error');
       }
     }
 
+    // ========== KPI CARDS ==========
     function renderKPIs(data, revenue) {
       const c = data.current;
-      const f = data.funnel;
       const conv = data.conversions;
       const grid = document.getElementById('kpi-grid');
       
-      // Calculate MRR and current year revenue from revenue data
       const mrr = revenue?.breakdown ? (revenue.breakdown.actualMRR + revenue.breakdown.upsellMRR) : 0;
       const currentYear = revenue?.currentYear || new Date().getFullYear();
       const hostingCurrentYear = revenue?.breakdown?.hostingCurrentYear || 0;
       const upsellCurrentYear = revenue?.breakdown?.upsellCurrentYear || 0;
       const eenmaligNetto = revenue?.breakdown ? (revenue.breakdown.eenmalig + revenue.breakdown.upsellOneTime - revenue.breakdown.discount) : 0;
       const totalCurrentYear = eenmaligNetto + hostingCurrentYear + upsellCurrentYear;
-      
-      // Helper to create small sparkline charts
-      setTimeout(() => {
-        createSparkline('chart-leads', [12, 19, 15, 25, 22, 30, data.totalLeads], '#60a5fa');
-        createSparkline('chart-sent', [c.NIEUW, c.VERSTUURD + c.GEEN_REACTIE], '#60a5fa');
-        createSparkline('chart-response', [5, 8, 12, 15, c.GEREAGEERD + c.NIET_GEINTERESSEERD], '#fb923c');
-        createSparkline('chart-interest', [1, 2, 3, 5, c.AFSPRAAK], '#a78bfa');
-        createSparkline('chart-clients', [10, 15, 20, c.KLANT], '#34d399');
-        createSparkline('chart-revenue', [mrr * 0.6, mrr * 0.8, mrr * 0.9, mrr], '#34d399');
-      }, 100);
+      const profitThisYear = revenue?.totalProfitThisYear || 0;
+      const profitMargin = revenue?.profitMarginThisYear || 0;
 
       grid.innerHTML = `
         <div class="section-header" style="border-bottom:1px solid var(--border-color);margin-bottom:20px;padding-bottom:10px;">
           <span class="section-header-title" style="color:var(--text-primary);font-size:16px;">Lead Pipeline</span>
         </div>
         <div class="dashboard-kpi-grid">
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              ${wrapWithTooltip('<span class="dashboard-label">Total Leads</span>', 'total-leads')}
-              <i data-lucide="users" style="color:var(--accent-blue);width:18px;height:18px;"></i>
-            </div>
-            <div class="dashboard-value">${data.totalLeads}</div>
-            <div class="dashboard-subtext">
-              <span style="color:var(--accent-blue);">+${c.NIEUW}</span>
-              <span>nieuw toegevoegd</span>
-            </div>
-            <div class="dashboard-chart-container">
-              <canvas id="chart-leads"></canvas>
-            </div>
-          </div>
-
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              ${wrapWithTooltip('<span class="dashboard-label">Verstuurd</span>', 'verstuurd')}
-              <i data-lucide="send" style="color:var(--accent-blue);width:18px;height:18px;"></i>
-            </div>
-            <div class="dashboard-value">${c.VERSTUURD + c.GEEN_REACTIE}</div>
-            <div class="dashboard-subtext">
-              ${wrapWithTooltip(`<span>${conv.sendRate}% van totaal</span>`, 'send-rate')}
-            </div>
-            <div class="dashboard-chart-container">
-              <canvas id="chart-sent"></canvas>
-            </div>
-          </div>
-
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              ${wrapWithTooltip('<span class="dashboard-label">Reacties</span>', 'reacties')}
-              <i data-lucide="message-square" style="color:var(--accent-orange);width:18px;height:18px;"></i>
-            </div>
-            <div class="dashboard-value">${c.GEREAGEERD + c.NIET_GEINTERESSEERD}</div>
-            <div class="dashboard-subtext">
-              ${wrapWithTooltip(`<span style="color:var(--accent-orange);">${conv.responseRate}%</span>`, 'response-rate')}
-              <span>reactieratio</span>
-            </div>
-            <div class="dashboard-chart-container">
-              <canvas id="chart-response"></canvas>
-            </div>
-          </div>
-
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              ${wrapWithTooltip('<span class="dashboard-label">Interesse</span>', 'interesse')}
-              <i data-lucide="thumbs-up" style="color:var(--accent-purple);width:18px;height:18px;"></i>
-            </div>
-            <div class="dashboard-value">${c.AFSPRAAK}</div>
-            <div class="dashboard-subtext">
-              ${wrapWithTooltip(`<span style="color:var(--accent-purple);">${conv.interestRate}%</span>`, 'interest-rate')}
-              <span>conversie</span>
-            </div>
-            <div class="dashboard-chart-container">
-              <canvas id="chart-interest"></canvas>
-            </div>
-          </div>
+          ${kpiCard('Total Leads', 'total-leads', 'users', '--accent-blue', data.totalLeads, `<span style="color:var(--accent-blue);">+${c.NIEUW}</span> nieuw`)}
+          ${kpiCard('Verstuurd', 'verstuurd', 'send', '--accent-blue', c.VERSTUURD + c.GEEN_REACTIE, `${conv.sendRate}% van totaal`)}
+          ${kpiCard('Reacties', 'reacties', 'message-square', '--accent-orange', c.GEREAGEERD + c.NIET_GEINTERESSEERD, `<span style="color:var(--accent-orange);">${conv.responseRate}%</span> reactieratio`)}
+          ${kpiCard('Interesse', 'interesse', 'thumbs-up', '--accent-purple', c.AFSPRAAK, `<span style="color:var(--accent-purple);">${conv.interestRate}%</span> conversie`)}
         </div>
 
         <div class="section-header" style="border-bottom:1px solid var(--border-color);margin-bottom:20px;padding-bottom:10px;margin-top:40px;">
-          <span class="section-header-title" style="color:var(--text-primary);font-size:16px;">Klanten & Omzet</span>
+          <span class="section-header-title" style="color:var(--text-primary);font-size:16px;">Klanten & Omzet ${currentYear}</span>
         </div>
-        <div class="dashboard-kpi-grid" style="grid-template-columns:repeat(3,1fr);">
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              ${wrapWithTooltip('<span class="dashboard-label">Totaal Klanten</span>', 'totaal-klanten')}
-              <i data-lucide="building-2" style="color:var(--accent-green);width:18px;height:18px;"></i>
-            </div>
-            <div class="dashboard-value">${data.totalClients || c.KLANT}</div>
-            <div class="dashboard-subtext">
-              <span style="color:var(--accent-green);">${data.totalClients || c.KLANT}</span>
-              <span>actieve klanten</span>
-            </div>
-            <div class="dashboard-chart-container">
-              <canvas id="chart-clients"></canvas>
-            </div>
-          </div>
-
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              ${wrapWithTooltip('<span class="dashboard-label">MRR (terugkerend)</span>', 'mrr')}
-              <i data-lucide="repeat" style="color:var(--accent-green);width:18px;height:18px;"></i>
-            </div>
-            <div class="dashboard-value">${formatCurrency(mrr)}</div>
-            <div class="dashboard-subtext">
-              <span>Hosting ${currentYear}: ${formatCurrency(hostingCurrentYear)}</span>
-            </div>
-            <div class="dashboard-chart-container">
-              <canvas id="chart-revenue"></canvas>
-            </div>
-          </div>
-
-          <div class="dashboard-card">
-            <div class="dashboard-card-header">
-              ${wrapWithTooltip(`<span class="dashboard-label">Omzet ${currentYear}</span>`, 'omzet-jaar')}
-              <i data-lucide="trending-up" style="color:var(--accent-green);width:18px;height:18px;"></i>
-            </div>
-            <div class="dashboard-value">${formatCurrency(totalCurrentYear)}</div>
-            <div class="dashboard-subtext">
-              <span style="font-size:11px;">Eenmalig: ${formatCurrency(eenmaligNetto)} | Hosting: ${formatCurrency(hostingCurrentYear)}</span>
-            </div>
-            <div style="height:60px;display:flex;align-items:end;font-size:12px;color:var(--text-muted);">
-              ${wrapWithTooltip(`Gem. acquisitiekost: ${formatCurrency(data.avgAcquisitionCost)}`, 'gem-acquisitiekost')}
-            </div>
-          </div>
+        <div class="dashboard-kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+          ${kpiCard('Klanten', 'totaal-klanten', 'building-2', '--accent-green', data.totalClients || c.KLANT, `<span style="color:var(--accent-green);">${data.totalClients || c.KLANT}</span> actief`)}
+          ${kpiCard('MRR', 'mrr', 'repeat', '--accent-green', formatCurrency(mrr), `Hosting + upsells`)}
+          ${kpiCard(`Omzet ${currentYear}`, 'omzet-jaar', 'trending-up', '--accent-green', formatCurrency(totalCurrentYear), `<span style="font-size:11px;">Een: ${formatCurrency(eenmaligNetto)} | Host: ${formatCurrency(hostingCurrentYear)}</span>`)}
+          ${kpiCard(`Winst ${currentYear}`, 'winst-jaar', 'piggy-bank', profitThisYear >= 0 ? '--accent-green' : '--accent-red', formatCurrency(profitThisYear), `Marge: ${profitMargin}%`)}
         </div>
       `;
       refreshIcons();
     }
 
-    function renderHostingReminders(hosting) {
-      // Hosting reminders only shown on hosting page, not on dashboard
-      const container = document.getElementById('dashboard-reminders');
-      if (container) container.innerHTML = '';
+    function kpiCard(label, tooltipKey, icon, colorVar, value, subtext) {
+      return `
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            ${wrapWithTooltip(`<span class="dashboard-label">${label}</span>`, tooltipKey)}
+            <i data-lucide="${icon}" style="color:var(${colorVar});width:18px;height:18px;"></i>
+          </div>
+          <div class="dashboard-value">${value}</div>
+          <div class="dashboard-subtext">${subtext}</div>
+        </div>
+      `;
     }
 
-    function createSparkline(id, dataPoints, color) {
-      const ctx = document.getElementById(id);
-      if(!ctx) return;
-      new Chart(ctx.getContext('2d'), {
-        type: 'line',
+    // ========== STACKED BAR: Maandelijkse omzet ==========
+    function renderRevenueStackedChart(revenue) {
+      const ctx = document.getElementById('revenue-stacked-chart').getContext('2d');
+      const monthlyData = revenue.monthlyBreakdown || [];
+      const labels = monthlyData.map(m => {
+        const [y, mo] = m.month.split('-');
+        return ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'][parseInt(mo) - 1];
+      });
+
+      document.getElementById('revenue-chart-year').textContent = revenue.currentYear;
+
+      new Chart(ctx, {
+        type: 'bar',
         data: {
-          labels: dataPoints.map((_, i) => i),
+          labels,
+          datasets: [
+            {
+              label: 'Eenmalig',
+              data: monthlyData.map(m => m.eenmalig - (m.korting || 0)),
+              backgroundColor: 'rgba(96, 165, 250, 0.8)',
+              borderColor: '#60A5FA',
+              borderWidth: 1,
+              borderRadius: { topLeft: 0, topRight: 0 },
+              stack: 'revenue'
+            },
+            {
+              label: 'Hosting',
+              data: monthlyData.map(m => m.hosting),
+              backgroundColor: 'rgba(52, 211, 153, 0.8)',
+              borderColor: '#34d399',
+              borderWidth: 1,
+              borderRadius: { topLeft: 0, topRight: 0 },
+              stack: 'revenue'
+            },
+            {
+              label: 'Upsells',
+              data: monthlyData.map(m => m.upsells),
+              backgroundColor: 'rgba(167, 139, 250, 0.8)',
+              borderColor: '#A78BFA',
+              borderWidth: 1,
+              borderRadius: { topLeft: 4, topRight: 4 },
+              stack: 'revenue'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' }
+            },
+            tooltip: {
+              ...CHART_TOOLTIP,
+              mode: 'index',
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`,
+                footer: (items) => {
+                  const total = items.reduce((s, i) => s + i.parsed.y, 0);
+                  return `Totaal: ${formatCurrency(total)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+            y: {
+              stacked: true,
+              grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+              ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => formatCurrency(v) }
+            }
+          }
+        }
+      });
+    }
+
+    // ========== DONUT: Omzet verdeling ==========
+    function renderRevenueDonut(revenue) {
+      const ctx = document.getElementById('revenue-donut-chart').getContext('2d');
+      const b = revenue.breakdown || {};
+      const eenmalig = (b.eenmalig || 0) + (b.upsellOneTime || 0) - (b.discount || 0);
+      const hosting = b.hostingCurrentYear || 0;
+      const upsells = b.upsellCurrentYear || 0;
+      const total = eenmalig + hosting + upsells;
+
+      document.getElementById('donut-total').textContent = formatCurrency(total);
+
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Eenmalig', 'Hosting', 'Upsells'],
           datasets: [{
-            data: dataPoints,
-            borderColor: color,
+            data: [eenmalig, hosting, upsells],
+            backgroundColor: ['rgba(96, 165, 250, 0.85)', 'rgba(52, 211, 153, 0.85)', 'rgba(167, 139, 250, 0.85)'],
+            borderColor: ['#60A5FA', '#34d399', '#A78BFA'],
             borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 0,
-            pointHoverRadius: 4,
-            pointHoverBackgroundColor: color,
-            fill: false
+            hoverOffset: 8
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { 
-            legend: { display: false }, 
-            tooltip: { 
-              enabled: true,
-              backgroundColor: '#111111',
-              borderColor: 'rgba(255,255,255,0.1)',
-              borderWidth: 1,
-              titleColor: '#f0f0f0',
-              bodyColor: color,
-              displayColors: false,
-              padding: 8,
-              cornerRadius: 6,
+          cutout: '68%',
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: { color: '#94a3b8', font: { size: 11 }, padding: 16, usePointStyle: true, pointStyle: 'circle' }
+            },
+            tooltip: {
+              ...CHART_TOOLTIP,
               callbacks: {
-                title: () => '',
-                label: (context) => context.parsed.y.toString()
+                label: (ctx) => {
+                  const val = ctx.parsed;
+                  const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                  return `${ctx.label}: ${formatCurrency(val)} (${pct}%)`;
+                }
               }
-            } 
-          },
-          scales: {
-            x: { display: false },
-            y: { display: false }
-          },
-          layout: { padding: 0 }
+            }
+          }
         }
       });
     }
 
+    // ========== FUNNEL: Horizontal bar ==========
     function renderFunnelChart(data) {
       const ctx = document.getElementById('funnel-chart').getContext('2d');
       const labels = data.funnel.map(f => STATUS_LABELS[f.status] || f.status);
       const values = data.funnel.map(f => f.count);
       const colors = [
-        'rgba(107, 114, 128, 0.8)',
-        'rgba(96, 165, 250, 0.8)',
-        'rgba(251, 146, 60, 0.8)',
-        'rgba(34, 211, 238, 0.8)',
-        'rgba(167, 139, 250, 0.8)',
-        'rgba(59, 130, 246, 0.8)',
-        'rgba(248, 113, 113, 0.8)'
+        'rgba(107, 114, 128, 0.8)', 'rgba(96, 165, 250, 0.8)', 'rgba(251, 146, 60, 0.8)',
+        'rgba(34, 211, 238, 0.8)', 'rgba(167, 139, 250, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(248, 113, 113, 0.8)'
       ];
       const borderColors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
-
       const totalLeads = values.reduce((a, b) => a + b, 0);
+
       new Chart(ctx, {
         type: 'bar',
         data: {
@@ -383,161 +409,56 @@
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: '#111111',
-              borderColor: 'rgba(255,255,255,0.1)',
-              borderWidth: 1,
-              titleColor: '#f0f0f0',
-              bodyColor: '#a0a0a0',
-              cornerRadius: 8,
-              padding: 12,
+              ...CHART_TOOLTIP,
               callbacks: {
-                label: (context) => {
-                  const value = context.parsed.x;
-                  const percentage = totalLeads > 0 ? ((value / totalLeads) * 100).toFixed(1) : 0;
-                  return [
-                    `Aantal: ${value} leads`,
-                    `Percentage: ${percentage}% van totaal`,
-                    `Totaal: ${totalLeads} leads`
-                  ];
+                label: (ctx) => {
+                  const v = ctx.parsed.x;
+                  const pct = totalLeads > 0 ? ((v / totalLeads) * 100).toFixed(1) : 0;
+                  return [`${v} leads (${pct}%)`];
                 }
               }
             }
           },
           scales: {
-            x: {
-              grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
-              ticks: { color: '#94a3b8', font: { size: 11 } }
-            },
-            y: {
-              grid: { display: false },
-              ticks: { color: '#cbd5e1', font: { size: 12, weight: 500 } }
-            }
+            x: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+            y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 12, weight: 500 } } }
           }
         }
       });
     }
 
-    function renderRevenueChart(data) {
-      const ctx = document.getElementById('revenue-chart').getContext('2d');
-      const months = data.monthlyRevenue.map(m => m.month);
-      const values = data.monthlyRevenue.map(m => m.revenue);
-
-      const gradient = ctx.createLinearGradient(0, 0, 0, 260);
-      gradient.addColorStop(0, 'rgba(52, 211, 153, 0.25)');
-      gradient.addColorStop(1, 'rgba(52, 211, 153, 0)');
-
-      const totalRevenue = values.reduce((a, b) => a + b, 0);
-      const avgRevenue = totalRevenue / values.length;
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: months,
-          datasets: [{
-            label: 'Omzet',
-            data: values,
-            borderColor: '#34d399',
-            backgroundColor: gradient,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            pointBackgroundColor: '#34d399',
-            pointBorderColor: '#111111',
-            pointBorderWidth: 2,
-            borderWidth: 2.5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#111111',
-              borderColor: 'rgba(255,255,255,0.1)',
-              borderWidth: 1,
-              titleColor: '#f0f0f0',
-              bodyColor: '#34d399',
-              cornerRadius: 8,
-              padding: 12,
-              callbacks: {
-                label: (context) => {
-                  const value = context.parsed.y;
-                  const percentage = totalRevenue > 0 ? ((value / totalRevenue) * 100).toFixed(1) : 0;
-                  const diff = value - avgRevenue;
-                  const diffText = diff >= 0 ? `+${formatCurrency(diff)}` : formatCurrency(diff);
-                  return [
-                    `Omzet: ${formatCurrency(value)}`,
-                    `${percentage}% van totaal`,
-                    `${diffText} vs gemiddelde`,
-                    `Gem: ${formatCurrency(avgRevenue)}`
-                  ];
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
-              ticks: { color: '#94a3b8', font: { size: 11 } }
-            },
-            y: {
-              grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
-              ticks: {
-                color: '#94a3b8',
-                font: { size: 11 },
-                callback: v => formatCurrency(v)
-              }
-            }
-          }
-        }
-      });
-    }
-
-    function renderLocationStats(locations) {
-      const topLocations = locations.slice(0, 10);
-      
-      const ctx = document.getElementById('location-chart').getContext('2d');
-      const cities = topLocations.map(l => l.city);
-      const totals = topLocations.map(l => l.total);
-      const verstuurd = topLocations.map(l => l.verstuurd);
-      const gereageerd = topLocations.map(l => l.gereageerd);
-      const klanten = topLocations.map(l => l.klanten);
+    // ========== GROUPED BAR: Kwartaal vergelijking ==========
+    function renderQuarterChart(revenue) {
+      const ctx = document.getElementById('quarter-chart').getContext('2d');
+      const q = revenue.quarters || {};
+      const labels = ['Q1', 'Q2', 'Q3', 'Q4'];
 
       new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: cities,
+          labels,
           datasets: [
             {
-              label: 'Totaal leads',
-              data: totals,
-              backgroundColor: 'rgba(107, 114, 128, 0.6)',
-              borderColor: 'rgba(107, 114, 128, 0.8)',
+              label: 'Eenmalig',
+              data: labels.map(qk => (q[qk]?.eenmalig || 0)),
+              backgroundColor: 'rgba(96, 165, 250, 0.75)',
+              borderColor: '#60A5FA',
               borderWidth: 1,
               borderRadius: 6
             },
             {
-              label: 'Verstuurd',
-              data: verstuurd,
-              backgroundColor: 'rgba(96, 165, 250, 0.6)',
-              borderColor: 'rgba(96, 165, 250, 0.8)',
+              label: 'Hosting',
+              data: labels.map(qk => (q[qk]?.hosting || 0)),
+              backgroundColor: 'rgba(52, 211, 153, 0.75)',
+              borderColor: '#34d399',
               borderWidth: 1,
               borderRadius: 6
             },
             {
-              label: 'Gereageerd',
-              data: gereageerd,
-              backgroundColor: 'rgba(251, 146, 60, 0.6)',
-              borderColor: 'rgba(251, 146, 60, 0.8)',
-              borderWidth: 1,
-              borderRadius: 6
-            },
-            {
-              label: 'Klanten',
-              data: klanten,
-              backgroundColor: 'rgba(52, 211, 153, 0.6)',
-              borderColor: 'rgba(52, 211, 153, 0.8)',
+              label: 'Upsells',
+              data: labels.map(qk => (q[qk]?.upsells || 0)),
+              backgroundColor: 'rgba(167, 139, 250, 0.75)',
+              borderColor: '#A78BFA',
               borderWidth: 1,
               borderRadius: 6
             }
@@ -550,97 +471,253 @@
             legend: {
               display: true,
               position: 'top',
-              labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16 }
+              labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' }
             },
             tooltip: {
-              backgroundColor: '#111111',
-              borderColor: 'rgba(255,255,255,0.1)',
-              borderWidth: 1,
-              titleColor: '#f0f0f0',
-              bodyColor: '#a0a0a0',
-              cornerRadius: 8,
-              padding: 12,
+              ...CHART_TOOLTIP,
+              mode: 'index',
               callbacks: {
-                label: (context) => {
-                  const datasetLabel = context.dataset.label;
-                  const value = context.parsed.y;
-                  const city = context.label;
-                  const dataIndex = context.dataIndex;
-                  
-                  // Get all values for this city
-                  const allDatasets = context.chart.data.datasets;
-                  const totaal = allDatasets[0].data[dataIndex];
-                  const verstuurd = allDatasets[1].data[dataIndex];
-                  const gereageerd = allDatasets[2].data[dataIndex];
-                  const klanten = allDatasets[3].data[dataIndex];
-                  
-                  const responseRate = verstuurd > 0 ? ((gereageerd / verstuurd) * 100).toFixed(1) : 0;
-                  const conversionRate = gereageerd > 0 ? ((klanten / gereageerd) * 100).toFixed(1) : 0;
-                  
-                  return [
-                    `${datasetLabel}: ${value}`,
-                    `Reactieratio: ${responseRate}%`,
-                    `Conversie: ${conversionRate}%`
-                  ];
+                label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`,
+                footer: (items) => {
+                  const total = items.reduce((s, i) => s + i.parsed.y, 0);
+                  return `Totaal: ${formatCurrency(total)}`;
                 }
               }
             }
           },
           scales: {
-            x: {
-              grid: { display: false },
-              ticks: { color: '#94a3b8', font: { size: 10 } }
-            },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12, weight: 600 } } },
             y: {
               grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
-              ticks: { color: '#94a3b8' }
+              ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => formatCurrency(v) }
+            }
+          }
+        }
+      });
+    }
+
+    // ========== POLAR AREA: Acquisitie kanalen ==========
+    function renderAcquisitionPolar(revenue) {
+      const ctx = document.getElementById('acquisition-polar-chart').getContext('2d');
+      const flyer = revenue.flyer || {};
+      const warm = revenue.warm || {};
+
+      new Chart(ctx, {
+        type: 'polarArea',
+        data: {
+          labels: ['Flyer omzet', 'Warm omzet', 'Flyer kosten', 'Warm kosten'],
+          datasets: [{
+            data: [flyer.revenue || 0, warm.revenue || 0, flyer.cost || 0, warm.cost || 0],
+            backgroundColor: [
+              'rgba(96, 165, 250, 0.7)',
+              'rgba(52, 211, 153, 0.7)',
+              'rgba(251, 146, 60, 0.5)',
+              'rgba(248, 113, 113, 0.5)'
+            ],
+            borderColor: ['#60A5FA', '#34d399', '#FB923C', '#F87171'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              ...CHART_TOOLTIP,
+              callbacks: { label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.parsed.r)}` }
+            }
+          },
+          scales: {
+            r: {
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { display: false },
+              pointLabels: { display: false }
             }
           }
         }
       });
 
-      const tableContainer = document.getElementById('location-table-container');
-      if (locations.length === 0) {
-        tableContainer.innerHTML = '<div class="empty-state"><div class="empty-state-text">Nog geen locatie data</div></div>';
-        return;
-      }
-
-      tableContainer.innerHTML = `
-        <table class="data-table" style="font-size:12px;">
-          <thead>
-            <tr>
-              <th>Gemeente</th>
-              <th style="text-align:right;">${wrapWithTooltip('Totaal', 'loc-totaal')}</th>
-              <th style="text-align:right;">${wrapWithTooltip('Verstuurd', 'loc-verstuurd')}</th>
-              <th style="text-align:right;">${wrapWithTooltip('Reactie', 'loc-reactie')}</th>
-              <th style="text-align:right;">${wrapWithTooltip('Klanten', 'loc-klanten')}</th>
-              <th style="text-align:right;">${wrapWithTooltip('Omzet', 'loc-omzet')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${locations.map(loc => `
-              <tr>
-                <td style="font-weight:600;">${loc.city}</td>
-                <td style="text-align:right;">${loc.total}</td>
-                <td style="text-align:right;">${loc.verstuurd}</td>
-                <td style="text-align:right;">
-                  ${loc.gereageerd}
-                  <span style="color:var(--text-muted);font-size:11px;">(${loc.responseRate}%)</span>
-                </td>
-                <td style="text-align:right;">
-                  ${loc.klanten}
-                  <span style="color:var(--text-muted);font-size:11px;">(${loc.conversionRate}%)</span>
-                </td>
-                <td style="text-align:right;font-weight:600;color:var(--accent-green);">
-                  ${loc.revenue > 0 ? formatCurrency(loc.revenue) : '-'}
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+      // Stats sidebar
+      const statsEl = document.getElementById('acquisition-stats');
+      const flyerROI = flyer.roi || 0;
+      const warmROI = warm.roi || 0;
+      statsEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Flyer</div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--text-muted);">Deals</span>
+            <span style="font-size:13px;font-weight:600;">${flyer.count || 0}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--text-muted);">Omzet</span>
+            <span style="font-size:13px;font-weight:600;color:#60A5FA;">${formatCurrency(flyer.revenue || 0)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--text-muted);">ROI</span>
+            <span style="font-size:13px;font-weight:600;color:${flyerROI > 0 ? '#34d399' : '#F87171'};">${flyerROI}%</span>
+          </div>
+          <hr style="border-color:var(--border-color);margin:4px 0;">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Warm / Direct</div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--text-muted);">Deals</span>
+            <span style="font-size:13px;font-weight:600;">${warm.count || 0}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--text-muted);">Omzet</span>
+            <span style="font-size:13px;font-weight:600;color:#34d399;">${formatCurrency(warm.revenue || 0)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--text-muted);">ROI</span>
+            <span style="font-size:13px;font-weight:600;color:${warmROI > 0 ? '#34d399' : '#F87171'};">${warmROI}%</span>
+          </div>
+        </div>
       `;
     }
 
+    // ========== HORIZONTAL BAR: Top locaties ==========
+    function renderLocationChart(locations) {
+      const top = locations.slice(0, 8);
+      const ctx = document.getElementById('location-chart').getContext('2d');
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: top.map(l => l.city),
+          datasets: [
+            {
+              label: 'Leads',
+              data: top.map(l => l.total),
+              backgroundColor: 'rgba(107, 114, 128, 0.6)',
+              borderColor: '#6B7280',
+              borderWidth: 1,
+              borderRadius: 4
+            },
+            {
+              label: 'Klanten',
+              data: top.map(l => l.klanten),
+              backgroundColor: 'rgba(52, 211, 153, 0.7)',
+              borderColor: '#34d399',
+              borderWidth: 1,
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' }
+            },
+            tooltip: {
+              ...CHART_TOOLTIP,
+              callbacks: {
+                afterBody: (items) => {
+                  const idx = items[0].dataIndex;
+                  const loc = top[idx];
+                  return [
+                    `Verstuurd: ${loc.verstuurd}`,
+                    `Gereageerd: ${loc.gereageerd}`,
+                    `Reactieratio: ${loc.responseRate}%`,
+                    `Conversie: ${loc.conversionRate}%`,
+                    loc.revenue > 0 ? `Omzet: ${formatCurrency(loc.revenue)}` : ''
+                  ].filter(Boolean);
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+            y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 11, weight: 500 } } }
+          }
+        }
+      });
+    }
+
+    // ========== FINANCIAL SUMMARY with progress bars ==========
+    function renderFinancialSummary(dashboard, revenue) {
+      const container = document.getElementById('financial-summary');
+      const yr = revenue?.currentYear || new Date().getFullYear();
+      const b = revenue?.breakdown || {};
+      const hostCY = b.hostingCurrentYear || 0;
+      const upsellCY = b.upsellCurrentYear || 0;
+      const eenmalig = (b.eenmalig || 0) + (b.upsellOneTime || 0) - (b.discount || 0);
+      const totalCY = eenmalig + hostCY + upsellCY;
+      const profit = revenue?.totalProfitThisYear || 0;
+      const costs = revenue?.totalCostsThisYear || 0;
+      const maxBar = Math.max(eenmalig, hostCY, upsellCY, 1);
+
+      function progressBar(value, color, maxVal) {
+        const pct = maxVal > 0 ? Math.min((value / maxVal) * 100, 100) : 0;
+        return `<div style="width:100%;height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;margin-top:4px;">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.6s ease;"></div>
+        </div>`;
+      }
+
+      container.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:rgba(52,211,153,0.08);border-radius:8px;border-left:3px solid #34d399;">
+            <span style="color:var(--text-muted);font-size:13px;">Totaal omzet ${yr}</span>
+            <span style="font-weight:800;font-size:20px;color:#34d399;">${formatCurrency(totalCY)}</span>
+          </div>
+
+          <div style="padding:0 4px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:var(--text-muted);font-size:12px;">Eenmalig netto</span>
+              <span style="font-weight:600;font-size:13px;color:#60A5FA;">${formatCurrency(eenmalig)}</span>
+            </div>
+            ${progressBar(eenmalig, '#60A5FA', maxBar)}
+          </div>
+          <div style="padding:0 4px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:var(--text-muted);font-size:12px;">Hosting ${yr}</span>
+              <span style="font-weight:600;font-size:13px;color:#34d399;">${formatCurrency(hostCY)}</span>
+            </div>
+            ${progressBar(hostCY, '#34d399', maxBar)}
+          </div>
+          ${upsellCY > 0 ? `<div style="padding:0 4px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:var(--text-muted);font-size:12px;">Upsells ${yr}</span>
+              <span style="font-weight:600;font-size:13px;color:#A78BFA;">${formatCurrency(upsellCY)}</span>
+            </div>
+            ${progressBar(upsellCY, '#A78BFA', maxBar)}
+          </div>` : ''}
+
+          <hr style="border-color:var(--border-color);margin:4px 0;">
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="padding:12px;background:rgba(52,211,153,0.08);border-radius:8px;text-align:center;">
+              <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Winst</div>
+              <div style="font-size:16px;font-weight:700;color:${profit >= 0 ? '#34d399' : '#F87171'};margin-top:4px;">${formatCurrency(profit)}</div>
+            </div>
+            <div style="padding:12px;background:rgba(248,113,113,0.08);border-radius:8px;text-align:center;">
+              <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Kosten</div>
+              <div style="font-size:16px;font-weight:700;color:#FB923C;margin-top:4px;">${formatCurrency(costs)}</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(96,165,250,0.08);border-radius:8px;border-left:3px solid #60A5FA;">
+            <span style="color:var(--text-muted);font-size:13px;">ROI</span>
+            <span style="font-weight:800;font-size:18px;color:#60A5FA;">${revenue?.roi || 0}%</span>
+          </div>
+
+          <hr style="border-color:var(--border-color);margin:4px 0;">
+          <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Per pakket</div>
+          ${(revenue?.packageRevenue || []).length > 0 ? revenue.packageRevenue.map(p => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;">
+              <span style="font-size:12px;color:var(--text-muted);">${p.name}</span>
+              <span style="font-weight:600;font-size:12px;color:var(--text-primary);">${formatCurrency(p.revenue)}</span>
+            </div>
+          `).join('') : '<span style="font-size:12px;color:var(--text-muted);padding:0 4px;">Nog geen deals</span>'}
+        </div>
+      `;
+    }
+
+    // ========== RECENT LEADS ==========
     function renderRecentLeads(leads) {
       const container = document.getElementById('recent-leads');
       if (leads.length === 0) {
@@ -662,62 +739,6 @@
             `).join('')}
           </tbody>
         </table>
-      `;
-    }
-
-    function renderFinancialSummary(dashboard, revenue) {
-      const container = document.getElementById('financial-summary');
-      const yr = revenue?.currentYear || new Date().getFullYear();
-      const b = revenue?.breakdown || {};
-      const hostCY = b.hostingCurrentYear || 0;
-      const upsellCY = b.upsellCurrentYear || 0;
-      const eenmalig = (b.eenmalig || 0) + (b.upsellOneTime || 0) - (b.discount || 0);
-      const totalCY = eenmalig + hostCY + upsellCY;
-      const q = revenue?.quarters || {};
-      
-      const qLabels = { Q1: 'jan-mrt', Q2: 'apr-jun', Q3: 'jul-sep', Q4: 'okt-dec' };
-      
-      container.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:14px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.1);border-radius:8px;border-left:3px solid #34d399;">
-            <span style="color:var(--text-muted);font-size:13px;">Omzet ${yr}</span>
-            <span style="font-weight:800;font-size:18px;color:#34d399;">${formatCurrency(totalCY)}</span>
-          </div>
-          <div class="flex justify-between items-center" style="padding:0 4px;">
-            <span style="color:var(--text-muted);font-size:13px;">Eenmalig netto</span>
-            <span style="font-weight:600;font-size:14px;color:var(--text-primary);">${formatCurrency(eenmalig)}</span>
-          </div>
-          <div class="flex justify-between items-center" style="padding:0 4px;">
-            <span style="color:var(--text-muted);font-size:13px;">Hosting ${yr}</span>
-            <span style="font-weight:600;font-size:14px;color:var(--text-primary);">${formatCurrency(hostCY)}</span>
-          </div>
-          ${upsellCY > 0 ? `<div class="flex justify-between items-center" style="padding:0 4px;">
-            <span style="color:var(--text-muted);font-size:13px;">Upsells ${yr}</span>
-            <span style="font-weight:600;font-size:14px;color:var(--text-primary);">${formatCurrency(upsellCY)}</span>
-          </div>` : ''}
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.1);border-radius:8px;border-left:3px solid #34d399;">
-            <span style="color:var(--text-muted);font-size:13px;">ROI</span>
-            <span style="font-weight:800;font-size:18px;color:#34d399;">${revenue.roi}%</span>
-          </div>
-          <hr style="border-color:var(--border-color);margin:4px 0;">
-          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Per kwartaal ${yr}</div>
-          ${['Q1','Q2','Q3','Q4'].map(qk => {
-            const qData = q[qk] || { hosting: 0, upsells: 0, eenmalig: 0 };
-            const qTotal = qData.hosting + qData.upsells + qData.eenmalig;
-            return `<div class="flex justify-between items-center" style="padding:0 4px;">
-              <span style="font-size:13px;color:var(--text-muted);">${qk} (${qLabels[qk]})</span>
-              <span style="font-weight:600;font-size:13px;color:var(--text-primary);">${formatCurrency(qTotal)}</span>
-            </div>`;
-          }).join('')}
-          <hr style="border-color:var(--border-color);margin:4px 0;">
-          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Omzet per pakket</div>
-          ${revenue.packageRevenue.length > 0 ? revenue.packageRevenue.map(p => `
-            <div class="flex justify-between items-center" style="padding:0 4px;">
-              <span style="font-size:13px;color:var(--text-muted);">${p.name}</span>
-              <span style="font-weight:600;font-size:13px;color:var(--text-primary);">${formatCurrency(p.revenue)}</span>
-            </div>
-          `).join('') : '<span style="font-size:13px;color:var(--text-muted);">Nog geen deals</span>'}
-        </div>
       `;
     }
 

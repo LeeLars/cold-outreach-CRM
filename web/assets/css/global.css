@@ -1650,13 +1650,13 @@ textarea.form-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: rgba(59, 130, 246, 0.15);
-  color: var(--accent-brand);
-  font-size: 10px;
-  font-weight: 700;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   position: relative;
@@ -1665,9 +1665,8 @@ textarea.form-input {
 }
 
 .stat-tooltip-icon:hover {
-  background: rgba(59, 130, 246, 0.3);
-  color: #fff;
-  transform: scale(1.15);
+  background: rgba(148, 163, 184, 0.25);
+  color: var(--text-secondary);
 }
 
 /* Floating tooltip - positioned via JS, always on top */

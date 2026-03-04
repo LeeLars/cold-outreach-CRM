@@ -89,7 +89,7 @@
         if (!reminders || reminders.length === 0) { container.innerHTML = ''; return; }
 
         container.innerHTML = `
-          <div style="background:var(--bg-card);border:1px solid var(--accent-orange-dim);border-left:4px solid var(--accent-orange);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;">
+          <div style="background:var(--accent-orange-dim);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;">
             <div style="font-size:14px;font-weight:700;color:var(--accent-orange);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
               <i data-lucide="bell-ring" style="width:18px;height:18px;"></i>
               ${reminders.length} afspraak${reminders.length > 1 ? 'en' : ''} binnenkort - stuur een herinnering!
@@ -297,7 +297,7 @@
                 <i data-lucide="${s.icon}" style="width:14px;height:14px;color:${s.color};flex-shrink:0;"></i>
                 <span style="width:90px;font-size:12px;color:var(--text-secondary);font-weight:500;">${s.label}</span>
                 <div style="flex:1;height:20px;background:rgba(255,255,255,0.04);border-radius:4px;overflow:hidden;position:relative;">
-                  <div style="height:100%;width:${barPct}%;background:${s.color}30;border-radius:4px;border-left:3px solid ${s.color};transition:width 0.6s ease;"></div>
+                  <div style="height:100%;width:${barPct}%;background:${s.color}30;border-radius:4px;transition:width 0.6s ease;"></div>
                 </div>
                 <span style="width:40px;text-align:right;font-size:13px;font-weight:700;color:var(--text-primary);">${s.value}</span>
                 ${s.pct !== undefined ? `<span style="width:45px;text-align:right;font-size:11px;font-weight:600;color:${s.color};">${s.pct}%</span>` : '<span style="width:45px;"></span>'}
@@ -305,7 +305,7 @@
             `;
           }).join('')}
         </div>
-        <div style="padding:12px;margin-top:8px;border-top:1px solid var(--border-color);text-align:center;">
+        <div style="padding:12px;margin-top:8px;text-align:center;">
           <a href="stats.html" style="font-size:12px;color:var(--accent-brand);text-decoration:none;font-weight:600;">Bekijk volledige funnel analyse &rarr;</a>
         </div>
       `;
@@ -362,7 +362,7 @@
               </div>
             </div>
           ` : ''}
-          <div style="padding:8px 12px;text-align:center;border-top:1px solid var(--border-color);margin-top:4px;">
+          <div style="padding:8px 12px;text-align:center;margin-top:4px;">
             <a href="stats.html" style="font-size:12px;color:var(--accent-brand);text-decoration:none;font-weight:600;">Bekijk volledige omzet analyse &rarr;</a>
           </div>
         </div>

@@ -206,7 +206,7 @@
 
         <div id="scan-progress" class="hidden" style="margin-top:16px;">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-            <div class="spinner" style="width:20px;height:20px;border:2px solid var(--border-color);border-top-color:var(--accent-brand);border-radius:50%;animation:spin 0.6s linear infinite;"></div>
+            <div class="spinner" style="width:20px;height:20px;border-radius:50%;animation:spin 0.6s linear infinite;"></div>
             <span id="scan-progress-text" style="font-size:13px;">Enveloppen verwerken...</span>
           </div>
           <div class="progress-bar"><div class="progress-bar-fill" id="scan-progress-bar" style="width:0%;transition:width 0.3s;"></div></div>
@@ -505,7 +505,7 @@
             <strong>${data.totalDuplicates} duplicaten</strong> gevonden in ${data.totalGroups} groepen (alle leads doorzocht)
           </div>
           ${data.duplicates.map((group, groupIndex) => `
-            <div style="margin-bottom:16px;border:1px solid var(--border-color);border-radius:var(--radius-sm);overflow:hidden;">
+            <div style="margin-bottom:16px;border-radius:var(--radius-sm);overflow:hidden;">
               <div style="padding:10px 14px;background:var(--bg-input);font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
                 <span>${group.companyName} (${group.count}x)</span>
                 <div style="display:flex;gap:8px;">

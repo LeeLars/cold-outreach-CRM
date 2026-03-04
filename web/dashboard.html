@@ -71,7 +71,7 @@
   <script src="assets/js/sidebar.js"></script>
   <script src="assets/js/tooltips.js"></script>
   <script>
-    const TT = { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 };
+    const TT = { backgroundColor: '#1E293B', borderColor: 'rgba(59,130,246,0.2)', borderWidth: 1, titleColor: '#E5E7EB', bodyColor: '#94A3B8', cornerRadius: 8, padding: 12 };
 
     async function init() {
       if (!await requireLogin()) return;
@@ -165,36 +165,36 @@
 
       grid.innerHTML = `
         <div class="dashboard-kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
-          <div class="dashboard-card" style="border-top:3px solid #34d399;">
+          <div class="dashboard-card" style="border-top:3px solid var(--accent-green);">
             <div class="dashboard-card-header">
               ${wrapWithTooltip('<span class="dashboard-label">Omzet ' + yr + '</span>', 'omzet-jaar')}
-              <i data-lucide="trending-up" style="color:#34d399;width:20px;height:20px;"></i>
+              <i data-lucide="trending-up" style="color:var(--accent-green);width:20px;height:20px;"></i>
             </div>
-            <div class="dashboard-value" style="color:#34d399;">${formatCurrency(totalCY)}</div>
+            <div class="dashboard-value" style="color:var(--accent-green);">${formatCurrency(totalCY)}</div>
             <div class="dashboard-subtext">Een: ${formatCurrency(eenmaligNetto)} | Host: ${formatCurrency(hostCY)}</div>
           </div>
-          <div class="dashboard-card" style="border-top:3px solid #60A5FA;">
+          <div class="dashboard-card" style="border-top:3px solid var(--accent-brand);">
             <div class="dashboard-card-header">
               ${wrapWithTooltip('<span class="dashboard-label">MRR</span>', 'mrr')}
-              <i data-lucide="repeat" style="color:#60A5FA;width:20px;height:20px;"></i>
+              <i data-lucide="repeat" style="color:var(--accent-brand);width:20px;height:20px;"></i>
             </div>
-            <div class="dashboard-value" style="color:#60A5FA;">${formatCurrency(mrr)}</div>
+            <div class="dashboard-value" style="color:var(--accent-brand);">${formatCurrency(mrr)}</div>
             <div class="dashboard-subtext">${formatCurrency(mrr * 12)}/jaar verwacht</div>
           </div>
-          <div class="dashboard-card" style="border-top:3px solid ${profit >= 0 ? '#34d399' : '#F87171'};">
+          <div class="dashboard-card" style="border-top:3px solid ${profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
             <div class="dashboard-card-header">
               ${wrapWithTooltip('<span class="dashboard-label">Winst ' + yr + '</span>', 'winst-jaar')}
-              <i data-lucide="piggy-bank" style="color:${profit >= 0 ? '#34d399' : '#F87171'};width:20px;height:20px;"></i>
+              <i data-lucide="piggy-bank" style="color:${profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};width:20px;height:20px;"></i>
             </div>
-            <div class="dashboard-value" style="color:${profit >= 0 ? '#34d399' : '#F87171'};">${formatCurrency(profit)}</div>
+            <div class="dashboard-value" style="color:${profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${formatCurrency(profit)}</div>
             <div class="dashboard-subtext">Marge: ${margin}%</div>
           </div>
-          <div class="dashboard-card" style="border-top:3px solid #A78BFA;">
+          <div class="dashboard-card" style="border-top:3px solid var(--accent-purple);">
             <div class="dashboard-card-header">
               ${wrapWithTooltip('<span class="dashboard-label">Klanten</span>', 'totaal-klanten')}
-              <i data-lucide="building-2" style="color:#A78BFA;width:20px;height:20px;"></i>
+              <i data-lucide="building-2" style="color:var(--accent-purple);width:20px;height:20px;"></i>
             </div>
-            <div class="dashboard-value" style="color:#A78BFA;">${data.totalClients || c.KLANT}</div>
+            <div class="dashboard-value" style="color:var(--accent-purple);">${data.totalClients || c.KLANT}</div>
             <div class="dashboard-subtext">Response: ${conv.responseRate}% | Close: ${conv.closeRate}%</div>
           </div>
         </div>
@@ -228,11 +228,11 @@
               label: 'Cumulatief',
               data: cumulative,
               type: 'line',
-              borderColor: '#34d399',
-              backgroundColor: 'rgba(52,211,153,0.08)',
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16,185,129,0.08)',
               borderWidth: 2,
               pointRadius: 3,
-              pointBackgroundColor: '#34d399',
+              pointBackgroundColor: '#10B981',
               fill: true,
               tension: 0.3,
               yAxisID: 'y1',
@@ -241,8 +241,8 @@
             {
               label: 'Per maand',
               data: totals,
-              backgroundColor: 'rgba(96,165,250,0.6)',
-              borderColor: '#60A5FA',
+              backgroundColor: 'rgba(59,130,246,0.5)',
+              borderColor: '#3B82F6',
               borderWidth: 1,
               borderRadius: 4,
               yAxisID: 'y',
@@ -255,7 +255,7 @@
           maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 10, padding: 12, usePointStyle: true } },
+            legend: { position: 'top', labels: { color: '#94A3B8', font: { size: 11 }, boxWidth: 10, padding: 12, usePointStyle: true } },
             tooltip: {
               ...TT,
               callbacks: {
@@ -264,9 +264,9 @@
             }
           },
           scales: {
-            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-            y: { position: 'left', grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => formatCurrency(v) } },
-            y1: { position: 'right', grid: { display: false }, ticks: { color: '#34d399', font: { size: 10 }, callback: v => formatCurrency(v) } }
+            x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
+            y: { position: 'left', grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', font: { size: 10 }, callback: v => formatCurrency(v) } },
+            y1: { position: 'right', grid: { display: false }, ticks: { color: '#10B981', font: { size: 10 }, callback: v => formatCurrency(v) } }
           }
         }
       });
@@ -279,11 +279,11 @@
       const conv = dashboard.conversions;
 
       const steps = [
-        { label: 'Totaal leads', value: dashboard.totalLeads, color: '#6B7280', icon: 'users' },
-        { label: 'Verstuurd', value: c.VERSTUURD + c.GEEN_REACTIE, pct: conv.sendRate, color: '#60A5FA', icon: 'send' },
-        { label: 'Gereageerd', value: c.GEREAGEERD + c.NIET_GEINTERESSEERD, pct: conv.responseRate, color: '#FB923C', icon: 'message-square' },
-        { label: 'Interesse', value: c.AFSPRAAK, pct: conv.interestRate, color: '#A78BFA', icon: 'thumbs-up' },
-        { label: 'Klant', value: c.KLANT, pct: conv.closeRate, color: '#34d399', icon: 'building-2' }
+        { label: 'Totaal leads', value: dashboard.totalLeads, color: '#64748B', icon: 'users' },
+        { label: 'Verstuurd', value: c.VERSTUURD + c.GEEN_REACTIE, pct: conv.sendRate, color: '#3B82F6', icon: 'send' },
+        { label: 'Gereageerd', value: c.GEREAGEERD + c.NIET_GEINTERESSEERD, pct: conv.responseRate, color: '#F59E0B', icon: 'message-square' },
+        { label: 'Interesse', value: c.AFSPRAAK, pct: conv.interestRate, color: '#8B5CF6', icon: 'thumbs-up' },
+        { label: 'Klant', value: c.KLANT, pct: conv.closeRate, color: '#10B981', icon: 'building-2' }
       ];
 
       const maxVal = Math.max(...steps.map(s => s.value), 1);
@@ -342,23 +342,23 @@
 
       container.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(52,211,153,0.06);border-radius:6px;margin:0 8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(16,185,129,0.06);border-radius:6px;margin:0 8px;">
             <span style="color:var(--text-muted);font-size:12px;">Totaal ${yr}</span>
-            <span style="font-weight:700;font-size:18px;color:#34d399;">${formatCurrency(totalCY)}</span>
+            <span style="font-weight:700;font-size:18px;color:var(--accent-green);">${formatCurrency(totalCY)}</span>
           </div>
-          ${splitBar('Eenmalig (netto)', eenmalig, '#60A5FA')}
-          ${splitBar('Hosting', hostCY, '#34d399')}
-          ${upsellCY > 0 ? splitBar('Upsells', upsellCY, '#A78BFA') : ''}
+          ${splitBar('Eenmalig (netto)', eenmalig, '#3B82F6')}
+          ${splitBar('Hosting', hostCY, '#10B981')}
+          ${upsellCY > 0 ? splitBar('Upsells', upsellCY, '#8B5CF6') : ''}
           ${costs > 0 ? `
             <hr style="border-color:var(--border-color);margin:2px 12px;">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px;">
-              <div style="padding:10px;background:rgba(248,113,113,0.06);border-radius:6px;text-align:center;">
+              <div style="padding:10px;background:rgba(245,158,11,0.06);border-radius:6px;text-align:center;">
                 <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Kosten</div>
-                <div style="font-size:14px;font-weight:700;color:#FB923C;margin-top:2px;">${formatCurrency(costs)}</div>
+                <div style="font-size:14px;font-weight:700;color:var(--accent-orange);margin-top:2px;">${formatCurrency(costs)}</div>
               </div>
-              <div style="padding:10px;background:rgba(96,165,250,0.06);border-radius:6px;text-align:center;">
+              <div style="padding:10px;background:rgba(59,130,246,0.06);border-radius:6px;text-align:center;">
                 <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">ROI</div>
-                <div style="font-size:14px;font-weight:700;color:#60A5FA;margin-top:2px;">${revenue?.roi || 0}%</div>
+                <div style="font-size:14px;font-weight:700;color:var(--accent-brand);margin-top:2px;">${revenue?.roi || 0}%</div>
               </div>
             </div>
           ` : ''}

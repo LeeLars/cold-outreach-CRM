@@ -41,12 +41,12 @@
           </div>
           <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="funnel-kpis"></div>
           <div class="grid-2 mb-24">
-            <div class="card" style="border-top:2px solid #60a5fa;">
-              <div class="card-header"><span class="card-title" style="color:#60a5fa;">Pipeline per status</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-brand);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Pipeline per status</span></div>
               <div class="card-body"><canvas id="funnel-bar-chart" height="280"></canvas></div>
             </div>
-            <div class="card" style="border-top:2px solid #A78BFA;">
-              <div class="card-header"><span class="card-title" style="color:#A78BFA;">Status verdeling</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-purple);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-purple);">Status verdeling</span></div>
               <div class="card-body" style="position:relative;">
                 <div style="max-width:260px;margin:0 auto;"><canvas id="funnel-donut-chart" height="260"></canvas></div>
                 <div style="position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
@@ -56,8 +56,8 @@
               </div>
             </div>
           </div>
-          <div class="card" style="border-top:2px solid #60a5fa;">
-            <div class="card-header"><span class="card-title" style="color:#60a5fa;">Conversieratio per stap</span></div>
+          <div class="card" style="border-top:2px solid var(--accent-brand);">
+            <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Conversieratio per stap</span></div>
             <div class="card-body" id="conversion-steps"></div>
           </div>
         </div>
@@ -79,26 +79,26 @@
           <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="mrr-kpis"></div>
 
           <!-- Omzet breakdown card - HIDDEN -->
-          <div class="card mb-24" style="border-top:2px solid #34d399;display:none;">
-            <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet opbouw</span></div>
+          <div class="card mb-24" style="border-top:2px solid var(--accent-green);display:none;">
+            <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Omzet opbouw</span></div>
             <div class="card-body" id="revenue-breakdown-card"></div>
           </div>
 
           <!-- Charts row 1: monthly stacked + composition doughnut -->
           <div class="grid-2 mb-24">
-            <div class="card" style="border-top:2px solid #34d399;">
-              <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet per maand (opbouw)</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-green);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Omzet per maand (opbouw)</span></div>
               <div class="card-body"><canvas id="monthly-revenue-chart" height="300"></canvas></div>
             </div>
-            <div class="card" style="border-top:2px solid #34d399;">
-              <div class="card-header"><span class="card-title" style="color:#34d399;">Omzet samenstelling</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-green);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Omzet samenstelling</span></div>
               <div class="card-body"><canvas id="revenue-composition-chart" height="300"></canvas></div>
             </div>
           </div>
 
           <!-- Package performance -->
-          <div class="card mb-24" style="border-top:2px solid #3B82F6;">
-            <div class="card-header"><span class="card-title" style="color:#3B82F6;">Pakket performance</span></div>
+          <div class="card mb-24" style="border-top:2px solid var(--accent-brand);">
+            <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Pakket performance</span></div>
             <div class="card-body" style="padding:0;">
               <table class="data-table" style="font-size:13px;">
                 <thead><tr><th>Pakket</th><th style="text-align:center;">Verkocht</th><th style="text-align:right;">Eenmalig</th><th style="text-align:right;">Hosting/jaar</th><th style="text-align:right;">Totaal</th><th style="text-align:right;">Gem. per deal</th></tr></thead>
@@ -108,8 +108,8 @@
           </div>
 
           <!-- Upsell performance -->
-          <div class="card mb-24" style="border-top:2px solid #A78BFA;" id="upsell-perf-card">
-            <div class="card-header"><span class="card-title" style="color:#A78BFA;">Upsell performance</span></div>
+          <div class="card mb-24" style="border-top:2px solid var(--accent-purple);" id="upsell-perf-card">
+            <div class="card-header"><span class="card-title" style="color:var(--accent-purple);">Upsell performance</span></div>
             <div class="card-body" style="padding:0;">
               <table class="data-table" style="font-size:13px;">
                 <thead><tr><th>Upsell</th><th>Type</th><th style="text-align:center;">Verkocht</th><th style="text-align:right;">Prijs</th><th style="text-align:right;">Totale omzet</th></tr></thead>
@@ -119,8 +119,8 @@
           </div>
 
           <!-- Quarter comparison -->
-          <div class="card mb-24" style="border-top:2px solid #FB923C;">
-            <div class="card-header"><span class="card-title" style="color:#FB923C;">Kwartaal vergelijking</span></div>
+          <div class="card mb-24" style="border-top:2px solid var(--accent-orange);">
+            <div class="card-header"><span class="card-title" style="color:var(--accent-orange);">Kwartaal vergelijking</span></div>
             <div class="card-body"><canvas id="quarter-compare-chart" height="280"></canvas></div>
           </div>
 
@@ -138,7 +138,7 @@
                     <th style="text-align:right;">Korting</th><th style="text-align:right;">Hosting/jr</th>
                     <th style="text-align:right;font-weight:700;">Omzet (jaar)</th>
                     <th style="text-align:right;color:var(--accent-orange);">Kosten (jaar)</th>
-                    <th style="text-align:right;color:#34d399;font-weight:700;">Winst (jaar)</th>
+                    <th style="text-align:right;color:var(--accent-green);font-weight:700;">Winst (jaar)</th>
                     <th>Datum</th>
                   </tr></thead>
                   <tbody id="revenue-client-body"></tbody>
@@ -151,8 +151,8 @@
         <!-- Acquisitie Tab -->
         <div id="tab-acquisitie" class="hidden">
           <div class="section-header">
-            <div class="section-header-icon" style="background:rgba(251,146,60,0.15);"><i data-lucide="megaphone" style="width:18px;height:18px;color:#FB923C;"></i></div>
-            <span class="section-header-title" style="color:#FB923C;">Acquisitie kanalen</span>
+            <div class="section-header-icon" style="background:var(--accent-orange-dim);"><i data-lucide="megaphone" style="width:18px;height:18px;color:var(--accent-orange);"></i></div>
+            <span class="section-header-title" style="color:var(--accent-orange);">Acquisitie kanalen</span>
           </div>
 
           <!-- Channel KPIs -->
@@ -160,12 +160,12 @@
 
           <!-- Charts row: Kanaal vergelijking + ROI -->
           <div class="grid-2 mb-24">
-            <div class="card" style="border-top:2px solid #60A5FA;">
-              <div class="card-header"><span class="card-title" style="color:#60A5FA;">Omzet per kanaal</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-brand);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Omzet per kanaal</span></div>
               <div class="card-body"><canvas id="acq-channel-chart" height="280"></canvas></div>
             </div>
-            <div class="card" style="border-top:2px solid #A78BFA;">
-              <div class="card-header"><span class="card-title" style="color:#A78BFA;">Kosten vs Winst</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-purple);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-purple);">Kosten vs Winst</span></div>
               <div class="card-body"><canvas id="acq-profit-chart" height="280"></canvas></div>
             </div>
           </div>
@@ -227,14 +227,14 @@
           </div>
 
           <div class="grid-2 mb-24">
-            <div class="card" style="border-top:2px solid #A78BFA;">
-              <div class="card-header"><span class="card-title" style="color:#A78BFA;">Lead verdeling top gemeentes</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-purple);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-purple);">Lead verdeling top gemeentes</span></div>
               <div class="card-body" style="position:relative;">
                 <div style="max-width:280px;margin:0 auto;"><canvas id="location-donut-chart" height="280"></canvas></div>
               </div>
             </div>
-            <div class="card" style="border-top:2px solid #FB923C;">
-              <div class="card-header"><span class="card-title" style="color:#FB923C;">Response & Conversie per gemeente</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-orange);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-orange);">Response & Conversie per gemeente</span></div>
               <div class="card-body">
                 <canvas id="location-rates-chart" height="280"></canvas>
               </div>
@@ -291,14 +291,14 @@
           <div id="hosting-alerts" style="margin-bottom:20px;"></div>
 
           <div class="grid-2 mb-24">
-            <div class="card" style="border-top:2px solid #34d399;">
-              <div class="card-header"><span class="card-title" style="color:#34d399;">Hosting prijs verdeling</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-green);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Hosting prijs verdeling</span></div>
               <div class="card-body" style="position:relative;">
                 <div style="max-width:240px;margin:0 auto;"><canvas id="hosting-price-donut" height="240"></canvas></div>
               </div>
             </div>
-            <div class="card" style="border-top:2px solid #60A5FA;">
-              <div class="card-header"><span class="card-title" style="color:#60A5FA;">Omzet per klant (hosting/jaar)</span></div>
+            <div class="card" style="border-top:2px solid var(--accent-brand);">
+              <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Omzet per klant (hosting/jaar)</span></div>
               <div class="card-body"><canvas id="hosting-revenue-bar" height="240"></canvas></div>
             </div>
           </div>
@@ -352,7 +352,7 @@
   <script src="assets/js/tooltips.js"></script>
   <script>
     let charts = {};
-    const TT = { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 };
+    const TT = { backgroundColor: '#1E293B', borderColor: 'rgba(59,130,246,0.2)', borderWidth: 1, titleColor: '#E5E7EB', bodyColor: '#94A3B8', cornerRadius: 8, padding: 12 };
 
     let locationDataAll = {};
     let locationData = [];
@@ -438,22 +438,22 @@
         document.getElementById('funnel-kpis').innerHTML = `
           <div class="kpi-card lead-theme">
             ${wrapWithTooltip('<div class="kpi-label">Verstuurd ratio</div>', 'send-rate')}
-            <div class="kpi-value" style="color:#60a5fa;">${data.conversions.sendRate}%</div>
+            <div class="kpi-value" style="color:#3B82F6;">${data.conversions.sendRate}%</div>
             <span class="kpi-badge neutral">${cur.VERSTUURD + cur.GEEN_REACTIE} nu verstuurd</span>
           </div>
           <div class="kpi-card lead-theme">
             ${wrapWithTooltip('<div class="kpi-label">Reactie ratio</div>', 'response-rate')}
-            <div class="kpi-value" style="color:#fb923c;">${data.conversions.responseRate}%</div>
+            <div class="kpi-value" style="color:#F59E0B;">${data.conversions.responseRate}%</div>
             <span class="kpi-badge positive">${cur.GEREAGEERD + cur.NIET_GEINTERESSEERD} gereageerd</span>
           </div>
           <div class="kpi-card lead-theme">
             ${wrapWithTooltip('<div class="kpi-label">Interesse ratio</div>', 'interest-rate')}
-            <div class="kpi-value" style="color:#a78bfa;">${data.conversions.interestRate}%</div>
+            <div class="kpi-value" style="color:#8B5CF6;">${data.conversions.interestRate}%</div>
             <span class="kpi-badge positive">${cur.AFSPRAAK} interesse</span>
           </div>
           <div class="kpi-card client-theme">
             ${wrapWithTooltip('<div class="kpi-label">Close ratio</div>', 'close-rate')}
-            <div class="kpi-value" style="color:#34d399;">${data.conversions.closeRate}%</div>
+            <div class="kpi-value" style="color:#10B981;">${data.conversions.closeRate}%</div>
             <span class="kpi-badge positive">${cur.KLANT} klanten</span>
           </div>
         `;
@@ -462,8 +462,8 @@
         if (charts.funnel) charts.funnel.destroy();
         const funnelLabels = data.funnel.map(f => STATUS_LABELS[f.status] || f.status);
         const funnelValues = data.funnel.map(f => f.count);
-        const colors = ['rgba(107,114,128,0.8)', 'rgba(96,165,250,0.8)', 'rgba(251,146,60,0.8)', 'rgba(34,211,238,0.8)', 'rgba(167,139,250,0.8)', 'rgba(59,130,246,0.8)', 'rgba(248,113,113,0.8)'];
-        const borderColors = ['#6B7280', '#60A5FA', '#FB923C', '#22D3EE', '#A78BFA', '#3B82F6', '#F87171'];
+        const colors = ['rgba(100,116,139,0.7)', 'rgba(59,130,246,0.7)', 'rgba(245,158,11,0.7)', 'rgba(6,182,212,0.7)', 'rgba(139,92,246,0.7)', 'rgba(16,185,129,0.7)', 'rgba(239,68,68,0.7)'];
+        const borderColors = ['#64748B', '#3B82F6', '#F59E0B', '#06B6D4', '#8B5CF6', '#10B981', '#EF4444'];
         const totalLeads = funnelValues.reduce((a, b) => a + b, 0);
         charts.funnel = new Chart(ctx, {
           type: 'bar',
@@ -476,8 +476,8 @@
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false }, tooltip: { ...TT, callbacks: { label: (ctx) => { const v = ctx.parsed.x; return `${v} leads (${totalLeads > 0 ? ((v/totalLeads)*100).toFixed(1) : 0}%)`; } } } },
             scales: {
-              x: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-              y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 12, weight: 500 } } }
+              x: { grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', font: { size: 11 } } },
+              y: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 12, weight: 500 } } }
             }
           }
         });
@@ -495,7 +495,7 @@
           options: {
             responsive: true, maintainAspectRatio: false, cutout: '65%',
             plugins: {
-              legend: { display: true, position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+              legend: { display: true, position: 'bottom', labels: { color: '#94A3B8', font: { size: 10 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
               tooltip: { ...TT, callbacks: { label: (ctx) => { const v = ctx.parsed; const pct = totalLeads > 0 ? ((v/totalLeads)*100).toFixed(1) : 0; return `${ctx.label}: ${v} (${pct}%)`; } } }
             }
           }
@@ -553,17 +553,17 @@
         document.getElementById('revenue-kpis').innerHTML = `
           <div class="kpi-card client-theme">
             ${wrapWithTooltip(`<div class="kpi-label">Omzet ${yr}</div>`, 'rev-omzet-jaar')}
-            <div class="kpi-value" style="color:#34d399;">${formatCurrency(totalCurrentYear)}</div>
+            <div class="kpi-value" style="color:#10B981;">${formatCurrency(totalCurrentYear)}</div>
             <span class="kpi-badge positive">${data.totalClients} deal${data.totalClients !== 1 ? 's' : ''}</span>
           </div>
           <div class="kpi-card" style="border-left-color:#3B82F6;">
             ${wrapWithTooltip('<div class="kpi-label">Pakket omzet</div>', 'rev-pakket-omzet')}
-            <div class="kpi-value" style="color:#3B82F6;">${formatCurrency(totalPackageNetto)}</div>
+            <div class="kpi-value" style="color:var(--accent-brand);">${formatCurrency(totalPackageNetto)}</div>
             <span class="kpi-badge neutral">${packagePct}% van totale omzet</span>
           </div>
-          <div class="kpi-card" style="border-left-color:#A78BFA;">
+          <div class="kpi-card" style="border-left-color:#8B5CF6;">
             ${wrapWithTooltip(`<div class="kpi-label">Hosting ${yr}</div>`, 'rev-hosting-jaar')}
-            <div class="kpi-value" style="color:#A78BFA;">${formatCurrency(hostingCY)}</div>
+            <div class="kpi-value" style="color:#8B5CF6;">${formatCurrency(hostingCY)}</div>
             <span class="kpi-badge neutral">${hostingPct}% van totaal</span>
           </div>
           <div class="kpi-card">
@@ -572,9 +572,9 @@
             <span class="kpi-badge neutral">Per klant</span>
           </div>
           ${data.totalCostsThisYear > 0 ? `
-          <div class="kpi-card" style="border-left-color:#34d399;">
+          <div class="kpi-card" style="border-left-color:#10B981;">
             ${wrapWithTooltip('<div class="kpi-label">Winst (jaar)</div>', 'winst-jaar')}
-            <div class="kpi-value" style="color:${data.totalProfitThisYear >= 0 ? '#34d399' : '#f87171'};">${formatCurrency(data.totalProfitThisYear)}</div>
+            <div class="kpi-value" style="color:${data.totalProfitThisYear >= 0 ? '#10B981' : '#EF4444'};">${formatCurrency(data.totalProfitThisYear)}</div>
             <span class="kpi-badge ${data.totalProfitThisYear >= 0 ? 'positive' : 'negative'}">${data.profitMarginThisYear}% marge</span>
           </div>
           <div class="kpi-card" style="border-left-color:var(--accent-orange);">
@@ -593,19 +593,19 @@
 
         // MRR section
         document.getElementById('mrr-kpis').innerHTML = `
-          <div class="kpi-card" style="border-left-color:#34d399;">
+          <div class="kpi-card" style="border-left-color:#10B981;">
             ${wrapWithTooltip('<div class="kpi-label">MRR Totaal</div>', 'rev-mrr')}
-            <div class="kpi-value" style="color:#34d399;">${formatCurrency(totalMRR)}</div>
+            <div class="kpi-value" style="color:#10B981;">${formatCurrency(totalMRR)}</div>
             <span class="kpi-badge neutral">${formatCurrency(totalMRR * 12)}/jaar</span>
           </div>
-          <div class="kpi-card" style="border-left-color:#A78BFA;">
+          <div class="kpi-card" style="border-left-color:#8B5CF6;">
             ${wrapWithTooltip('<div class="kpi-label">MRR Hosting</div>', 'rev-mrr-hosting')}
-            <div class="kpi-value" style="color:#A78BFA;">${formatCurrency(hostingMRR)}</div>
+            <div class="kpi-value" style="color:#8B5CF6;">${formatCurrency(hostingMRR)}</div>
             <span class="kpi-badge neutral">${formatCurrency(hostingMRR * 12)}/jaar</span>
           </div>
-          <div class="kpi-card" style="border-left-color:#FB923C;">
+          <div class="kpi-card" style="border-left-color:#F59E0B;">
             ${wrapWithTooltip('<div class="kpi-label">MRR Upsells</div>', 'rev-mrr-upsells')}
-            <div class="kpi-value" style="color:#FB923C;">${formatCurrency(upsellMRR)}</div>
+            <div class="kpi-value" style="color:#F59E0B;">${formatCurrency(upsellMRR)}</div>
             <span class="kpi-badge neutral">${formatCurrency(upsellMRR * 12)}/jaar</span>
           </div>
         `;
@@ -614,9 +614,9 @@
         const breakdownItems = [
           { label: 'Pakketten (eenmalig)', value: b.eenmalig, color: '#3B82F6' },
           { label: 'Upsells (eenmalig)', value: b.upsellOneTime, color: '#8B5CF6' },
-          { label: `Upsells ${yr} (maandelijks)`, value: upsellCY, color: '#A78BFA' },
-          { label: `Hosting ${yr}`, value: hostingCY, color: '#34d399' },
-          { label: 'Korting', value: -b.discount, color: '#f87171' }
+          { label: `Upsells ${yr} (maandelijks)`, value: upsellCY, color: '#8B5CF6' },
+          { label: `Hosting ${yr}`, value: hostingCY, color: '#10B981' },
+          { label: 'Korting', value: -b.discount, color: '#EF4444' }
         ].filter(i => i.value !== 0);
 
         document.getElementById('revenue-breakdown-card').innerHTML = `
@@ -632,14 +632,14 @@
                 <div style="width:10px;height:10px;border-radius:50%;background:${i.color};flex-shrink:0;"></div>
                 <div>
                   <div style="font-size:12px;color:var(--text-muted);">${i.label}</div>
-                  <div style="font-size:14px;font-weight:600;color:${i.value < 0 ? '#f87171' : 'var(--text-primary)'};">${formatCurrency(Math.abs(i.value))}</div>
+                  <div style="font-size:14px;font-weight:600;color:${i.value < 0 ? '#EF4444' : 'var(--text-primary)'};">${formatCurrency(Math.abs(i.value))}</div>
                 </div>
               </div>
             `).join('')}
             <div style="display:flex;align-items:center;gap:10px;border-left:2px solid var(--border-color);padding-left:12px;">
               <div>
                 <div style="font-size:12px;color:var(--text-muted);">Netto totaal</div>
-                <div style="font-size:16px;font-weight:700;color:#34d399;">${formatCurrency(data.totalRevenue)}</div>
+                <div style="font-size:16px;font-weight:700;color:#10B981;">${formatCurrency(data.totalRevenue)}</div>
               </div>
             </div>
           </div>
@@ -654,23 +654,21 @@
           data: {
             labels: months,
             datasets: [
-              { label: 'Pakketten', data: data.monthlyBreakdown.map(m => m.eenmalig), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4, stack: 'stack' },
-              { label: 'Upsells (eenmalig)', data: data.monthlyBreakdown.map(m => m.upsellEenmalig || 0), backgroundColor: 'rgba(139,92,246,0.7)', borderRadius: 4, stack: 'stack' },
-              { label: 'Hosting', data: data.monthlyBreakdown.map(m => m.hosting), backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4, stack: 'stack' },
-              { label: 'Upsells (mnd)', data: data.monthlyBreakdown.map(m => m.upsellMaandelijks || 0), backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, stack: 'stack' }
+              { label: 'Pakketten', data: data.monthlyBreakdown.map(m => m.eenmalig), backgroundColor: 'rgba(59,130,246,0.6)', borderRadius: 4, stack: 'stack' },
+              { label: 'Upsells (eenmalig)', data: data.monthlyBreakdown.map(m => m.upsellEenmalig || 0), backgroundColor: 'rgba(139,92,246,0.6)', borderRadius: 4, stack: 'stack' },
+              { label: 'Hosting', data: data.monthlyBreakdown.map(m => m.hosting), backgroundColor: 'rgba(16,185,129,0.6)', borderRadius: 4, stack: 'stack' },
+              { label: 'Upsells (mnd)', data: data.monthlyBreakdown.map(m => m.upsellMaandelijks || 0), backgroundColor: 'rgba(139,92,246,0.4)', borderRadius: 4, stack: 'stack' }
             ]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'top', labels: { color: '#a0a0a0', padding: 12, font: { size: 11 }, boxWidth: 10 } },
-              tooltip: { backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12,
-                callbacks: { label: ctx => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}` }
-              }
+              legend: { position: 'top', labels: { color: '#94A3B8', padding: 12, font: { size: 11 }, boxWidth: 10 } },
+              tooltip: { ...TT, callbacks: { label: ctx => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}` } }
             },
             scales: {
-              x: { stacked: true, grid: { display: false }, ticks: { color: '#666', font: { size: 11 } } },
-              y: { stacked: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#666', callback: v => formatCurrency(v) } }
+              x: { stacked: true, grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
+              y: { stacked: true, grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', callback: v => formatCurrency(v) } }
             }
           }
         });
@@ -679,9 +677,9 @@
         const ctx2 = document.getElementById('revenue-composition-chart').getContext('2d');
         if (charts.pkg) charts.pkg.destroy();
         const compData = [
-          { label: 'Pakketten', value: b.eenmalig - b.discount, color: 'rgba(59,130,246,0.8)', border: '#3B82F6' },
-          { label: 'Upsells', value: b.upsellOneTime + upsellCY, color: 'rgba(167,139,250,0.8)', border: '#A78BFA' },
-          { label: `Hosting ${yr}`, value: hostingCY, color: 'rgba(52,211,153,0.8)', border: '#34d399' }
+          { label: 'Pakketten', value: b.eenmalig - b.discount, color: 'rgba(59,130,246,0.7)', border: '#3B82F6' },
+          { label: 'Upsells', value: b.upsellOneTime + upsellCY, color: 'rgba(139,92,246,0.7)', border: '#8B5CF6' },
+          { label: `Hosting ${yr}`, value: hostingCY, color: 'rgba(16,185,129,0.7)', border: '#10B981' }
         ].filter(c => c.value > 0);
         charts.pkg = new Chart(ctx2, {
           type: 'doughnut',
@@ -692,8 +690,8 @@
           options: {
             responsive: true, maintainAspectRatio: false, cutout: '65%',
             plugins: {
-              legend: { position: 'bottom', labels: { color: '#a0a0a0', padding: 16, font: { size: 12 }, boxWidth: 12 } },
-              tooltip: { backgroundColor: '#111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12,
+              legend: { position: 'bottom', labels: { color: '#94A3B8', padding: 16, font: { size: 12 }, boxWidth: 12 } },
+              tooltip: { ...TT,
                 callbacks: { label: ctx => `${ctx.label}: ${formatCurrency(ctx.raw)} (${data.totalRevenue > 0 ? ((ctx.raw / data.totalRevenue) * 100).toFixed(0) : 0}%)` }
               }
             }
@@ -739,20 +737,20 @@
           data: {
             labels: qLabels,
             datasets: [
-              { label: 'Eenmalig', data: qLabels.map(qk => (q[qk]?.eenmalig || 0)), backgroundColor: 'rgba(59,130,246,0.75)', borderColor: '#3B82F6', borderWidth: 1, borderRadius: 6 },
-              { label: 'Hosting', data: qLabels.map(qk => (q[qk]?.hosting || 0)), backgroundColor: 'rgba(52,211,153,0.75)', borderColor: '#34d399', borderWidth: 1, borderRadius: 6 },
-              { label: 'Upsells', data: qLabels.map(qk => (q[qk]?.upsells || 0)), backgroundColor: 'rgba(167,139,250,0.75)', borderColor: '#A78BFA', borderWidth: 1, borderRadius: 6 }
+              { label: 'Eenmalig', data: qLabels.map(qk => (q[qk]?.eenmalig || 0)), backgroundColor: 'rgba(59,130,246,0.6)', borderColor: '#3B82F6', borderWidth: 1, borderRadius: 6 },
+              { label: 'Hosting', data: qLabels.map(qk => (q[qk]?.hosting || 0)), backgroundColor: 'rgba(16,185,129,0.6)', borderColor: '#10B981', borderWidth: 1, borderRadius: 6 },
+              { label: 'Upsells', data: qLabels.map(qk => (q[qk]?.upsells || 0)), backgroundColor: 'rgba(139,92,246,0.6)', borderColor: '#8B5CF6', borderWidth: 1, borderRadius: 6 }
             ]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
+              legend: { position: 'top', labels: { color: '#94A3B8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
               tooltip: { ...TT, mode: 'index', callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}`, footer: (items) => `Totaal: ${formatCurrency(items.reduce((s, i) => s + i.parsed.y, 0))}` } }
             },
             scales: {
-              x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12, weight: 600 } } },
-              y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => formatCurrency(v) } }
+              x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 12, weight: 600 } } },
+              y: { grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => formatCurrency(v) } }
             }
           }
         });
@@ -795,7 +793,7 @@
             <td style="text-align:right;">
               ${costs > 0 ? `<span style="color:var(--accent-orange);">${formatCurrency(costs)}</span>` : '<span class="text-muted">-</span>'}
             </td>
-            <td style="text-align:right;font-weight:700;color:${profit >= 0 ? '#34d399' : '#f87171'};">
+            <td style="text-align:right;font-weight:700;color:${profit >= 0 ? '#10B981' : '#EF4444'};">
               ${hasCostData || costs > 0 ? formatCurrency(profit) : '<span class="text-muted">?</span>'}
             </td>
             <td style="color:var(--text-muted);font-size:11px;">${formatDate(c.saleDate)}</td>
@@ -820,24 +818,24 @@
 
         // KPIs
         document.getElementById('acq-kpis').innerHTML = `
-          <div class="kpi-card" style="border-left-color:#FB923C;">
+          <div class="kpi-card" style="border-left-color:#F59E0B;">
             ${wrapWithTooltip('<div class="kpi-label">Flyer omzet</div>', 'acq-flyer-omzet')}
-            <div class="kpi-value" style="color:#FB923C;">${formatCurrency(flyer.revenue || 0)}</div>
+            <div class="kpi-value" style="color:#F59E0B;">${formatCurrency(flyer.revenue || 0)}</div>
             <span class="kpi-badge neutral">${flyer.count || 0} klant${(flyer.count || 0) !== 1 ? 'en' : ''} | ROI: ${flyer.roi || 0}%</span>
           </div>
-          <div class="kpi-card" style="border-left-color:#60A5FA;">
+          <div class="kpi-card" style="border-left-color:#3B82F6;">
             ${wrapWithTooltip('<div class="kpi-label">Warm omzet</div>', 'acq-warm-omzet')}
-            <div class="kpi-value" style="color:#60A5FA;">${formatCurrency(warm.revenue || 0)}</div>
+            <div class="kpi-value" style="color:#3B82F6;">${formatCurrency(warm.revenue || 0)}</div>
             <span class="kpi-badge neutral">${warm.count || 0} klant${(warm.count || 0) !== 1 ? 'en' : ''} | ROI: ${warm.roi || 0}%</span>
           </div>
-          <div class="kpi-card" style="border-left-color:#34d399;">
+          <div class="kpi-card" style="border-left-color:#10B981;">
             ${wrapWithTooltip('<div class="kpi-label">Beste kanaal</div>', 'acq-beste-kanaal')}
-            <div class="kpi-value" style="color:#34d399;font-size:18px;">${bestChannel}</div>
+            <div class="kpi-value" style="color:#10B981;font-size:18px;">${bestChannel}</div>
             <span class="kpi-badge positive">Hoogste ROI</span>
           </div>
-          <div class="kpi-card" style="border-left-color:#A78BFA;">
+          <div class="kpi-card" style="border-left-color:#8B5CF6;">
             ${wrapWithTooltip('<div class="kpi-label">Totale acquisitiekosten</div>', 'acq-totale-kosten')}
-            <div class="kpi-value" style="color:#A78BFA;">${formatCurrency((flyer.cost || 0) + (warm.cost || 0))}</div>
+            <div class="kpi-value" style="color:#8B5CF6;">${formatCurrency((flyer.cost || 0) + (warm.cost || 0))}</div>
             <span class="kpi-badge neutral">Flyer: ${formatCurrency(flyer.cost || 0)} | Warm: ${formatCurrency(warm.cost || 0)}</span>
           </div>
         `;
@@ -850,8 +848,8 @@
           data: {
             labels: ['Flyer', 'Warm / Direct'],
             datasets: [
-              { label: 'Omzet', data: [flyer.revenue || 0, warm.revenue || 0], backgroundColor: ['rgba(251,146,60,0.75)', 'rgba(96,165,250,0.75)'], borderColor: ['#FB923C', '#60A5FA'], borderWidth: 1, borderRadius: 8 },
-              { label: 'Kosten', data: [flyer.cost || 0, warm.cost || 0], backgroundColor: ['rgba(248,113,113,0.5)', 'rgba(248,113,113,0.5)'], borderColor: ['#F87171', '#F87171'], borderWidth: 1, borderRadius: 8 }
+              { label: 'Omzet', data: [flyer.revenue || 0, warm.revenue || 0], backgroundColor: ['rgba(245,158,11,0.6)', 'rgba(59,130,246,0.6)'], borderColor: ['#F59E0B', '#3B82F6'], borderWidth: 1, borderRadius: 8 },
+              { label: 'Kosten', data: [flyer.cost || 0, warm.cost || 0], backgroundColor: ['rgba(239,68,68,0.4)', 'rgba(239,68,68,0.4)'], borderColor: ['#EF4444', '#EF4444'], borderWidth: 1, borderRadius: 8 }
             ]
           },
           options: {
@@ -861,8 +859,8 @@
               tooltip: { ...TT, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } }
             },
             scales: {
-              x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12, weight: 600 } } },
-              y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => formatCurrency(v) } }
+              x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 12, weight: 600 } } },
+              y: { grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => formatCurrency(v) } }
             }
           }
         });
@@ -875,19 +873,19 @@
           data: {
             labels: ['Flyer', 'Warm / Direct'],
             datasets: [
-              { label: 'Winst', data: [flyer.profit || 0, warm.profit || 0], backgroundColor: ['rgba(52,211,153,0.75)', 'rgba(52,211,153,0.75)'], borderColor: ['#34d399', '#34d399'], borderWidth: 1, borderRadius: 8 },
-              { label: 'Kosten', data: [flyer.cost || 0, warm.cost || 0], backgroundColor: ['rgba(248,113,113,0.5)', 'rgba(248,113,113,0.5)'], borderColor: ['#F87171', '#F87171'], borderWidth: 1, borderRadius: 8 }
+              { label: 'Winst', data: [flyer.profit || 0, warm.profit || 0], backgroundColor: ['rgba(16,185,129,0.6)', 'rgba(16,185,129,0.6)'], borderColor: ['#10B981', '#10B981'], borderWidth: 1, borderRadius: 8 },
+              { label: 'Kosten', data: [flyer.cost || 0, warm.cost || 0], backgroundColor: ['rgba(239,68,68,0.4)', 'rgba(239,68,68,0.4)'], borderColor: ['#EF4444', '#EF4444'], borderWidth: 1, borderRadius: 8 }
             ]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
             plugins: {
-              legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
+              legend: { position: 'top', labels: { color: '#94A3B8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
               tooltip: { ...TT, callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}` } }
             },
             scales: {
-              x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12, weight: 600 } } },
-              y: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => formatCurrency(v) } }
+              x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 12, weight: 600 } } },
+              y: { grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => formatCurrency(v) } }
             }
           }
         });
@@ -940,7 +938,7 @@
             <td><span style="background:${channelColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${channelColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${channelLabels[c.acquisitionType] || c.acquisitionType}</span></td>
             <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(revenue)}</td>
             <td style="text-align:right;">${costs > 0 ? `<span style="color:var(--accent-orange);">${formatCurrency(costs)}</span>` : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;font-weight:600;color:${profit >= 0 ? '#34d399' : '#f87171'};">${formatCurrency(profit)}</td>
+            <td style="text-align:right;font-weight:600;color:${profit >= 0 ? '#10B981' : '#EF4444'};">${formatCurrency(profit)}</td>
             <td style="text-align:right;">${c.acquisitionCost > 0 ? formatCurrency(c.acquisitionCost) : '<span class="text-muted">-</span>'}</td>
             <td style="color:var(--text-muted);font-size:11px;">${formatDate(c.saleDate)}</td>
           </tr>
@@ -1040,10 +1038,10 @@
       };
 
       const colors = {
-        total: '#6B7280',
-        verstuurd: '#60A5FA',
-        gereageerd: '#FB923C',
-        klanten: '#22C55E',
+        total: '#64748B',
+        verstuurd: '#3B82F6',
+        gereageerd: '#F59E0B',
+        klanten: '#10B981',
         revenue: '#3B82F6'
       };
 
@@ -1065,17 +1063,17 @@
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            tooltip: { backgroundColor: '#111111', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, titleColor: '#f0f0f0', bodyColor: '#a0a0a0', cornerRadius: 8, padding: 12 }
+            tooltip: { ...TT }
           },
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: '#666', font: { size: 11 } }
+              ticks: { color: '#64748B', font: { size: 11 } }
             },
             y: {
-              grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+              grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false },
               ticks: {
-                color: '#666',
+                color: '#64748B',
                 callback: v => metric === 'revenue' ? formatCurrency(v) : v
               }
             }
@@ -1094,9 +1092,9 @@
       if (restTotal > 0) { labels.push('Overige'); values.push(restTotal); }
 
       const donutColors = [
-        'rgba(96,165,250,0.8)', 'rgba(52,211,153,0.8)', 'rgba(167,139,250,0.8)',
-        'rgba(251,146,60,0.8)', 'rgba(34,211,238,0.8)', 'rgba(59,130,246,0.8)',
-        'rgba(248,113,113,0.8)', 'rgba(163,230,53,0.8)', 'rgba(107,114,128,0.6)'
+        'rgba(59,130,246,0.7)', 'rgba(16,185,129,0.7)', 'rgba(139,92,246,0.7)',
+        'rgba(245,158,11,0.7)', 'rgba(6,182,212,0.7)', 'rgba(59,130,246,0.5)',
+        'rgba(239,68,68,0.7)', 'rgba(16,185,129,0.5)', 'rgba(100,116,139,0.5)'
       ];
 
       const ctx = document.getElementById('location-donut-chart').getContext('2d');
@@ -1112,7 +1110,7 @@
         options: {
           responsive: true, maintainAspectRatio: false, cutout: '60%',
           plugins: {
-            legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+            legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 10 }, padding: 10, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
             tooltip: { ...TT, callbacks: { label: (c) => { const v = c.parsed; const pct = totalLeads > 0 ? ((v/totalLeads)*100).toFixed(1) : 0; return `${c.label}: ${v} leads (${pct}%)`; } } }
           }
         }
@@ -1136,16 +1134,16 @@
             {
               label: 'Response %',
               data: top10.map(l => parseFloat(l.responseRate)),
-              backgroundColor: 'rgba(251,146,60,0.7)',
-              borderColor: '#FB923C',
+              backgroundColor: 'rgba(245,158,11,0.6)',
+              borderColor: '#F59E0B',
               borderWidth: 1,
               borderRadius: 6
             },
             {
               label: 'Conversie %',
               data: top10.map(l => parseFloat(l.conversionRate)),
-              backgroundColor: 'rgba(52,211,153,0.7)',
-              borderColor: '#34d399',
+              backgroundColor: 'rgba(16,185,129,0.6)',
+              borderColor: '#10B981',
               borderWidth: 1,
               borderRadius: 6
             }
@@ -1155,7 +1153,7 @@
           indexAxis: 'y',
           responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
+            legend: { position: 'top', labels: { color: '#94A3B8', font: { size: 11 }, boxWidth: 12, padding: 16, usePointStyle: true, pointStyle: 'rectRounded' } },
             tooltip: { ...TT, callbacks: { afterBody: (items) => {
               const idx = items[0].dataIndex;
               const loc = top10[idx];
@@ -1163,8 +1161,8 @@
             } } }
           },
           scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', callback: v => v + '%' }, max: 100 },
-            y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 11, weight: 500 } } }
+            x: { grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', callback: v => v + '%' }, max: 100 },
+            y: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 11, weight: 500 } } }
           }
         }
       });
@@ -1254,9 +1252,9 @@
             ${wrapWithTooltip('<div class="kpi-label">MRR (hosting)</div>', 'hosting-mrr')}
             <div class="kpi-value">${fmt(data.totalMRR || 0)}</div>
           </div>
-          <div class="kpi-card" style="border-left-color:#34d399;">
+          <div class="kpi-card" style="border-left-color:#10B981;">
             ${wrapWithTooltip(`<div class="kpi-label">Hosting omzet ${yr}</div>`, 'hosting-omzet-jaar')}
-            <div class="kpi-value" style="color:#34d399;">${fmt(data.totalCurrentYear || 0)}</div>
+            <div class="kpi-value" style="color:#10B981;">${fmt(data.totalCurrentYear || 0)}</div>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Gem. per klant/mnd</div>', 'hosting-gem-klant')}
@@ -1277,7 +1275,7 @@
         });
         const priceLabels = Object.keys(priceGroups);
         const priceCounts = priceLabels.map(k => priceGroups[k].count);
-        const priceDonutColors = ['rgba(52,211,153,0.85)', 'rgba(96,165,250,0.85)', 'rgba(167,139,250,0.85)', 'rgba(251,146,60,0.85)', 'rgba(248,113,113,0.85)'];
+        const priceDonutColors = ['rgba(16,185,129,0.7)', 'rgba(59,130,246,0.7)', 'rgba(139,92,246,0.7)', 'rgba(245,158,11,0.7)', 'rgba(239,68,68,0.7)'];
 
         const ctxPD = document.getElementById('hosting-price-donut').getContext('2d');
         if (charts.hostingPriceDonut) charts.hostingPriceDonut.destroy();
@@ -1290,7 +1288,7 @@
           options: {
             responsive: true, maintainAspectRatio: false, cutout: '60%',
             plugins: {
-              legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
+              legend: { position: 'bottom', labels: { color: '#94A3B8', font: { size: 11 }, padding: 14, usePointStyle: true, pointStyle: 'circle' } },
               tooltip: { ...TT, callbacks: { label: (c) => { const k = c.label; const g = priceGroups[k]; return [`${g.count} klanten`, `Omzet: ${fmt(g.revenue)}/jaar`]; } } }
             }
           }
@@ -1307,8 +1305,8 @@
             datasets: [{
               label: 'Hosting/jaar',
               data: topClients.map(c => c.hostingPrice * 12),
-              backgroundColor: 'rgba(96,165,250,0.7)',
-              borderColor: '#60A5FA',
+              backgroundColor: 'rgba(59,130,246,0.6)',
+              borderColor: '#3B82F6',
               borderWidth: 1,
               borderRadius: 4
             }]
@@ -1321,8 +1319,8 @@
               tooltip: { ...TT, callbacks: { label: (c) => `${fmt(c.parsed.x)}/jaar (${fmt(c.parsed.x / 12)}/mnd)` } }
             },
             scales: {
-              x: { grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => fmt(v) } },
-              y: { grid: { display: false }, ticks: { color: '#cbd5e1', font: { size: 11, weight: 500 } } }
+              x: { grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', font: { size: 11 }, callback: v => fmt(v) } },
+              y: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 11, weight: 500 } } }
             }
           }
         });

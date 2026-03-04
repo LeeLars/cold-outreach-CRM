@@ -165,7 +165,7 @@
 
       grid.innerHTML = `
         <div class="dashboard-kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
-          <div class="dashboard-card" style="border-top:3px solid var(--accent-green);">
+          <div class="dashboard-card">
             <div class="dashboard-card-header">
               ${wrapWithTooltip('<span class="dashboard-label">Omzet ' + yr + '</span>', 'omzet-jaar')}
               <i data-lucide="trending-up" style="color:var(--accent-green);width:20px;height:20px;"></i>
@@ -173,7 +173,7 @@
             <div class="dashboard-value" style="color:var(--accent-green);">${formatCurrency(totalCY)}</div>
             <div class="dashboard-subtext">Een: ${formatCurrency(eenmaligNetto)} | Host: ${formatCurrency(hostCY)}</div>
           </div>
-          <div class="dashboard-card" style="border-top:3px solid var(--accent-brand);">
+          <div class="dashboard-card">
             <div class="dashboard-card-header">
               ${wrapWithTooltip('<span class="dashboard-label">MRR</span>', 'mrr')}
               <i data-lucide="repeat" style="color:var(--accent-brand);width:20px;height:20px;"></i>
@@ -181,7 +181,7 @@
             <div class="dashboard-value" style="color:var(--accent-brand);">${formatCurrency(mrr)}</div>
             <div class="dashboard-subtext">${formatCurrency(mrr * 12)}/jaar verwacht</div>
           </div>
-          <div class="dashboard-card" style="border-top:3px solid ${profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">
+          <div class="dashboard-card">
             <div class="dashboard-card-header">
               ${wrapWithTooltip('<span class="dashboard-label">Winst ' + yr + '</span>', 'winst-jaar')}
               <i data-lucide="piggy-bank" style="color:${profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};width:20px;height:20px;"></i>
@@ -189,7 +189,7 @@
             <div class="dashboard-value" style="color:${profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'};">${formatCurrency(profit)}</div>
             <div class="dashboard-subtext">Marge: ${margin}%</div>
           </div>
-          <div class="dashboard-card" style="border-top:3px solid var(--accent-purple);">
+          <div class="dashboard-card">
             <div class="dashboard-card-header">
               ${wrapWithTooltip('<span class="dashboard-label">Klanten</span>', 'totaal-klanten')}
               <i data-lucide="building-2" style="color:var(--accent-purple);width:20px;height:20px;"></i>

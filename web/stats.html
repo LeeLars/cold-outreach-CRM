@@ -78,8 +78,8 @@
           </div>
           <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="mrr-kpis"></div>
 
-          <!-- Omzet breakdown card - HIDDEN -->
-          <div class="card mb-24" style="display:none;">
+          <!-- Omzet breakdown card -->
+          <div class="card mb-24">
             <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Omzet opbouw</span></div>
             <div class="card-body" id="revenue-breakdown-card"></div>
           </div>
@@ -101,7 +101,7 @@
             <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Pakket performance</span></div>
             <div class="card-body" style="padding:0;">
               <table class="data-table" style="font-size:13px;">
-                <thead><tr><th>Pakket</th><th style="text-align:center;">Verkocht</th><th style="text-align:right;">Eenmalig</th><th style="text-align:right;">Hosting/jaar</th><th style="text-align:right;">Totaal</th><th style="text-align:right;">Gem. per deal</th></tr></thead>
+                <thead><tr><th>Pakket</th><th style="text-align:center;">Verkocht</th><th style="text-align:right;">Eenmalig</th><th style="text-align:right;">Upsells</th><th style="text-align:right;">Korting</th><th style="text-align:right;">Hosting/jaar</th><th style="text-align:right;">Netto totaal</th><th style="text-align:right;">Gem. per deal</th></tr></thead>
                 <tbody id="package-perf-body"></tbody>
               </table>
             </div>
@@ -185,6 +185,7 @@
                 <table class="data-table" style="font-size:12px;">
                   <thead><tr>
                     <th>Bedrijf</th><th>Pakket</th><th>Kanaal</th>
+                    <th style="text-align:right;">Korting</th>
                     <th style="text-align:right;">Omzet (jaar)</th>
                     <th style="text-align:right;">Kosten (jaar)</th>
                     <th style="text-align:right;">Winst (jaar)</th>
@@ -571,6 +572,13 @@
             <div class="kpi-value">${formatCurrency(data.avgDeal)}</div>
             <span class="kpi-badge neutral">Per klant</span>
           </div>
+          ${b.discount > 0 ? `
+          <div class="kpi-card">
+            <div class="kpi-label">Korting</div>
+            <div class="kpi-value" style="color:#EF4444;">-${formatCurrency(b.discount)}</div>
+            <span class="kpi-badge negative">${data.totalClients > 0 ? Math.round((b.discount / (b.eenmalig + b.upsellOneTime)) * 100) : 0}% van bruto</span>
+          </div>
+          ` : ''}
           ${data.totalCostsThisYear > 0 ? `
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Winst (jaar)</div>', 'winst-jaar')}
@@ -657,7 +665,8 @@
               { label: 'Pakketten', data: data.monthlyBreakdown.map(m => m.eenmalig), backgroundColor: 'rgba(59,130,246,0.6)', borderRadius: 4, stack: 'stack' },
               { label: 'Upsells (eenmalig)', data: data.monthlyBreakdown.map(m => m.upsellEenmalig || 0), backgroundColor: 'rgba(139,92,246,0.6)', borderRadius: 4, stack: 'stack' },
               { label: 'Hosting', data: data.monthlyBreakdown.map(m => m.hosting), backgroundColor: 'rgba(16,185,129,0.6)', borderRadius: 4, stack: 'stack' },
-              { label: 'Upsells (mnd)', data: data.monthlyBreakdown.map(m => m.upsellMaandelijks || 0), backgroundColor: 'rgba(139,92,246,0.4)', borderRadius: 4, stack: 'stack' }
+              { label: 'Upsells (mnd)', data: data.monthlyBreakdown.map(m => m.upsellMaandelijks || 0), backgroundColor: 'rgba(139,92,246,0.4)', borderRadius: 4, stack: 'stack' },
+              ...(data.monthlyBreakdown.some(m => (m.korting || 0) > 0) ? [{ label: 'Korting', data: data.monthlyBreakdown.map(m => -(m.korting || 0)), backgroundColor: 'rgba(239,68,68,0.6)', borderRadius: 4, stack: 'stack' }] : [])
             ]
           },
           options: {
@@ -704,11 +713,13 @@
             <td style="font-weight:600;">${p.name}</td>
             <td style="text-align:center;">${p.count}x</td>
             <td style="text-align:right;">${formatCurrency(p.eenmalig)}</td>
+            <td style="text-align:right;">${(p.upsells || 0) > 0 ? formatCurrency(p.upsells) : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;">${(p.korting || 0) > 0 ? `<span style="color:#EF4444;">-${formatCurrency(p.korting)}</span>` : '<span class="text-muted">-</span>'}</td>
             <td style="text-align:right;">${formatCurrency(p.hosting)}</td>
             <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(p.total)}</td>
             <td style="text-align:right;">${formatCurrency(p.count > 0 ? p.total / p.count : 0)}</td>
           </tr>
-        `).join('') || '<tr><td colspan="6" class="text-center text-muted" style="padding:20px;">Geen pakketten verkocht</td></tr>';
+        `).join('') || '<tr><td colspan="8" class="text-center text-muted" style="padding:20px;">Geen pakketten verkocht</td></tr>';
 
         // Upsell performance table
         const upsellCard = document.getElementById('upsell-perf-card');
@@ -737,9 +748,10 @@
           data: {
             labels: qLabels,
             datasets: [
-              { label: 'Eenmalig', data: qLabels.map(qk => (q[qk]?.eenmalig || 0)), backgroundColor: 'rgba(59,130,246,0.6)', borderColor: '#3B82F6', borderWidth: 1, borderRadius: 6 },
+              { label: 'Eenmalig (bruto)', data: qLabels.map(qk => (q[qk]?.eenmalig || 0)), backgroundColor: 'rgba(59,130,246,0.6)', borderColor: '#3B82F6', borderWidth: 1, borderRadius: 6 },
               { label: 'Hosting', data: qLabels.map(qk => (q[qk]?.hosting || 0)), backgroundColor: 'rgba(16,185,129,0.6)', borderColor: '#10B981', borderWidth: 1, borderRadius: 6 },
-              { label: 'Upsells', data: qLabels.map(qk => (q[qk]?.upsells || 0)), backgroundColor: 'rgba(139,92,246,0.6)', borderColor: '#8B5CF6', borderWidth: 1, borderRadius: 6 }
+              { label: 'Upsells', data: qLabels.map(qk => (q[qk]?.upsells || 0)), backgroundColor: 'rgba(139,92,246,0.6)', borderColor: '#8B5CF6', borderWidth: 1, borderRadius: 6 },
+              ...(qLabels.some(qk => (q[qk]?.korting || 0) > 0) ? [{ label: 'Korting', data: qLabels.map(qk => -(q[qk]?.korting || 0)), backgroundColor: 'rgba(239,68,68,0.6)', borderColor: '#EF4444', borderWidth: 1, borderRadius: 6 }] : [])
             ]
           },
           options: {
@@ -920,7 +932,7 @@
 
       const tbody = document.getElementById('acquisition-body');
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted" style="padding:40px;">Geen klanten gevonden</td></tr>';
         return;
       }
 
@@ -936,6 +948,7 @@
             <td style="font-weight:500;">${c.companyName}</td>
             <td style="font-size:11px;">${c.packageName}</td>
             <td><span style="background:${channelColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${channelColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${channelLabels[c.acquisitionType] || c.acquisitionType}</span></td>
+            <td style="text-align:right;">${c.discount > 0 ? `<span style="color:#EF4444;">-${formatCurrency(c.discount)}</span>` : '<span class="text-muted">-</span>'}</td>
             <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(revenue)}</td>
             <td style="text-align:right;">${costs > 0 ? `<span style="color:var(--accent-orange);">${formatCurrency(costs)}</span>` : '<span class="text-muted">-</span>'}</td>
             <td style="text-align:right;font-weight:600;color:${profit >= 0 ? '#10B981' : '#EF4444'};">${formatCurrency(profit)}</td>

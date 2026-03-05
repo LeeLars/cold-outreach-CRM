@@ -361,7 +361,7 @@ router.get('/revenue', async (req, res, next) => {
     const totalProfitAllTime = perDeal.reduce((s, d) => s + d.profitAllTime, 0);
 
     // Quarter totals for current year
-    const quarterTotals = { Q1: { hosting: 0, upsells: 0, eenmalig: 0 }, Q2: { hosting: 0, upsells: 0, eenmalig: 0 }, Q3: { hosting: 0, upsells: 0, eenmalig: 0 }, Q4: { hosting: 0, upsells: 0, eenmalig: 0 } };
+    const quarterTotals = { Q1: { hosting: 0, upsells: 0, eenmalig: 0, korting: 0 }, Q2: { hosting: 0, upsells: 0, eenmalig: 0, korting: 0 }, Q3: { hosting: 0, upsells: 0, eenmalig: 0, korting: 0 }, Q4: { hosting: 0, upsells: 0, eenmalig: 0, korting: 0 } };
     perDeal.forEach(d => {
       for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
         quarterTotals[q].hosting += d.hostingQuarters[q];
@@ -372,7 +372,8 @@ router.get('/revenue', async (req, res, next) => {
       const saleYear = new Date(d.saleDate).getFullYear();
       if (saleYear === currentYear) {
         const saleQ = getQuarter(saleMonth);
-        quarterTotals[saleQ].eenmalig += (d.pkgOneTime + d.upsellOneTime - d.discount);
+        quarterTotals[saleQ].eenmalig += (d.pkgOneTime + d.upsellOneTime);
+        quarterTotals[saleQ].korting += d.discount;
       }
     });
 
@@ -423,9 +424,11 @@ router.get('/revenue', async (req, res, next) => {
     // Package breakdown (deals sold in selected year)
     const packageBreakdown = {};
     dealsInYear.forEach(d => {
-      if (!packageBreakdown[d.packageName]) packageBreakdown[d.packageName] = { count: 0, eenmalig: 0, hosting: 0, total: 0 };
+      if (!packageBreakdown[d.packageName]) packageBreakdown[d.packageName] = { count: 0, eenmalig: 0, upsells: 0, korting: 0, hosting: 0, total: 0 };
       packageBreakdown[d.packageName].count++;
       packageBreakdown[d.packageName].eenmalig += d.pkgOneTime;
+      packageBreakdown[d.packageName].upsells += d.upsellOneTime + d.upsellCurrentYear;
+      packageBreakdown[d.packageName].korting += d.discount;
       packageBreakdown[d.packageName].hosting += d.hostingCurrentYear;
       packageBreakdown[d.packageName].total += (d.pkgOneTime + d.upsellOneTime - d.discount) + d.hostingCurrentYear + d.upsellCurrentYear;
     });

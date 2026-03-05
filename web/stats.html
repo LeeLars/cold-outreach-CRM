@@ -36,17 +36,17 @@
         <!-- Funnel Tab -->
         <div id="tab-funnel">
           <div class="section-header">
-            <div class="section-header-icon lead-theme"><i data-lucide="users" style="width:18px;height:18px;"></i></div>
-            <span class="section-header-title lead-theme">Cold & Flyer Pipeline Analyse</span>
+            <div class="section-header-icon"><i data-lucide="users" style="width:18px;height:18px;"></i></div>
+            <span class="section-header-title">Cold & Flyer Pipeline Analyse</span>
           </div>
           <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="funnel-kpis"></div>
           <div class="grid-2 mb-24">
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Pipeline per status</span></div>
+              <div class="card-header"><span class="card-title">Pipeline per status</span></div>
               <div class="card-body"><canvas id="funnel-bar-chart" height="280"></canvas></div>
             </div>
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-purple);">Status verdeling</span></div>
+              <div class="card-header"><span class="card-title">Status verdeling</span></div>
               <div class="card-body" style="position:relative;">
                 <div style="max-width:260px;margin:0 auto;"><canvas id="funnel-donut-chart" height="260"></canvas></div>
                 <div style="position:absolute;top:48%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
@@ -57,7 +57,7 @@
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Conversieratio per stap</span></div>
+            <div class="card-header"><span class="card-title">Conversieratio per stap</span></div>
             <div class="card-body" id="conversion-steps"></div>
           </div>
         </div>
@@ -65,8 +65,8 @@
         <!-- Revenue & Acquisition Tab -->
         <div id="tab-revenue" class="hidden">
           <div class="section-header">
-            <div class="section-header-icon client-theme"><i data-lucide="trending-up" style="width:18px;height:18px;"></i></div>
-            <span class="section-header-title client-theme">Omzet analyse</span>
+            <div class="section-header-icon"><i data-lucide="trending-up" style="width:18px;height:18px;"></i></div>
+            <span class="section-header-title">Omzet analyse</span>
           </div>
 
           <!-- Main KPIs -->
@@ -80,25 +80,25 @@
 
           <!-- Omzet breakdown card -->
           <div class="card mb-24">
-            <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Omzet opbouw</span></div>
+            <div class="card-header"><span class="card-title">Omzet opbouw</span></div>
             <div class="card-body" id="revenue-breakdown-card"></div>
           </div>
 
           <!-- Charts row 1: monthly stacked + composition doughnut -->
           <div class="grid-2 mb-24">
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Omzet per maand (opbouw)</span></div>
+              <div class="card-header"><span class="card-title">Omzet per maand (opbouw)</span></div>
               <div class="card-body"><canvas id="monthly-revenue-chart" height="300"></canvas></div>
             </div>
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Omzet samenstelling</span></div>
+              <div class="card-header"><span class="card-title">Omzet samenstelling</span></div>
               <div class="card-body"><canvas id="revenue-composition-chart" height="300"></canvas></div>
             </div>
           </div>
 
           <!-- Package performance -->
           <div class="card mb-24">
-            <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Pakket performance</span></div>
+            <div class="card-header"><span class="card-title">Pakket performance</span></div>
             <div class="card-body" style="padding:0;">
               <table class="data-table" style="font-size:13px;">
                 <thead><tr><th>Pakket</th><th style="text-align:center;">Verkocht</th><th style="text-align:right;">Eenmalig</th><th style="text-align:right;">Upsells</th><th style="text-align:right;">Korting</th><th style="text-align:right;">Hosting/jaar</th><th style="text-align:right;">Netto totaal</th><th style="text-align:right;">Gem. per deal</th></tr></thead>
@@ -109,7 +109,7 @@
 
           <!-- Upsell performance -->
           <div class="card mb-24" id="upsell-perf-card">
-            <div class="card-header"><span class="card-title" style="color:var(--accent-purple);">Upsell performance</span></div>
+            <div class="card-header"><span class="card-title">Upsell performance</span></div>
             <div class="card-body" style="padding:0;">
               <table class="data-table" style="font-size:13px;">
                 <thead><tr><th>Upsell</th><th>Type</th><th style="text-align:center;">Verkocht</th><th style="text-align:right;">Prijs</th><th style="text-align:right;">Totale omzet</th></tr></thead>
@@ -120,7 +120,7 @@
 
           <!-- Quarter comparison -->
           <div class="card mb-24">
-            <div class="card-header"><span class="card-title" style="color:var(--accent-orange);">Kwartaal vergelijking</span></div>
+            <div class="card-header"><span class="card-title">Kwartaal vergelijking</span></div>
             <div class="card-body"><canvas id="quarter-compare-chart" height="280"></canvas></div>
           </div>
 
@@ -137,8 +137,8 @@
                     <th style="text-align:right;">Eenmalig</th><th style="text-align:right;">Upsells</th>
                     <th style="text-align:right;">Korting</th><th style="text-align:right;">Hosting/jr</th>
                     <th style="text-align:right;font-weight:700;">Omzet (jaar)</th>
-                    <th style="text-align:right;color:var(--accent-orange);">Kosten (jaar)</th>
-                    <th style="text-align:right;color:var(--accent-green);font-weight:700;">Winst (jaar)</th>
+                    <th style="text-align:right;">Kosten (jaar)</th>
+                    <th style="text-align:right;font-weight:700;">Winst (jaar)</th>
                     <th>Datum</th>
                   </tr></thead>
                   <tbody id="revenue-client-body"></tbody>
@@ -151,8 +151,8 @@
         <!-- Acquisitie Tab -->
         <div id="tab-acquisitie" class="hidden">
           <div class="section-header">
-            <div class="section-header-icon" style="background:var(--accent-orange-dim);"><i data-lucide="megaphone" style="width:18px;height:18px;color:var(--accent-orange);"></i></div>
-            <span class="section-header-title" style="color:var(--accent-orange);">Acquisitie kanalen</span>
+            <div class="section-header-icon"><i data-lucide="megaphone" style="width:18px;height:18px;"></i></div>
+            <span class="section-header-title">Acquisitie kanalen</span>
           </div>
 
           <!-- Channel KPIs -->
@@ -161,11 +161,11 @@
           <!-- Charts row: Kanaal vergelijking + ROI -->
           <div class="grid-2 mb-24">
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Omzet per kanaal</span></div>
+              <div class="card-header"><span class="card-title">Omzet per kanaal</span></div>
               <div class="card-body"><canvas id="acq-channel-chart" height="280"></canvas></div>
             </div>
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-purple);">Kosten vs Winst</span></div>
+              <div class="card-header"><span class="card-title">Kosten vs Winst</span></div>
               <div class="card-body"><canvas id="acq-profit-chart" height="280"></canvas></div>
             </div>
           </div>
@@ -229,13 +229,13 @@
 
           <div class="grid-2 mb-24">
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-purple);">Lead verdeling top gemeentes</span></div>
+              <div class="card-header"><span class="card-title">Lead verdeling top gemeentes</span></div>
               <div class="card-body" style="position:relative;">
                 <div style="max-width:280px;margin:0 auto;"><canvas id="location-donut-chart" height="280"></canvas></div>
               </div>
             </div>
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-orange);">Response & Conversie per gemeente</span></div>
+              <div class="card-header"><span class="card-title">Response & Conversie per gemeente</span></div>
               <div class="card-body">
                 <canvas id="location-rates-chart" height="280"></canvas>
               </div>
@@ -293,13 +293,13 @@
 
           <div class="grid-2 mb-24">
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-green);">Hosting prijs verdeling</span></div>
+              <div class="card-header"><span class="card-title">Hosting prijs verdeling</span></div>
               <div class="card-body" style="position:relative;">
                 <div style="max-width:240px;margin:0 auto;"><canvas id="hosting-price-donut" height="240"></canvas></div>
               </div>
             </div>
             <div class="card">
-              <div class="card-header"><span class="card-title" style="color:var(--accent-brand);">Omzet per klant (hosting/jaar)</span></div>
+              <div class="card-header"><span class="card-title">Omzet per klant (hosting/jaar)</span></div>
               <div class="card-body"><canvas id="hosting-revenue-bar" height="240"></canvas></div>
             </div>
           </div>
@@ -437,24 +437,24 @@
         data.funnel.forEach(f => cur[f.status] = f.count);
 
         document.getElementById('funnel-kpis').innerHTML = `
-          <div class="kpi-card lead-theme">
+          <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Verstuurd ratio</div>', 'send-rate')}
-            <div class="kpi-value" style="color:#3B82F6;">${data.conversions.sendRate}%</div>
+            <div class="kpi-value">${data.conversions.sendRate}%</div>
             <span class="kpi-badge neutral">${cur.VERSTUURD + cur.GEEN_REACTIE} nu verstuurd</span>
           </div>
-          <div class="kpi-card lead-theme">
+          <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Reactie ratio</div>', 'response-rate')}
-            <div class="kpi-value" style="color:#F59E0B;">${data.conversions.responseRate}%</div>
+            <div class="kpi-value">${data.conversions.responseRate}%</div>
             <span class="kpi-badge positive">${cur.GEREAGEERD + cur.NIET_GEINTERESSEERD} gereageerd</span>
           </div>
-          <div class="kpi-card lead-theme">
+          <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Interesse ratio</div>', 'interest-rate')}
-            <div class="kpi-value" style="color:#8B5CF6;">${data.conversions.interestRate}%</div>
+            <div class="kpi-value">${data.conversions.interestRate}%</div>
             <span class="kpi-badge positive">${cur.AFSPRAAK} interesse</span>
           </div>
-          <div class="kpi-card client-theme">
+          <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Close ratio</div>', 'close-rate')}
-            <div class="kpi-value" style="color:#10B981;">${data.conversions.closeRate}%</div>
+            <div class="kpi-value">${data.conversions.closeRate}%</div>
             <span class="kpi-badge positive">${cur.KLANT} klanten</span>
           </div>
         `;
@@ -552,19 +552,19 @@
 
         // KPIs
         document.getElementById('revenue-kpis').innerHTML = `
-          <div class="kpi-card client-theme">
+          <div class="kpi-card">
             ${wrapWithTooltip(`<div class="kpi-label">Omzet ${yr}</div>`, 'rev-omzet-jaar')}
-            <div class="kpi-value" style="color:#10B981;">${formatCurrency(totalCurrentYear)}</div>
+            <div class="kpi-value">${formatCurrency(totalCurrentYear)}</div>
             <span class="kpi-badge positive">${data.totalClients} deal${data.totalClients !== 1 ? 's' : ''}</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Pakket omzet</div>', 'rev-pakket-omzet')}
-            <div class="kpi-value" style="color:var(--accent-brand);">${formatCurrency(totalPackageNetto)}</div>
+            <div class="kpi-value">${formatCurrency(totalPackageNetto)}</div>
             <span class="kpi-badge neutral">${packagePct}% van totale omzet</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip(`<div class="kpi-label">Hosting ${yr}</div>`, 'rev-hosting-jaar')}
-            <div class="kpi-value" style="color:#8B5CF6;">${formatCurrency(hostingCY)}</div>
+            <div class="kpi-value">${formatCurrency(hostingCY)}</div>
             <span class="kpi-badge neutral">${hostingPct}% van totaal</span>
           </div>
           <div class="kpi-card">
@@ -582,17 +582,17 @@
           ${data.totalCostsThisYear > 0 ? `
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Winst (jaar)</div>', 'winst-jaar')}
-            <div class="kpi-value" style="color:${data.totalProfitThisYear >= 0 ? '#10B981' : '#EF4444'};">${formatCurrency(data.totalProfitThisYear)}</div>
+            <div class="kpi-value"${data.totalProfitThisYear < 0 ? ' style="color:#EF4444;"' : ''}>${formatCurrency(data.totalProfitThisYear)}</div>
             <span class="kpi-badge ${data.totalProfitThisYear >= 0 ? 'positive' : 'negative'}">${data.profitMarginThisYear}% marge</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Kosten (jaar)</div>', 'kosten-jaar')}
-            <div class="kpi-value" style="color:var(--accent-orange);">${formatCurrency(data.totalCostsThisYear)}</div>
+            <div class="kpi-value">${formatCurrency(data.totalCostsThisYear)}</div>
             <span class="kpi-badge neutral">Acquisitie + productie + hosting</span>
           </div>
           ` : `
           <div class="kpi-card" style="opacity:0.6;">
-            <div class="kpi-label" style="color:var(--accent-orange);">Winst (jaar)</div>
+            <div class="kpi-label">Winst (jaar)</div>
             <div class="kpi-value" style="color:var(--text-muted);font-size:16px;">Stel kostprijzen in</div>
             <span class="kpi-badge neutral">Pakketten &amp; Prijzen pagina</span>
           </div>
@@ -603,17 +603,17 @@
         document.getElementById('mrr-kpis').innerHTML = `
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">MRR Totaal</div>', 'rev-mrr')}
-            <div class="kpi-value" style="color:#10B981;">${formatCurrency(totalMRR)}</div>
+            <div class="kpi-value">${formatCurrency(totalMRR)}</div>
             <span class="kpi-badge neutral">${formatCurrency(totalMRR * 12)}/jaar</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">MRR Hosting</div>', 'rev-mrr-hosting')}
-            <div class="kpi-value" style="color:#8B5CF6;">${formatCurrency(hostingMRR)}</div>
+            <div class="kpi-value">${formatCurrency(hostingMRR)}</div>
             <span class="kpi-badge neutral">${formatCurrency(hostingMRR * 12)}/jaar</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">MRR Upsells</div>', 'rev-mrr-upsells')}
-            <div class="kpi-value" style="color:#F59E0B;">${formatCurrency(upsellMRR)}</div>
+            <div class="kpi-value">${formatCurrency(upsellMRR)}</div>
             <span class="kpi-badge neutral">${formatCurrency(upsellMRR * 12)}/jaar</span>
           </div>
         `;
@@ -647,7 +647,7 @@
             <div style="display:flex;align-items:center;gap:10px;padding-left:12px;">
               <div>
                 <div style="font-size:12px;color:var(--text-muted);">Netto totaal</div>
-                <div style="font-size:16px;font-weight:700;color:#10B981;">${formatCurrency(data.totalRevenue)}</div>
+                <div style="font-size:16px;font-weight:700;">${formatCurrency(data.totalRevenue)}</div>
               </div>
             </div>
           </div>
@@ -716,7 +716,7 @@
             <td style="text-align:right;">${(p.upsells || 0) > 0 ? formatCurrency(p.upsells) : '<span class="text-muted">-</span>'}</td>
             <td style="text-align:right;">${(p.korting || 0) > 0 ? `<span style="color:#EF4444;">-${formatCurrency(p.korting)}</span>` : '<span class="text-muted">-</span>'}</td>
             <td style="text-align:right;">${formatCurrency(p.hosting)}</td>
-            <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(p.total)}</td>
+            <td style="text-align:right;font-weight:600;">${formatCurrency(p.total)}</td>
             <td style="text-align:right;">${formatCurrency(p.count > 0 ? p.total / p.count : 0)}</td>
           </tr>
         `).join('') || '<tr><td colspan="8" class="text-center text-muted" style="padding:20px;">Geen pakketten verkocht</td></tr>';
@@ -733,7 +733,7 @@
               <td><span style="background:${u.type === 'MONTHLY' ? 'var(--accent-purple-dim)' : 'var(--accent-blue-dim)'};color:${u.type === 'MONTHLY' ? 'var(--accent-purple)' : 'var(--accent-blue)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${u.type === 'MONTHLY' ? 'Maandelijks' : 'Eenmalig'}</span></td>
               <td style="text-align:center;">${u.count}x</td>
               <td style="text-align:right;">${formatCurrency(u.price)}${u.type === 'MONTHLY' ? '/mnd' : ''}</td>
-              <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(u.revenue)}</td>
+              <td style="text-align:right;font-weight:600;">${formatCurrency(u.revenue)}</td>
             </tr>
           `).join('');
         }
@@ -799,13 +799,13 @@
             <td><span style="background:${channelColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${channelColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${channelLabels[c.acquisitionType] || c.acquisitionType}</span></td>
             <td style="text-align:right;">${formatCurrency(c.pkgOneTime)}</td>
             <td style="text-align:right;">${upsellTotal > 0 ? formatCurrency(upsellTotal) : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;">${c.discount > 0 ? `<span style="color:var(--accent-green);">-${formatCurrency(c.discount)}</span>` : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;">${c.discount > 0 ? `<span style="color:#EF4444;">-${formatCurrency(c.discount)}</span>` : '<span class="text-muted">-</span>'}</td>
             <td style="text-align:right;">${c.hostingCurrentYear > 0 ? formatCurrency(c.hostingCurrentYear) : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;font-weight:700;color:var(--accent-brand);">${formatCurrency(revenue)}</td>
+            <td style="text-align:right;font-weight:700;">${formatCurrency(revenue)}</td>
             <td style="text-align:right;">
-              ${costs > 0 ? `<span style="color:var(--accent-orange);">${formatCurrency(costs)}</span>` : '<span class="text-muted">-</span>'}
+              ${costs > 0 ? formatCurrency(costs) : '<span class="text-muted">-</span>'}
             </td>
-            <td style="text-align:right;font-weight:700;color:${profit >= 0 ? '#10B981' : '#EF4444'};">
+            <td style="text-align:right;font-weight:700;${profit < 0 ? 'color:#EF4444;' : ''}">
               ${hasCostData || costs > 0 ? formatCurrency(profit) : '<span class="text-muted">?</span>'}
             </td>
             <td style="color:var(--text-muted);font-size:11px;">${formatDate(c.saleDate)}</td>
@@ -832,22 +832,22 @@
         document.getElementById('acq-kpis').innerHTML = `
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Flyer omzet</div>', 'acq-flyer-omzet')}
-            <div class="kpi-value" style="color:#F59E0B;">${formatCurrency(flyer.revenue || 0)}</div>
+            <div class="kpi-value">${formatCurrency(flyer.revenue || 0)}</div>
             <span class="kpi-badge neutral">${flyer.count || 0} klant${(flyer.count || 0) !== 1 ? 'en' : ''} | ROI: ${flyer.roi || 0}%</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Warm omzet</div>', 'acq-warm-omzet')}
-            <div class="kpi-value" style="color:#3B82F6;">${formatCurrency(warm.revenue || 0)}</div>
+            <div class="kpi-value">${formatCurrency(warm.revenue || 0)}</div>
             <span class="kpi-badge neutral">${warm.count || 0} klant${(warm.count || 0) !== 1 ? 'en' : ''} | ROI: ${warm.roi || 0}%</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Beste kanaal</div>', 'acq-beste-kanaal')}
-            <div class="kpi-value" style="color:#10B981;font-size:18px;">${bestChannel}</div>
+            <div class="kpi-value" style="font-size:18px;">${bestChannel}</div>
             <span class="kpi-badge positive">Hoogste ROI</span>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Totale acquisitiekosten</div>', 'acq-totale-kosten')}
-            <div class="kpi-value" style="color:#8B5CF6;">${formatCurrency((flyer.cost || 0) + (warm.cost || 0))}</div>
+            <div class="kpi-value">${formatCurrency((flyer.cost || 0) + (warm.cost || 0))}</div>
             <span class="kpi-badge neutral">Flyer: ${formatCurrency(flyer.cost || 0)} | Warm: ${formatCurrency(warm.cost || 0)}</span>
           </div>
         `;
@@ -949,9 +949,9 @@
             <td style="font-size:11px;">${c.packageName}</td>
             <td><span style="background:${channelColors[c.acquisitionType] || 'var(--text-muted)'}20;color:${channelColors[c.acquisitionType] || 'var(--text-muted)'};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;">${channelLabels[c.acquisitionType] || c.acquisitionType}</span></td>
             <td style="text-align:right;">${c.discount > 0 ? `<span style="color:#EF4444;">-${formatCurrency(c.discount)}</span>` : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;font-weight:600;color:var(--accent-brand);">${formatCurrency(revenue)}</td>
-            <td style="text-align:right;">${costs > 0 ? `<span style="color:var(--accent-orange);">${formatCurrency(costs)}</span>` : '<span class="text-muted">-</span>'}</td>
-            <td style="text-align:right;font-weight:600;color:${profit >= 0 ? '#10B981' : '#EF4444'};">${formatCurrency(profit)}</td>
+            <td style="text-align:right;font-weight:600;">${formatCurrency(revenue)}</td>
+            <td style="text-align:right;">${costs > 0 ? formatCurrency(costs) : '<span class="text-muted">-</span>'}</td>
+            <td style="text-align:right;font-weight:600;${profit < 0 ? 'color:#EF4444;' : ''}">${formatCurrency(profit)}</td>
             <td style="text-align:right;">${c.acquisitionCost > 0 ? formatCurrency(c.acquisitionCost) : '<span class="text-muted">-</span>'}</td>
             <td style="color:var(--text-muted);font-size:11px;">${formatDate(c.saleDate)}</td>
           </tr>
@@ -1020,7 +1020,7 @@
         </div>
         <div class="kpi-card">
           ${wrapWithTooltip('<div class="kpi-label">Totale omzet</div>', 'loc-tab-totaal-omzet')}
-          <div class="kpi-value text-green">${formatCurrency(totalRevenue)}</div>
+          <div class="kpi-value">${formatCurrency(totalRevenue)}</div>
           <span class="kpi-badge positive">${filterLabel}</span>
         </div>
       `;
@@ -1202,7 +1202,7 @@
               ${loc.conversionRate}%
             </span>
           </td>
-          <td style="text-align:right;font-weight:600;color:var(--accent-green);">
+          <td style="text-align:right;font-weight:600;">
             ${loc.revenue > 0 ? formatCurrency(loc.revenue) : '-'}
           </td>
         </tr>
@@ -1267,7 +1267,7 @@
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip(`<div class="kpi-label">Hosting omzet ${yr}</div>`, 'hosting-omzet-jaar')}
-            <div class="kpi-value" style="color:#10B981;">${fmt(data.totalCurrentYear || 0)}</div>
+            <div class="kpi-value">${fmt(data.totalCurrentYear || 0)}</div>
           </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Gem. per klant/mnd</div>', 'hosting-gem-klant')}

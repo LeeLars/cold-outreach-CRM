@@ -1561,6 +1561,8 @@ textarea.form-input {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-secondary);
 }
 
 .section-header-icon.lead-theme {
@@ -1578,6 +1580,7 @@ textarea.form-input {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: var(--text-secondary);
 }
 
 .section-header-title.lead-theme { color: #60a5fa; }

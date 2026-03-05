@@ -708,7 +708,7 @@
         });
 
         // Package performance table
-        document.getElementById('package-perf-body').innerHTML = data.packageBreakdown.map(p => `
+        const pkgRows = data.packageBreakdown.map(p => `
           <tr>
             <td style="font-weight:600;">${p.name}</td>
             <td style="text-align:center;">${p.count}x</td>
@@ -719,7 +719,31 @@
             <td style="text-align:right;font-weight:600;">${formatCurrency(p.total)}</td>
             <td style="text-align:right;">${formatCurrency(p.count > 0 ? p.total / p.count : 0)}</td>
           </tr>
-        `).join('') || '<tr><td colspan="8" class="text-center text-muted" style="padding:20px;">Geen pakketten verkocht</td></tr>';
+        `).join('');
+        
+        // Calculate totals
+        const totalCount = data.packageBreakdown.reduce((sum, p) => sum + p.count, 0);
+        const totalEenmalig = data.packageBreakdown.reduce((sum, p) => sum + p.eenmalig, 0);
+        const totalUpsells = data.packageBreakdown.reduce((sum, p) => sum + (p.upsells || 0), 0);
+        const totalKorting = data.packageBreakdown.reduce((sum, p) => sum + (p.korting || 0), 0);
+        const totalHosting = data.packageBreakdown.reduce((sum, p) => sum + p.hosting, 0);
+        const totalNetto = data.packageBreakdown.reduce((sum, p) => sum + p.total, 0);
+        const avgPerDeal = totalCount > 0 ? totalNetto / totalCount : 0;
+        
+        const totalRow = pkgRows ? `
+          <tr style="border-top:2px solid var(--border-color);background:var(--bg-tertiary);">
+            <td style="font-weight:700;">Totaal</td>
+            <td style="text-align:center;font-weight:700;">${totalCount}x</td>
+            <td style="text-align:right;font-weight:700;">${formatCurrency(totalEenmalig)}</td>
+            <td style="text-align:right;font-weight:700;">${totalUpsells > 0 ? formatCurrency(totalUpsells) : '-'}</td>
+            <td style="text-align:right;font-weight:700;">${totalKorting > 0 ? `<span style="color:#EF4444;">-${formatCurrency(totalKorting)}</span>` : '-'}</td>
+            <td style="text-align:right;font-weight:700;">${formatCurrency(totalHosting)}</td>
+            <td style="text-align:right;font-weight:700;">${formatCurrency(totalNetto)}</td>
+            <td style="text-align:right;font-weight:700;">${formatCurrency(avgPerDeal)}</td>
+          </tr>
+        ` : '';
+        
+        document.getElementById('package-perf-body').innerHTML = pkgRows ? (pkgRows + totalRow) : '<tr><td colspan="8" class="text-center text-muted" style="padding:20px;">Geen pakketten verkocht</td></tr>';
 
         // Upsell performance table
         const upsellCard = document.getElementById('upsell-perf-card');

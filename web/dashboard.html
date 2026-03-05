@@ -198,7 +198,7 @@
       refreshIcons();
     }
 
-    // ========== REVENUE TREND: Line chart with bar underneath ==========
+    // ========== REVENUE TREND: Bar chart per month ==========
     function renderRevenueTrend(revenue) {
       const ctx = document.getElementById('revenue-trend-chart').getContext('2d');
       const monthlyData = revenue.monthlyBreakdown || [];
@@ -207,11 +207,7 @@
         return ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'][mo - 1];
       });
       
-      // Calculate totals per month for the line
       const totals = monthlyData.map(m => (m.eenmalig || 0) - (m.korting || 0) + (m.hosting || 0) + (m.upsellEenmalig || 0) + (m.upsellMaandelijks || 0));
-      // Cumulative for area
-      let cumulative = [];
-      totals.reduce((acc, val, i) => { cumulative[i] = acc + val; return acc + val; }, 0);
 
       document.getElementById('revenue-chart-year').textContent = revenue.currentYear;
 
@@ -219,50 +215,25 @@
         type: 'bar',
         data: {
           labels,
-          datasets: [
-            {
-              label: 'Cumulatief',
-              data: cumulative,
-              type: 'line',
-              borderColor: '#10B981',
-              backgroundColor: 'rgba(16,185,129,0.08)',
-              borderWidth: 2,
-              pointRadius: 3,
-              pointBackgroundColor: '#10B981',
-              fill: true,
-              tension: 0.3,
-              yAxisID: 'y1',
-              order: 0
-            },
-            {
-              label: 'Per maand',
-              data: totals,
-              backgroundColor: 'rgba(59,130,246,0.5)',
-              borderColor: '#3B82F6',
-              borderWidth: 1,
-              borderRadius: 4,
-              yAxisID: 'y',
-              order: 1
-            }
-          ]
+          datasets: [{
+            label: 'Omzet per maand',
+            data: totals,
+            backgroundColor: 'rgba(59,130,246,0.5)',
+            borderColor: '#3B82F6',
+            borderWidth: 1,
+            borderRadius: 6
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { position: 'top', labels: { color: '#94A3B8', font: { size: 11 }, boxWidth: 10, padding: 12, usePointStyle: true } },
-            tooltip: {
-              ...TT,
-              callbacks: {
-                label: (c) => `${c.dataset.label}: ${formatCurrency(c.parsed.y)}`
-              }
-            }
+            legend: { display: false },
+            tooltip: { ...TT, callbacks: { label: (c) => formatCurrency(c.parsed.y) } }
           },
           scales: {
             x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
-            y: { position: 'left', grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', font: { size: 10 }, callback: v => formatCurrency(v) } },
-            y1: { position: 'right', grid: { display: false }, ticks: { color: '#10B981', font: { size: 10 }, callback: v => formatCurrency(v) } }
+            y: { grid: { color: 'rgba(148,163,184,0.06)', drawBorder: false }, ticks: { color: '#64748B', font: { size: 10 }, callback: v => formatCurrency(v) } }
           }
         }
       });

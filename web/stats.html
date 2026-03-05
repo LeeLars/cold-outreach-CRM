@@ -69,14 +69,8 @@
             <span class="section-header-title">Omzet analyse</span>
           </div>
 
-          <!-- Main KPIs -->
-          <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);" id="revenue-kpis"></div>
-
-          <!-- MRR KPIs -->
-          <div class="section-header" style="margin-top:8px;">
-            <span class="section-header-title" style="font-size:14px;color:var(--text-secondary);">Maandelijks Terugkerende Omzet (MRR)</span>
-          </div>
-          <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);" id="mrr-kpis"></div>
+          <!-- Sub KPIs (hoofdcijfers staan op Dashboard) -->
+          <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));" id="revenue-kpis"></div>
 
           <!-- Omzet breakdown card -->
           <div class="card mb-24">
@@ -545,18 +539,8 @@
         const totalCurrentYear = eenmaligNetto + hostingCY + upsellCY;
         const hostingPct = totalCurrentYear > 0 ? ((hostingCY / totalCurrentYear) * 100).toFixed(0) : 0;
         const packagePct = data.totalRevenue > 0 ? ((totalPackageNetto / data.totalRevenue) * 100).toFixed(0) : 0;
-        const totalMRR = b.actualMRR + b.upsellMRR;
-
-        const hostingMRR = b.actualMRR || 0;
-        const upsellMRR = b.upsellMRR || 0;
-
-        // KPIs
+        // KPIs (sub-KPIs only - main Omzet/MRR/Winst/Klanten are on Dashboard)
         document.getElementById('revenue-kpis').innerHTML = `
-          <div class="kpi-card">
-            ${wrapWithTooltip(`<div class="kpi-label">Omzet ${yr}</div>`, 'rev-omzet-jaar')}
-            <div class="kpi-value">${formatCurrency(totalCurrentYear)}</div>
-            <span class="kpi-badge positive">${data.totalClients} deal${data.totalClients !== 1 ? 's' : ''}</span>
-          </div>
           <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Pakket omzet</div>', 'rev-pakket-omzet')}
             <div class="kpi-value">${formatCurrency(totalPackageNetto)}</div>
@@ -581,41 +565,11 @@
           ` : ''}
           ${data.totalCostsThisYear > 0 ? `
           <div class="kpi-card">
-            ${wrapWithTooltip('<div class="kpi-label">Winst (jaar)</div>', 'winst-jaar')}
-            <div class="kpi-value"${data.totalProfitThisYear < 0 ? ' style="color:#EF4444;"' : ''}>${formatCurrency(data.totalProfitThisYear)}</div>
-            <span class="kpi-badge ${data.totalProfitThisYear >= 0 ? 'positive' : 'negative'}">${data.profitMarginThisYear}% marge</span>
-          </div>
-          <div class="kpi-card">
             ${wrapWithTooltip('<div class="kpi-label">Kosten (jaar)</div>', 'kosten-jaar')}
             <div class="kpi-value">${formatCurrency(data.totalCostsThisYear)}</div>
             <span class="kpi-badge neutral">Acquisitie + productie + hosting</span>
           </div>
-          ` : `
-          <div class="kpi-card" style="opacity:0.6;">
-            <div class="kpi-label">Winst (jaar)</div>
-            <div class="kpi-value" style="color:var(--text-muted);font-size:16px;">Stel kostprijzen in</div>
-            <span class="kpi-badge neutral">Pakketten &amp; Prijzen pagina</span>
-          </div>
-          `}
-        `;
-
-        // MRR section
-        document.getElementById('mrr-kpis').innerHTML = `
-          <div class="kpi-card">
-            ${wrapWithTooltip('<div class="kpi-label">MRR Totaal</div>', 'rev-mrr')}
-            <div class="kpi-value">${formatCurrency(totalMRR)}</div>
-            <span class="kpi-badge neutral">${formatCurrency(totalMRR * 12)}/jaar</span>
-          </div>
-          <div class="kpi-card">
-            ${wrapWithTooltip('<div class="kpi-label">MRR Hosting</div>', 'rev-mrr-hosting')}
-            <div class="kpi-value">${formatCurrency(hostingMRR)}</div>
-            <span class="kpi-badge neutral">${formatCurrency(hostingMRR * 12)}/jaar</span>
-          </div>
-          <div class="kpi-card">
-            ${wrapWithTooltip('<div class="kpi-label">MRR Upsells</div>', 'rev-mrr-upsells')}
-            <div class="kpi-value">${formatCurrency(upsellMRR)}</div>
-            <span class="kpi-badge neutral">${formatCurrency(upsellMRR * 12)}/jaar</span>
-          </div>
+          ` : ''}
         `;
 
         // Breakdown bar

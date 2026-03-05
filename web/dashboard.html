@@ -317,7 +317,6 @@
       const upsellCY = b.upsellCurrentYear || 0;
       const eenmalig = (b.eenmalig || 0) + (b.upsellOneTime || 0) - (b.discount || 0);
       const totalCY = eenmalig + hostCY + upsellCY;
-      const costs = revenue?.totalCostsThisYear || 0;
       const maxBar = Math.max(eenmalig, hostCY, upsellCY, 1);
 
       function splitBar(label, value, color) {
@@ -345,19 +344,6 @@
           ${splitBar('Eenmalig (netto)', eenmalig, '#3B82F6')}
           ${splitBar('Hosting', hostCY, '#10B981')}
           ${upsellCY > 0 ? splitBar('Upsells', upsellCY, '#8B5CF6') : ''}
-          ${costs > 0 ? `
-            <hr style="border-color:var(--border-color);margin:2px 12px;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px;">
-              <div style="padding:10px;background:rgba(245,158,11,0.06);border-radius:6px;text-align:center;">
-                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Kosten</div>
-                <div style="font-size:14px;font-weight:700;color:var(--accent-orange);margin-top:2px;">${formatCurrency(costs)}</div>
-              </div>
-              <div style="padding:10px;background:rgba(59,130,246,0.06);border-radius:6px;text-align:center;">
-                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">ROI</div>
-                <div style="font-size:14px;font-weight:700;color:var(--accent-brand);margin-top:2px;">${revenue?.roi || 0}%</div>
-              </div>
-            </div>
-          ` : ''}
           <div style="padding:8px 12px;text-align:center;margin-top:4px;">
             <a href="stats.html" style="font-size:12px;color:var(--accent-brand);text-decoration:none;font-weight:600;">Bekijk volledige omzet analyse &rarr;</a>
           </div>
